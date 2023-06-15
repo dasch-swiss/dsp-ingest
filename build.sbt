@@ -26,8 +26,8 @@ lazy val root = (project in file("."))
         scalaVersion := "3.2.2",
       )
     ),
-    name                   := "dsp-ingest",
-    headerLicense          := Some(
+    name                                 := "dsp-ingest",
+    headerLicense                        := Some(
       HeaderLicense.Custom(
         """|Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
            |SPDX-License-Identifier: Apache-2.0
@@ -66,6 +66,7 @@ lazy val root = (project in file("."))
     Docker / defaultLinuxInstallLocation := "/sipi",
     dockerUpdateLatest                   := true,
     dockerBaseImage                      := "daschswiss/knora-sipi:latest",
+    dockerBuildxPlatforms                := Seq("linux/arm64/v8", "linux/amd64"),
     dockerCommands += Cmd(
       "RUN",
       "apt-get update && apt-get install -y openjdk-17-jre-headless && apt-get clean",
