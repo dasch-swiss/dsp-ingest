@@ -42,7 +42,7 @@ object ExportEndpointSpec extends ZIOSpecDefault {
               .headers
               .get("Content-Disposition")
               .contains(s"attachment; filename=export-${existingProject.toString}.zip"),
-            response.headers.get("Content-Type").contains("application/octet-stream"),
+            response.headers.get("Content-Type").contains("application/zip"),
           )
         },
       )

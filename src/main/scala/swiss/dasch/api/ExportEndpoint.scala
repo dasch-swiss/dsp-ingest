@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.domain.{ AssetService, ProjectShortcode }
-import zio.http.Header.ContentDisposition
+import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root
 import zio.http.codec.HttpCodec.*
@@ -23,9 +23,12 @@ import java.io.{ File, IOException }
 
 object ExportEndpoint {
   private val shortcodePathVarName = "shortcode"
-  private type ContentDispositionStream = (ContentDisposition, ZStream[Any, Nothing, Byte])
-  private val downloadCodec =
-    HeaderCodec.contentDisposition ++ ContentCodec.contentStream[Byte] ++ StatusCodec.status(Status.Ok)
+  private type ContentDispositionStream = (ContentDisposition, ContentType, ZStream[Any, Nothing, Byte])
+  private val contentTypeApplicationZip = ContentType.parse("application/zip").toOption.get
+  private val downloadCodec             =
+    HeaderCodec.contentDisposition ++ HeaderCodec.contentType ++ ContentCodec.contentStream[Byte] ++ StatusCodec.status(
+      Status.Ok
+    )
 
   private val exportEndpoint: Endpoint[String, ApiProblem, ContentDispositionStream, None] = Endpoint
     .post("export" / string(shortcodePathVarName))
@@ -51,7 +54,11 @@ object ExportEndpoint {
                 case _         => ApiProblem.projectNotFound(code)
               },
               path =>
-                (ContentDisposition.Attachment(Some(s"export-$shortcode.zip")), ZStream.fromFile(path.toFile).orDie),
+                (
+                  ContentDisposition.Attachment(Some(s"export-$shortcode.zip")),
+                  contentTypeApplicationZip,
+                  ZStream.fromFile(path.toFile).orDie,
+                ),
             )
         }
 
