@@ -21,7 +21,7 @@ lazy val root = (project in file("."))
     inThisBuild(
       List(
         organization := "daschswiss",
-        scalaVersion := "3.3.0",
+        scalaVersion := "3.2.2",
       )
     ),
     name                                 := "dsp-ingest",
