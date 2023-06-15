@@ -1,3 +1,7 @@
+import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{ Docker, dockerRepository }
+import com.typesafe.sbt.packager.docker.Cmd
+
 addCommandAlias("fmt", "; all root/scalafmtSbt root/scalafmtAll")
 
 val zioVersion            = "2.0.13"
@@ -12,6 +16,7 @@ val zioPreludeVersion     = "1.0.0-RC19"
 val zioHttpVersion        = "3.0.0-RC1"
 
 lazy val root = (project in file("."))
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     inThisBuild(
       List(
@@ -19,7 +24,7 @@ lazy val root = (project in file("."))
         scalaVersion := "3.3.0",
       )
     ),
-    name                   := "dsp-ingest",
+    name                                 := "dsp-ingest",
     libraryDependencies ++= Seq(
       "dev.zio"       %% "zio"                      % zioVersion,
       "dev.zio"       %% "zio-streams"              % zioVersion,
@@ -45,9 +50,19 @@ lazy val root = (project in file("."))
       "dev.zio" %% "zio-mock"          % zioMockVersion % Test,
       "dev.zio" %% "zio-test-magnolia" % zioVersion     % Test,
     ),
-    testFrameworks         := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
-    jibBaseImage           := "gcr.io/distroless/java17-debian11",
-    jibName                := "dsp-ingest",
-    jibUseCurrentTimestamp := true,
+    testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
+    Docker / dockerRepository            := Some("daschswiss"),
+    Docker / packageName                 := "dsp-ingest",
+    Docker / dockerExposedPorts ++= Seq(8080),
+    Docker / defaultLinuxInstallLocation := "/sipi",
+    dockerUpdateLatest                   := true,
+    dockerBaseImage                      := "daschswiss/knora-sipi:latest",
+    dockerCommands += Cmd(
+      "RUN",
+      "apt-get update && apt-get install -y openjdk-17-jre-headless && apt-get clean",
+    ),
+    dockerCommands                       := dockerCommands.value.filterNot {
+      case Cmd("USER", args @ _*) => true
+      case cmd                    => false
+    },
   )
-  .enablePlugins(JavaAppPackaging)
