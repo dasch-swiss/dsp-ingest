@@ -16,7 +16,7 @@ object HealthCheckRoutes {
       ZIO.succeed {
         Response.status(Status.NoContent)
       }
-    case Method.GET -> Root / "health" =>
+    case Method.GET -> Root / "health"  =>
       HealthCheckService.check.map { result =>
         if (result.isHealthy) Response.ok
         else Response.status(Status.InternalServerError)

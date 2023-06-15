@@ -7,11 +7,11 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.AssetServiceLive
 import swiss.dasch.test.SpecConfigurations
-import swiss.dasch.test.SpecConstants.{existingProject, nonExistentProject}
+import swiss.dasch.test.SpecConstants.{ existingProject, nonExistentProject }
 import zio.Scope
-import zio.http.{URL, *}
+import zio.http.{ URL, * }
 import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue, assertZIO}
+import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue, assertZIO }
 
 import java.net.URI
 
@@ -32,11 +32,18 @@ object ExportEndpointSpec extends ZIOSpecDefault {
             response <- ExportEndpoint.app.runZIO(Request.post(Body.empty, url))
           } yield assertTrue(response.status == Status.BadRequest)
         },
-        test("given the project is valid, return 200") {
+        test("given the project is valid, return 200 with correct headers") {
           val url = URL.empty.withPath(Root / "export" / existingProject.toString)
           for {
             response <- ExportEndpoint.app.runZIO(Request.post(Body.empty, url))
-          } yield assertTrue(response.status == Status.Ok)
+          } yield assertTrue(
+            response.status == Status.Ok,
+            response
+              .headers
+              .get("Content-Disposition")
+              .contains(s"attachment; filename=export-${existingProject.toString}.zip"),
+            response.headers.get("Content-Type").contains("application/octet-stream"),
+          )
         },
       )
     ).provide(AssetServiceLive.layer, SpecConfigurations.storageConfigLayer)

@@ -7,8 +7,11 @@ package swiss.dasch.domain
 
 import zio.*
 import zio.nio.file.*
+import zio.stream.ZStream
 
 import java.io.{
+  ByteArrayInputStream,
+  ByteArrayOutputStream,
   File,
   FileInputStream,
   FileNotFoundException,
@@ -16,6 +19,8 @@ import java.io.{
   IOException,
   InputStream,
   OutputStream,
+  PipedInputStream,
+  PipedOutputStream,
 }
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -45,8 +50,18 @@ object ZipUtility {
     for {
       _      <- ZIO.whenZIO(Files.notExists(destinationFolder))(Files.createDirectory(destinationFolder))
       zipOut <- createTargetZipFileStream(zipFile)
-      _      <- addFolder(srcFolder, srcFolder, zipOut)
+      _      <- addFolder(srcFolder, zipOut)
     } yield zipFile
+  }
+
+  def zipFolderStream(srcFolder: Path): ZStream[Scope, IOException, Byte] = {
+    val pipedStream: ZIO[Any with Scope, IOException, PipedInputStream] = for {
+      byteOut <- ScopedIoStreams.byteArrayOutputStream()
+      zipOut  <- ScopedIoStreams.zipOutputStream(byteOut)
+      _       <- addFolder(srcFolder, zipOut).refineOrDie { case e: IOException => e }
+      piped   <- ScopedIoStreams.pipeInputStream(byteOut)
+    } yield piped
+    ZStream.fromInputStreamScoped(pipedStream)
   }
 
   private def createTargetZipFileStream(targetFile: Path) =
@@ -58,7 +73,10 @@ object ZipUtility {
       zipOut <- ScopedIoStreams.zipFileOutputStream(targetFile)
     } yield zipOut
 
-  private def addFolder(
+  private def addFolder(folderToAdd: Path, out: ZipOutputStream): ZIO[Scope, Throwable, Unit] =
+    addFolderRec(folderToAdd, folderToAdd, out)
+
+  private def addFolderRec(
       folderToAdd: Path,
       srcFolder: Path,
       out: ZipOutputStream,
@@ -74,7 +92,7 @@ object ZipUtility {
       out: ZipOutputStream,
     ) = for {
     _ <- ZIO.whenZIO(Files.isRegularFile(entry))(addFile(entry, srcFolder, out))
-    _ <- ZIO.whenZIO(Files.isDirectory(entry))(addFolder(entry, srcFolder, out))
+    _ <- ZIO.whenZIO(Files.isDirectory(entry))(addFolderRec(entry, srcFolder, out))
   } yield ()
 
   private def addFile(
@@ -169,6 +187,27 @@ object ScopedIoStreams {
     */
   def zipOutputStream(out: OutputStream): URIO[Scope, ZipOutputStream] =
     ZIO.fromAutoCloseable(ZIO.succeed(new ZipOutputStream(out)))
+
+  private val defaultBufferSize = 4096
+
+  def byteArrayOutputStream(bufferSize: Int = defaultBufferSize): URIO[Scope, ByteArrayOutputStream] =
+    ZIO.fromAutoCloseable(ZIO.succeed(new ByteArrayOutputStream(bufferSize)))
+
+  def byteArrayInputStream(bufferSize: Int = defaultBufferSize): URIO[Scope, ByteArrayInputStream] =
+    ZIO.fromAutoCloseable(ZIO.succeed(new ByteArrayInputStream(new Array[Byte](bufferSize))))
+
+  def pipeInputStream(out: ByteArrayOutputStream): ZIO[Any with Scope, IOException, PipedInputStream] =
+    for {
+      pIn  <- ZIO.fromAutoCloseable(ZIO.succeed(new PipedInputStream()))
+      pOut <- ZIO.fromAutoCloseable(ZIO.succeed(new PipedOutputStream(pIn)))
+      p    <- ZIO.attemptBlockingIO(out.writeTo(pOut)).fork.flatMap(_.join)
+    } yield pIn
+
+  // PipedInputStream in = new PipedInputStream();
+  // final PipedOutputStream out = new PipedOutputStream(in);
+  //// in a background thread, write the given output stream to the
+  //// PipedOutputStream for consumption
+  // new Thread(() -> {originalOutputStream.writeTo(out);}).start();
 
   /** Creates a new managed [[FileOutputStream]] by opening a connection to an actual file, the file named by the File
     * object file in the file system.
