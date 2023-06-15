@@ -7,11 +7,11 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.AssetServiceLive
 import swiss.dasch.test.SpecConfigurations
-import swiss.dasch.test.SpecConstants.{ existingProject, nonExistentProject }
+import swiss.dasch.test.SpecConstants.{existingProject, nonExistentProject}
 import zio.Scope
-import zio.http.{ URL, * }
+import zio.http.{URL, *}
 import zio.test.Assertion.equalTo
-import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue, assertZIO }
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue, assertZIO}
 
 import java.net.URI
 
@@ -21,19 +21,19 @@ object ExportEndpointSpec extends ZIOSpecDefault {
     suite("ExportEndpoint")(
       suite("POST on /export/{project} should")(
         test("given the project does not exist, return 404") {
-          val url = URL.empty.withPath(!! / "export" / nonExistentProject.toString)
+          val url = URL.empty.withPath(Root / "export" / nonExistentProject.toString)
           for {
             response <- ExportEndpoint.app.runZIO(Request.post(Body.empty, url))
           } yield assertTrue(response.status == Status.NotFound)
         },
         test("given the project shortcode is invalid, return 400") {
-          val url = URL.empty.withPath(!! / "export" / "invalid-short-code")
+          val url = URL.empty.withPath(Root / "export" / "invalid-short-code")
           for {
             response <- ExportEndpoint.app.runZIO(Request.post(Body.empty, url))
           } yield assertTrue(response.status == Status.BadRequest)
         },
         test("given the project is valid, return 200") {
-          val url = URL.empty.withPath(!! / "export" / existingProject.toString)
+          val url = URL.empty.withPath(Root / "export" / existingProject.toString)
           for {
             response <- ExportEndpoint.app.runZIO(Request.post(Body.empty, url))
           } yield assertTrue(response.status == Status.Ok)
