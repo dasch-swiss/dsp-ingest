@@ -3,6 +3,8 @@ import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{ Docker, docker
 import com.typesafe.sbt.packager.docker.Cmd
 
 addCommandAlias("fmt", "; all root/scalafmtSbt root/scalafmtAll")
+addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
+addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val zioVersion            = "2.0.13"
 val zioJsonVersion        = "0.5.0"
@@ -24,7 +26,14 @@ lazy val root = (project in file("."))
         scalaVersion := "3.2.2",
       )
     ),
-    name                                 := "dsp-ingest",
+    name                   := "dsp-ingest",
+    headerLicense          := Some(
+      HeaderLicense.Custom(
+        """|Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+           |SPDX-License-Identifier: Apache-2.0
+           |""".stripMargin
+      )
+    ),
     libraryDependencies ++= Seq(
       "dev.zio"       %% "zio"                      % zioVersion,
       "dev.zio"       %% "zio-streams"              % zioVersion,
