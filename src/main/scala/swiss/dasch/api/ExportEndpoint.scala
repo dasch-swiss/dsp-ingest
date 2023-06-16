@@ -39,7 +39,7 @@ object ExportEndpoint {
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
 
-  private val handlerFun: String => ZIO[AssetService, ApiProblem, ContentDispositionStream] =
+  private val postExportShortCodeHandler: String => ZIO[AssetService, ApiProblem, ContentDispositionStream] =
     (shortcode: String) =>
       ZIO
         .fromEither(ProjectShortcode.make(shortcode))
@@ -62,5 +62,5 @@ object ExportEndpoint {
             )
         }
 
-  val app: App[AssetService] = exportEndpoint.implement(handlerFun).toApp
+  val app: App[AssetService] = exportEndpoint.implement(postExportShortCodeHandler).toApp
 }
