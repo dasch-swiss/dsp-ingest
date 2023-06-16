@@ -50,13 +50,16 @@ object ImportEndpoint {
           actual: ContentType,
         ) =>
         for {
-          _          <- ApiContentTypes.verifyContentType(actual, ApiContentTypes.applicationZip)
-          config     <- ZIO.service[StorageConfig]
           pShortcode <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
-          tempFile    = config.importPath / s"import-$pShortcode"
+          _          <- ApiContentTypes.verifyContentType(actual, ApiContentTypes.applicationZip)
+          tempFile   <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$pShortcode.zip")
           _          <- stream
                           .run(ZSink.fromFile(tempFile.toFile))
                           .mapError(ApiProblem.internalError)
+          _          <- ZIO
+                          .fail(IllegalArguments(Map("body" -> "body is empty")))
+                          .whenZIO(Files.size(tempFile).mapBoth(e => ApiProblem.internalError(e), _ == 0))
+                          .tapError(e => Files.deleteIfExists(tempFile).mapError(ApiProblem.internalError))
           _          <- AssetService
                           .importProject(pShortcode, tempFile)
                           .mapError(ApiProblem.internalError)

@@ -24,7 +24,7 @@ object ExportEndpointSpec extends ZIOSpecDefault {
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("ExportEndpoint")(
-      suite("POST on /export/{project} should")(
+      suite("POST on /project/{shortcode}/export should")(
         test("given the project does not exist, return 404") {
           for {
             response <- postExport(nonExistentProject)
