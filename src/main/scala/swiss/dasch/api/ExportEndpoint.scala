@@ -41,9 +41,8 @@ object ExportEndpoint {
 
   private val postExportShortCodeHandler: String => ZIO[AssetService, ApiProblem, ContentDispositionStream] =
     (shortcode: String) =>
-      ZIO
-        .fromEither(ProjectShortcode.make(shortcode))
-        .mapError(ApiProblem.invalidPathVariable(shortcodePathVarName, shortcode, _))
+      ApiStringConverters
+        .fromPathVarToProjectShortcode(shortcode)
         .flatMap { code =>
           AssetService
             .zipProject(code)
