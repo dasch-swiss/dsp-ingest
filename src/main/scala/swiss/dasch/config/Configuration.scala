@@ -60,8 +60,13 @@ object Configuration {
 
     private def verifyFoldersExist(config: Configuration.StorageConfig) =
       ZIO
-        .die(new IllegalStateException(s"Asset (${config.assetPath}) and temp (${config.tempPath}) folders must exist"))
-        .unlessZIO(Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath))
+        .die(new IllegalStateException(s"Config paths $config folders must exist"))
+        .unlessZIO(
+          Files.isDirectory(config.assetPath) &&
+          Files.isDirectory(config.tempPath) &&
+          Files.isDirectory(config.exportPath) &&
+          Files.isDirectory(config.importPath)
+        )
   }
 
   val layer: Layer[ReadError[String], DspApiConfig with StorageConfig] = DspApiConfig.layer ++ StorageConfig.layer

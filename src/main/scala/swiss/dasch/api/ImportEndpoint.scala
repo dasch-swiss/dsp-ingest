@@ -19,6 +19,22 @@ import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.{ ZSink, ZStream }
 import zio.{ Chunk, Exit, Scope, URIO, ZIO, ZNothing }
 
+import java.io.IOException
+import java.util.zip.ZipFile
+
+def validateInputFile(tempFile: file.Path): ZIO[Any, ApiProblem, Unit] =
+  (for {
+    _ <- ZIO
+           .fail(IllegalArguments(Map("body" -> "body is empty")))
+           .whenZIO(Files.size(tempFile).mapBoth(e => ApiProblem.internalError(e), _ == 0))
+    _ <-
+      ZIO.scoped {
+        val acquire                   = ZIO.attemptBlockingIO(new ZipFile(tempFile.toFile))
+        def release(zipFile: ZipFile) = ZIO.succeed(zipFile.close())
+        ZIO.acquireRelease(acquire)(release).orElseFail(IllegalArguments(Map("body" -> "body is not a zip file")))
+      }
+  } yield ()).tapError(e => Files.deleteIfExists(tempFile).mapError(ApiProblem.internalError))
+
 object ImportEndpoint {
   case class UploadResponse(status: String = "okey")
   private object UploadResponse {
@@ -56,10 +72,7 @@ object ImportEndpoint {
           _          <- stream
                           .run(ZSink.fromFile(tempFile.toFile))
                           .mapError(ApiProblem.internalError)
-          _          <- ZIO
-                          .fail(IllegalArguments(Map("body" -> "body is empty")))
-                          .whenZIO(Files.size(tempFile).mapBoth(e => ApiProblem.internalError(e), _ == 0))
-                          .tapError(e => Files.deleteIfExists(tempFile).mapError(ApiProblem.internalError))
+          _          <- validateInputFile(tempFile)
           _          <- AssetService
                           .importProject(pShortcode, tempFile)
                           .mapError(ApiProblem.internalError)
