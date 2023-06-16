@@ -54,16 +54,6 @@ object ZipUtility {
     } yield zipFile
   }
 
-  def zipFolderStream(srcFolder: Path): ZStream[Scope, IOException, Byte] = {
-    val pipedStream: ZIO[Any with Scope, IOException, PipedInputStream] = for {
-      byteOut <- ScopedIoStreams.byteArrayOutputStream()
-      zipOut  <- ScopedIoStreams.zipOutputStream(byteOut)
-      _       <- addFolder(srcFolder, zipOut).refineOrDie { case e: IOException => e }
-      piped   <- ScopedIoStreams.pipeInputStream(byteOut)
-    } yield piped
-    ZStream.fromInputStreamScoped(pipedStream)
-  }
-
   private def createTargetZipFileStream(targetFile: Path) =
     for {
       _      <-
@@ -195,19 +185,6 @@ object ScopedIoStreams {
 
   def byteArrayInputStream(bufferSize: Int = defaultBufferSize): URIO[Scope, ByteArrayInputStream] =
     ZIO.fromAutoCloseable(ZIO.succeed(new ByteArrayInputStream(new Array[Byte](bufferSize))))
-
-  def pipeInputStream(out: ByteArrayOutputStream): ZIO[Any with Scope, IOException, PipedInputStream] =
-    for {
-      pIn  <- ZIO.fromAutoCloseable(ZIO.succeed(new PipedInputStream()))
-      pOut <- ZIO.fromAutoCloseable(ZIO.succeed(new PipedOutputStream(pIn)))
-      p    <- ZIO.attemptBlockingIO(out.writeTo(pOut)).fork.flatMap(_.join)
-    } yield pIn
-
-  // PipedInputStream in = new PipedInputStream();
-  // final PipedOutputStream out = new PipedOutputStream(in);
-  //// in a background thread, write the given output stream to the
-  //// PipedOutputStream for consumption
-  // new Thread(() -> {originalOutputStream.writeTo(out);}).start();
 
   /** Creates a new managed [[FileOutputStream]] by opening a connection to an actual file, the file named by the File
     * object file in the file system.

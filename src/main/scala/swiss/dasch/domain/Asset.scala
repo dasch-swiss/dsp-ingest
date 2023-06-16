@@ -40,8 +40,8 @@ trait AssetService  {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
-  def zipProjectStream(shortcode: ProjectShortcode): ZStream[Scope, Option[IOException], Byte]
 }
+
 object AssetService {
   def listAllProjects(): ZIO[AssetService, IOException, Chunk[ProjectShortcode]] =
     ZIO.serviceWithZIO[AssetService](_.listAllProjects())
@@ -51,9 +51,6 @@ object AssetService {
 
   def zipProject(shortcode: ProjectShortcode): ZIO[AssetService, Throwable, Option[Path]] =
     ZIO.serviceWithZIO[AssetService](_.zipProject(shortcode))
-
-  def zipProjectStream(shortcode: ProjectShortcode): ZStream[AssetService with Scope, Option[IOException], Byte] =
-    ZStream.serviceWithStream[AssetService](it => it.zipProjectStream(shortcode))
 }
 
 final case class AssetServiceLive(config: StorageConfig) extends AssetService {
@@ -77,12 +74,10 @@ final case class AssetServiceLive(config: StorageConfig) extends AssetService {
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     findProject(shortcode).flatMap(_.map(zipProjectPath(_, shortcode)).getOrElse(ZIO.none))
 
-  private def zipProjectPath(projectPath: Path, shortcode: ProjectShortcode)                            = {
+  private def zipProjectPath(projectPath: Path, shortcode: ProjectShortcode) = {
     val targetFolder = config.tempPath / "zipped"
     ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
   }
-  override def zipProjectStream(shortcode: ProjectShortcode): ZStream[Scope, Option[IOException], Byte] =
-    ZStream.fromZIO(findProject(shortcode).some).flatMap(path => ZipUtility.zipFolderStream(path).mapError(Some(_)))
 }
 
 object AssetServiceLive {
