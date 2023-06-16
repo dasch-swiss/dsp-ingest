@@ -38,8 +38,6 @@ object Configuration {
   final case class StorageConfig(assetDir: String, tempDir: String) {
     val assetPath: Path  = Path(assetDir)
     val tempPath: Path   = Path(tempDir)
-    val exportPath: Path = Path(tempDir) / "export"
-    val importPath: Path = Path(tempDir) / "import"
   }
   object StorageConfig                                              {
     private val storageConfigDescription: ConfigDescriptor[StorageConfig] =
@@ -49,16 +47,13 @@ object Configuration {
       }.to[StorageConfig]
 
     private[Configuration] val layer: Layer[ReadError[String], StorageConfig] = ZLayer(
-      for {
-        config <- read(
-                    storageConfigDescription.from(
-                      TypesafeConfigSource.fromTypesafeConfig(
-                        ZIO.attempt(ConfigFactory.defaultApplication())
-                      )
-                    )
-                  )
-        _      <- verifyFoldersExist(config)
-      } yield config
+      read(
+        storageConfigDescription.from(
+          TypesafeConfigSource.fromTypesafeConfig(
+            ZIO.attempt(ConfigFactory.defaultApplication())
+          )
+        )
+      ).tap(verifyFoldersExist)
     )
 
     private def verifyFoldersExist(config: Configuration.StorageConfig) =
