@@ -49,14 +49,13 @@ object Configuration {
       }.to[StorageConfig]
 
     private[Configuration] val layer: Layer[ReadError[String], StorageConfig] = ZLayer(
-      for {
-        config <- read(
-                    storageConfigDescription.from(
-                      TypesafeConfigSource.fromTypesafeConfig(ZIO.attempt(ConfigFactory.defaultApplication().resolve()))
-                    )
-                  )
-        _      <- verifyFoldersExist(config)
-      } yield config
+      read(
+        storageConfigDescription.from(
+          TypesafeConfigSource.fromTypesafeConfig(
+            ZIO.attempt(ConfigFactory.defaultApplication().resolve())
+          )
+        )
+      ).tap(verifyFoldersExist)
     )
 
     private def verifyFoldersExist(config: Configuration.StorageConfig) =
