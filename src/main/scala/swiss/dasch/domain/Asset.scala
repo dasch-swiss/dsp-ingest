@@ -36,7 +36,7 @@ object DotInfoFileContent {
   implicit val codec: JsonCodec[DotInfoFileContent] = DeriveJsonCodec.gen[DotInfoFileContent]
 }
 
-trait AssetService  {
+trait AssetService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
