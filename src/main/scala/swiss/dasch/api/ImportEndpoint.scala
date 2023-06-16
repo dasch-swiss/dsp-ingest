@@ -2,7 +2,7 @@ package swiss.dasch.api
 import eu.timepit.refined.auto.autoUnwrap
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.ProjectShortcode
+import swiss.dasch.domain.{ AssetService, ProjectShortcode }
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root
@@ -26,26 +26,41 @@ object ImportEndpoint {
     implicit val encoder: JsonEncoder[UploadResponse] = DeriveJsonEncoder.gen[UploadResponse]
   }
 
-  private val importEndpoint: Endpoint[(String, ZStream[Any, Nothing, Byte]), ApiProblem, UploadResponse, None] =
+  private val uploadCodec = HeaderCodec.contentType ++ ContentCodec.contentStream[Byte] ++ StatusCodec.status(Status.Ok)
+
+  private val importEndpoint
+      : Endpoint[(String, ZStream[Any, Nothing, Byte], ContentType), ApiProblem, UploadResponse, None] =
     Endpoint
       .post("project" / string("shortcode") / "import")
-      .inStream[Byte]("upload")
+      // Files must be uploaded as zip files with the header 'Content-Type' 'application/zip' and the file in the body.
+      // For now we check the ContentType in the implementation as zio-http doesn't support it yet to specify it
+      // in the endpoint definition.
+      .inCodec(ContentCodec.contentStream[Byte] ++ HeaderCodec.contentType)
       .out[UploadResponse]
       .outErrors(
         HttpCodec.error[IllegalArguments](Status.BadRequest),
         HttpCodec.error[InternalProblem](Status.InternalServerError),
       )
 
-  val app: App[StorageConfig] = importEndpoint
-    .implement((shortcode: String, stream: ZStream[Any, Nothing, Byte]) =>
-      for {
-        config     <- ZIO.service[StorageConfig] <* ZIO.logInfo("hello")
-        pShortcode <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
-        tempFile    = (config.importPath / s"import-$pShortcode").toFile
-        _          <- stream
-                        .run(ZSink.fromFile(tempFile))
-                        .mapError(ApiProblem.internalError)
-      } yield UploadResponse()
+  val app: App[StorageConfig with AssetService] = importEndpoint
+    .implement(
+      (
+          shortcode: String,
+          stream: ZStream[Any, Nothing, Byte],
+          actual: ContentType,
+        ) =>
+        for {
+          _          <- ApiContentTypes.verifyContentType(actual, ApiContentTypes.applicationZip)
+          config     <- ZIO.service[StorageConfig]
+          pShortcode <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
+          tempFile    = config.importPath / s"import-$pShortcode"
+          _          <- stream
+                          .run(ZSink.fromFile(tempFile.toFile))
+                          .mapError(ApiProblem.internalError)
+          _          <- AssetService
+                          .importProject(pShortcode, tempFile)
+                          .mapError(ApiProblem.internalError)
+        } yield UploadResponse()
     )
     .toApp
 }

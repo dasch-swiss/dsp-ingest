@@ -6,6 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.domain.ProjectShortcode
+import zio.http.Header.ContentType
 import zio.json.{ DeriveJsonEncoder, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 
@@ -36,7 +37,20 @@ object ApiProblem {
       key: String,
       value: String,
       reason: String,
-    ): IllegalArguments = IllegalArguments(Map(s"Invalid path var: $key" -> s"'$value' is invalid: $reason"))
+    ): IllegalArguments = IllegalArguments(Map(s"Invalid path var: '$key''" -> s"'$value' is invalid: $reason"))
+
+  def invalidHeader(
+      key: String,
+      value: String,
+      reason: String,
+    ): IllegalArguments = IllegalArguments(Map(s"Invalid header: '$key''" -> s"'$value' is invalid: $reason"))
+
+  def invalidHeaderContentType(
+      actual: ContentType,
+      expected: ContentType,
+    ): IllegalArguments = IllegalArguments(
+    Map(s"Invalid header: 'Content-Type'" -> s"Is '$actual' but expected: '$expected''")
+  )
 
   def projectNotFound(shortcode: ProjectShortcode): ProjectNotFound = ProjectNotFound.make(shortcode)
 }

@@ -31,7 +31,7 @@ object ExportEndpoint {
     )
 
   private val exportEndpoint: Endpoint[String, ApiProblem, ContentDispositionStream, None] = Endpoint
-    .post("export" / string(shortcodePathVarName))
+    .post("project" / string(shortcodePathVarName) / "export")
     .outCodec(downloadCodec)
     .outErrors(
       HttpCodec.error[ProjectNotFound](Status.NotFound),
