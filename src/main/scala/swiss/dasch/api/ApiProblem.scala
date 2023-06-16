@@ -45,12 +45,8 @@ object ApiProblem {
       reason: String,
     ): IllegalArguments = IllegalArguments(Map(s"Invalid header: '$key''" -> s"'$value' is invalid: $reason"))
 
-  def invalidHeaderContentType(
-      actual: ContentType,
-      expected: ContentType,
-    ): IllegalArguments = IllegalArguments(
-    Map(s"Invalid header: 'Content-Type'" -> s"Is '$actual' but expected: '$expected''")
-  )
+  def invalidHeaderContentType(actual: ContentType, expected: ContentType): IllegalArguments =
+    invalidHeader("Content-Type", actual.toString, s"expected '$expected'")
 
   def projectNotFound(shortcode: ProjectShortcode): ProjectNotFound = ProjectNotFound.make(shortcode)
 }
