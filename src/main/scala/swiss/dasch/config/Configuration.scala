@@ -28,7 +28,7 @@ object Configuration {
       read(
         serverConfigDescription.from(
           TypesafeConfigSource.fromTypesafeConfig(
-            ZIO.attempt(ConfigFactory.defaultApplication())
+            ZIO.attempt(ConfigFactory.defaultApplication().resolve())
           )
         )
       )
@@ -36,8 +36,8 @@ object Configuration {
   }
 
   final case class StorageConfig(assetDir: String, tempDir: String) {
-    val assetPath: Path  = Path(assetDir)
-    val tempPath: Path   = Path(tempDir)
+    val assetPath: Path = Path(assetDir)
+    val tempPath: Path  = Path(tempDir)
   }
   object StorageConfig                                              {
     private val storageConfigDescription: ConfigDescriptor[StorageConfig] =
@@ -50,7 +50,7 @@ object Configuration {
       read(
         storageConfigDescription.from(
           TypesafeConfigSource.fromTypesafeConfig(
-            ZIO.attempt(ConfigFactory.defaultApplication())
+            ZIO.attempt(ConfigFactory.defaultApplication().resolve())
           )
         )
       ).tap(verifyFoldersExist)
