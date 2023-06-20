@@ -12,13 +12,14 @@ import swiss.dasch.domain.{ AssetService, AssetServiceLive, ProjectShortcode }
 import swiss.dasch.test.{ SpecConfigurations, SpecConstants }
 import swiss.dasch.test.SpecConstants.{ emptyProject, existingProject, nonExistentProject }
 import swiss.dasch.test.SpecFileUtil.pathFromResource
-import zio.{ UIO, URIO, ZIO }
+import zio.{ Chunk, UIO, URIO, ZIO }
 import zio.http.*
 import zio.nio.file.Files
 object ImportEndpointSpec extends ZIOSpecDefault {
 
   private val validContentTypeHeaders = Headers(Header.ContentType(MediaType.application.zip))
   private val bodyFromZipFile         = Body.fromFile(pathFromResource("/test-import.zip").toFile)
+  private val nonEmptyChunkBody       = Body.fromChunk(Chunk[Byte](0x004))
 
   private def postImport(
       shortcode: String | ProjectShortcode,
@@ -45,7 +46,7 @@ object ImportEndpointSpec extends ZIOSpecDefault {
         )
       ),
       test("given the Body is empty, return 400")(for {
-        response <- postImport(emptyProject, bodyFromZipFile, validContentTypeHeaders)
+        response <- postImport(emptyProject, Body.empty, validContentTypeHeaders)
       } yield assertTrue(response.status == Status.BadRequest)),
       test("given the Body is a zip, return 200")(
         for {
@@ -55,14 +56,14 @@ object ImportEndpointSpec extends ZIOSpecDefault {
                              bodyFromZipFile,
                              validContentTypeHeaders,
                            )
-          importExists  <- Files.isDirectory(storageConfig.assetPath / "0003")
-                           && Files.isDirectory(storageConfig.assetPath / "0003" / "fg")
+          importExists  <- Files.isDirectory(storageConfig.assetPath / emptyProject.toString)
+                           && Files.isDirectory(storageConfig.assetPath / emptyProject.toString / "fg")
         } yield assertTrue(response.status == Status.Ok, importExists)
       ),
       test("given the Body is not a zip, will return 400") {
         for {
           storageConfig      <- ZIO.service[StorageConfig]
-          response           <- postImport(emptyProject, bodyFromZipFile, validContentTypeHeaders)
+          response           <- postImport(emptyProject, nonEmptyChunkBody, validContentTypeHeaders)
           importDoesNotExist <- validateImportedProjectExists(storageConfig, emptyProject).map(!_)
         } yield assertTrue(response.status == Status.BadRequest, importDoesNotExist)
       },
