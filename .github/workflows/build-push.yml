@@ -8,7 +8,8 @@ on:
       - 'main'
 
 jobs:
-  build:
+  build-and-publish:
+    name: Build and publish
     if_merged:
       if: github.event.pull_request.merged == true
       runs-on: ubuntu-latest
