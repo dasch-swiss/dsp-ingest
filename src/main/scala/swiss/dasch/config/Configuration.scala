@@ -14,14 +14,19 @@ import zio.nio.file.{ Files, Path }
 
 object Configuration {
 
-  final case class DspApiConfig(host: String, port: Int)
+  final case class DspApiConfig(
+      host: String,
+      port: Int,
+      jwtSecretKey: String,
+    )
 
   object DspApiConfig {
 
     private val serverConfigDescription =
       nested("dsp-api") {
         string("host") <*>
-          int("port")
+          int("port") <*>
+          string("jwt-secret-key")
       }.to[DspApiConfig]
 
     private[Configuration] val layer = ZLayer(
