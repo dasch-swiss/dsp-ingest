@@ -1,4 +1,4 @@
-name: Build and publish to Dockeer Hub
+name: Build and publish to Docker Hub
 
 on:
   pull_request:
