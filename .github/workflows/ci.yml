@@ -27,21 +27,9 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
-
-#      - name: Cache sbt
-#        uses: actions/cache@v2
-#        with:
-#          path: |
-#            ~/.sbt
-#            ~/.ivy2/cache
-#            ~/.coursier/cache/v1
-#            ~/.cache/coursier/v1
-#            ~/AppData/Local/Coursier/Cache/v1
-#            ~/Library/Caches/Coursier/v1
-#          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
-#
-      - name: Run the unit tests
-        run: sbt clean test
+#          cache: sbt
+      - name: Build and Test
+        run: sbt -v +compile ; ls -al /home/runner/work/dsp-ingest/dsp-ingest/target/scala-3.2.2/test-classes; sbt -v +test
       - name: Unit Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
