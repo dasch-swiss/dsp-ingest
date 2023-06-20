@@ -7,7 +7,7 @@ import zio.test.{ ZIOSpecDefault, assertTrue }
 object FileChecksumLiveSpec extends ZIOSpecDefault {
 
   private val checksumOrig = "fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c"
-  private val fileprefix   = "/test-folder-structure/0001/fg/il/FGiLaT4zzuV-CqwbEDFAFeS"
+  private val fileprefix   = "test-folder-structure/0001/fg/il/FGiLaT4zzuV-CqwbEDFAFeS"
 
   val spec = suite("FileChecksumLiveSpec")(
     test("checksum of .jp2.orig should be correct") {

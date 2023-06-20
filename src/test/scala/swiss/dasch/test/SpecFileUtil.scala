@@ -8,5 +8,7 @@ package swiss.dasch.test
 import zio.nio.file.Path
 
 object SpecFileUtil {
-  def pathFromResource(resource: String): Path = Path(getClass.getResource(resource).getPath)
+  def pathFromResource(resource: String): Path = {
+    Path(getClass.getClassLoader.getResource(resource).getPath)
+  }
 }

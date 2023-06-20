@@ -19,7 +19,7 @@ object AssetServiceSpec extends ZIOSpecDefault {
     for {
       tmpDir <- Files.createTempDirectoryScoped(None, List.empty)
     } yield StorageConfig(
-      assetDir = pathFromResource("/test-folder-structure").toFile.getAbsolutePath,
+      assetDir = pathFromResource("test-folder-structure").toFile.getAbsolutePath,
       tempDir = tmpDir.toFile.toString,
     )
   }

@@ -16,7 +16,7 @@ object DotInfoFileContentSpec extends ZIOSpecDefault {
     suite("DotInfoFileContent")(test("parsing a file works") {
       for {
         actual <- Files
-                    .readAllLines(pathFromResource("/test-folder-structure/0001/fg/il/FGiLaT4zzuV-CqwbEDFAFeS.info"))
+                    .readAllLines(pathFromResource("test-folder-structure/0001/fg/il/FGiLaT4zzuV-CqwbEDFAFeS.info"))
                     .map(lines => lines.mkString.fromJson[DotInfoFileContent])
       } yield assertTrue(
         actual.contains(

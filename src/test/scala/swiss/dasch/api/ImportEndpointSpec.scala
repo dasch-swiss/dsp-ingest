@@ -18,7 +18,7 @@ import zio.nio.file.Files
 object ImportEndpointSpec extends ZIOSpecDefault {
 
   private val validContentTypeHeaders = Headers(Header.ContentType(MediaType.application.zip))
-  private val bodyFromZipFile         = Body.fromFile(pathFromResource("/test-import.zip").toFile)
+  private val bodyFromZipFile         = Body.fromFile(pathFromResource("test-import.zip").toFile)
   private val nonEmptyChunkBody       = Body.fromChunk(Chunk[Byte](0x004))
 
   private def postImport(

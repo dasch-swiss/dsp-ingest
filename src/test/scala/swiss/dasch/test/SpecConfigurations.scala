@@ -25,7 +25,7 @@ object SpecConfigurations {
       storageConfig = StorageConfig(assetDir.toFile.toString, tempDir.toFile.toString)
       _            <- Files.createDirectories(storageConfig.exportPath)
       _            <- Files.createDirectories(storageConfig.importPath)
-      _            <- copyDirectory(pathFromResource("/test-folder-structure"), storageConfig.assetPath)
+      _            <- copyDirectory(pathFromResource("test-folder-structure"), storageConfig.assetPath)
     } yield storageConfig
   }
 
