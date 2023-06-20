@@ -7,8 +7,11 @@ package swiss.dasch.test
 
 import zio.nio.file.Path
 
-object SpecFileUtil {
-  def pathFromResource(resource: String): Path = {
+object SpecPaths {
+  def pathFromResource(resource: String): Path =
     Path(getClass.getClassLoader.getResource(resource).getPath)
-  }
+
+  val testFolder: Path   = pathFromResource("test-folder-structure")
+  val testZip: Path      = pathFromResource("test-import.zip")
+  val testTextFile: Path = pathFromResource("test.txt")
 }

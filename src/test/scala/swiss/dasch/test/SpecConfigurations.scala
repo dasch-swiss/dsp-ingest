@@ -5,7 +5,7 @@
 
 package swiss.dasch.test
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.test.SpecFileUtil.pathFromResource
+import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.Files.newDirectoryStream
 import zio.{ Layer, ZIO, ZLayer }
 import zio.nio.file.{ Files, Path }
@@ -25,7 +25,7 @@ object SpecConfigurations {
       storageConfig = StorageConfig(assetDir.toFile.toString, tempDir.toFile.toString)
       _            <- Files.createDirectories(storageConfig.exportPath)
       _            <- Files.createDirectories(storageConfig.importPath)
-      _            <- copyDirectory(pathFromResource("test-folder-structure"), storageConfig.assetPath)
+      _            <- copyDirectory(SpecPaths.testFolder, storageConfig.assetPath)
     } yield storageConfig
   }
 

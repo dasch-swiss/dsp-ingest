@@ -5,7 +5,7 @@
 
 package swiss.dasch.domain
 
-import swiss.dasch.test.SpecFileUtil.pathFromResource
+import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.Scope
 import zio.nio.charset.Charset
 import zio.nio.file.{ Files, Path }

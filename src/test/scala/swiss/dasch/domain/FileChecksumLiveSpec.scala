@@ -1,6 +1,6 @@
 package swiss.dasch.domain
 
-import swiss.dasch.test.SpecFileUtil.pathFromResource
+import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.*
 import zio.test.{ ZIOSpecDefault, assertTrue }
 

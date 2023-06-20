@@ -9,17 +9,17 @@ import swiss.dasch.api.ImportEndpointSpec.postImport
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
 import swiss.dasch.domain.{ AssetService, AssetServiceLive, ProjectShortcode }
-import swiss.dasch.test.{ SpecConfigurations, SpecConstants }
+import swiss.dasch.test.{ SpecConfigurations, SpecConstants, SpecPaths }
 import swiss.dasch.test.SpecConstants.{ emptyProject, existingProject, nonExistentProject }
-import swiss.dasch.test.SpecFileUtil.pathFromResource
+import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.{ Chunk, UIO, URIO, ZIO }
 import zio.http.*
 import zio.nio.file.Files
 object ImportEndpointSpec extends ZIOSpecDefault {
 
   private val validContentTypeHeaders = Headers(Header.ContentType(MediaType.application.zip))
-  private val bodyFromZipFile         = Body.fromFile(pathFromResource("test-import.zip").toFile)
-  private val nonEmptyChunkBody       = Body.fromChunk(Chunk[Byte](0x004))
+  private val bodyFromZipFile         = Body.fromFile(SpecPaths.testZip.toFile)
+  private val nonEmptyChunkBody       = Body.fromFile(SpecPaths.testTextFile.toFile)
 
   private def postImport(
       shortcode: String | ProjectShortcode,
