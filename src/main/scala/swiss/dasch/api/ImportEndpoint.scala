@@ -74,7 +74,7 @@ object ImportEndpoint {
   private def validateInputFile(tempFile: file.Path): ZIO[Any, ApiProblem, Unit] =
     (for {
       _ <- ZIO
-             .fail(IllegalArguments(Map("body" -> "body is empty")))
+             .fail(ApiProblem.bodyIsEmpty)
              .whenZIO(Files.size(tempFile).mapBoth(e => ApiProblem.internalError(e), _ == 0))
       _ <-
         ZIO.scoped {

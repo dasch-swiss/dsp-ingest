@@ -33,6 +33,8 @@ object ApiProblem {
   def internalError(t: Throwable): InternalProblem =
     InternalProblem(t.getMessage)
 
+  val bodyIsEmpty: IllegalArguments = IllegalArguments(Map("body" -> "body is empty"))
+
   def invalidPathVariable(
       key: String,
       value: String,
