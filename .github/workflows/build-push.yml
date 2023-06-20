@@ -29,4 +29,3 @@ jobs:
 
       - name: Build and push image
         run: sbt Docker/publish
-  
