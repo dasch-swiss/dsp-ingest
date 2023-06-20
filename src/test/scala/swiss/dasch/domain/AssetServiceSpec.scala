@@ -10,9 +10,9 @@ import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecPaths
 import swiss.dasch.test.SpecPaths.pathFromResource
-import zio.nio.file.{Files, Path}
-import zio.{Chunk, Scope, ZIO, ZLayer}
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue}
+import zio.nio.file.{ Files, Path }
+import zio.{ Chunk, Scope, ZIO, ZLayer }
+import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue }
 
 object AssetServiceSpec extends ZIOSpecDefault {
 
