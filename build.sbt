@@ -46,7 +46,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
       "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
       "eu.timepit"           %% "refined"                  % "0.10.3",
-      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.3.0", // 9.4.0 is not compatible with scala 3.2.2
+      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.3.0", // 9.4.0 is not supported on scala 3.2.2 https://github.com/jwt-scala/jwt-scala/issues/486
 
       // logging
       "dev.zio"       %% "zio-logging"       % zioLoggingVersion,
