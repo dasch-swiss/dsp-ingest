@@ -14,7 +14,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import scala.util.Try
 object SpecJwtTokens {
-  def validToken(): URIO[JwtConfig, String]   = createToken()
+  def validToken(): URIO[JwtConfig, String]                      = createToken()
   def expiredToken(expiration: Instant): URIO[JwtConfig, String] = createToken(expiration = Some(expiration))
   def tokenWithInvalidSignature(): URIO[JwtConfig, String]       = createToken(secret = Some("aDifferentKey"))
   def tokenWithInvalidAudience(): URIO[JwtConfig, String]        = createToken(audience = Some(Set("invalid-audience")))

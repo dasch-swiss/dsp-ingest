@@ -10,11 +10,22 @@ import zio.*
 import zio.prelude.Validation
 import pdi.jwt.*
 import pdi.jwt.exceptions.JwtException
+import zio.http.{ HttpAppMiddleware, RequestHandlerMiddleware }
 
 trait Authenticator  {
   def authenticate(token: String): ZIO[Any, NonEmptyChunk[AuthenticationError], JwtClaim]
 }
 object Authenticator {
+
+  val middleware: RequestHandlerMiddleware[Nothing, Authenticator with JwtConfig, Nothing, Any] =
+    HttpAppMiddleware.bearerAuthZIO(token =>
+      for {
+        isAuthDisabled  <- ZIO.serviceWith[JwtConfig](_.disableAuth)
+        isAuthenticated <- if (isAuthDisabled) { ZIO.succeed(true) }
+                           else { Authenticator.authenticate(token).fold(_ => false, _ => true) }
+      } yield isAuthenticated
+    )
+
   def authenticate(token: String): ZIO[Authenticator, NonEmptyChunk[AuthenticationError], JwtClaim] =
     ZIO.serviceWithZIO[Authenticator](_.authenticate(token))
 }

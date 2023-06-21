@@ -18,13 +18,15 @@ object Configuration {
       secret: String,
       audience: String,
       issuer: String,
+      disableAuth: Boolean = false,
     )
   object JwtConfig {
     private val jwtConfigDescription =
       nested("jwt") {
         string("secret") <*>
           string("audience") <*>
-          string("issuer")
+          string("issuer") <*>
+          boolean("disable-auth")
       }.to[JwtConfig]
     private[Configuration] val layer = ZLayer(
       read(
@@ -95,6 +97,6 @@ object Configuration {
         )
   }
 
-  val layer: Layer[ReadError[String], DspApiConfig with StorageConfig] =
+  val layer: Layer[ReadError[String], DspApiConfig with JwtConfig with StorageConfig] =
     DspApiConfig.layer ++ StorageConfig.layer ++ JwtConfig.layer
 }

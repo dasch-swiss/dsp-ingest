@@ -4,11 +4,11 @@
  */
 
 package swiss.dasch.test
-import swiss.dasch.config.Configuration.{JwtConfig, StorageConfig}
+import swiss.dasch.config.Configuration.{ JwtConfig, StorageConfig }
 import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.Files.newDirectoryStream
-import zio.{Layer, ULayer, ZIO, ZLayer}
-import zio.nio.file.{Files, Path}
+import zio.{ Layer, ULayer, ZIO, ZLayer }
+import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
 
 import java.io.IOException

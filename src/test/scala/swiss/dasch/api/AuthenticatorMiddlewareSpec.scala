@@ -7,15 +7,12 @@ import zio.http.endpoint.*
 import zio.http.endpoint.EndpointMiddleware.Typed
 import zio.test.{ TestAspect, ZIOSpecDefault, assertCompletes, assertTrue }
 
-object AuthenticationMiddlewareSpec extends ZIOSpecDefault {
-
-  private val middleware =
-    HttpAppMiddleware.bearerAuthZIO(token => Authenticator.authenticate(token).fold(_ => false, _ => true))
+object AuthenticatorMiddlewareSpec extends ZIOSpecDefault {
 
   private val app =
-    Endpoint.get("hello").out[String].implement(_ => ZIO.succeed("test")).toApp @@ middleware
+    Endpoint.get("hello").out[String].implement(_ => ZIO.succeed("test")).toApp @@ Authenticator.middleware
 
-  val request = Request.get(URL(Root / "hello"))
+  private val request = Request.get(URL(Root / "hello"))
 
   val spec = suite("AuthenticationMiddlewareSpec")(
     test("valid token should be accepted") {
@@ -23,18 +20,19 @@ object AuthenticationMiddlewareSpec extends ZIOSpecDefault {
         token    <- SpecJwtTokens.validToken()
         _        <- Authenticator.authenticate(token)
         response <- app.runZIO(request.updateHeaders(_.addHeader(Header.Authorization.Bearer(token))))
-      } yield assertTrue(response.status == Status.Ok)
+        body     <- response.body.asString
+      } yield assertTrue(response.status == Status.Ok, body == "\"test\"")
     },
     test("request without auth header should be unauthorized") {
       for {
         response <- app.runZIO(request)
-      } yield assertTrue(response.status == Status.Unauthorized)
+      } yield assertTrue(response.status == Status.Unauthorized, response.body == Body.empty)
     },
     test("request with invalid token should be unauthorized") {
       for {
         token    <- SpecJwtTokens.tokenWithInvalidSignature()
         response <- app.runZIO(request.updateHeaders(_.addHeader(Header.Authorization.Bearer(token))))
-      } yield assertTrue(response.status == Status.Unauthorized)
+      } yield assertTrue(response.status == Status.Unauthorized, response.body == Body.empty)
     },
   ).provide(jwtConfigLayer, AuthenticatorLive.layer) @@ TestAspect.withLiveClock
 }
