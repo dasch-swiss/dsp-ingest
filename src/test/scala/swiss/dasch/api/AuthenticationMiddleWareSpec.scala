@@ -59,7 +59,7 @@ object AuthenticationMiddleWareSpec extends ZIOSpecDefault {
     test("A expired token should fail with a JwtProblem") {
       for {
         expiration <- Clock.instant.map(_.minusSeconds(3600))
-        token <-expiredToken(expiration)
+        token      <- expiredToken(expiration)
         result     <- verifyToken(token).exit
       } yield assertTrue(
         result == Exit.fail(
