@@ -1,14 +1,13 @@
+/*
+ * Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package swiss.dasch.api
+
 import pdi.jwt.*
 import pdi.jwt.exceptions.JwtException
-import swiss.dasch.api.AuthenticationMiddleWareSpec.Authentication.{
-  AuthenticationError,
-  InvalidAudience,
-  InvalidIssuer,
-  JwtProblem,
-  alg,
-  verifyToken,
-}
+
 import swiss.dasch.config.Configuration.{ DspApiConfig, JwtConfig }
 import zio.*
 import zio.json.ast.Json
@@ -19,48 +18,20 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import scala.util.Try
 
-object AuthenticationMiddleWareSpec extends ZIOSpecDefault {
-  object Authentication {
-    private val alg = JwtAlgorithm.HS256
+object AuthenticatorLiveSpec extends ZIOSpecDefault {
 
-    sealed trait AuthenticationError
-    case class JwtProblem(message: String) extends AuthenticationError
-    case object InvalidAudience            extends AuthenticationError
-    case object InvalidIssuer              extends AuthenticationError
-
-    def verifyToken(token: String): ZIO[JwtConfig, NonEmptyChunk[AuthenticationError], JwtClaim] =
-      for {
-        jwtConfig <- ZIO.service[JwtConfig]
-        claims    <- ZIO
-                       .fromTry(JwtZIOJson.decode(token, jwtConfig.secret, Seq(alg)))
-                       .refineOrDie {
-                         case e: JwtException => NonEmptyChunk(JwtProblem(e.getMessage))
-                       }
-        _         <- verifyClaims(claims, jwtConfig)
-      } yield claims
-
-    private def verifyClaims(claims: JwtClaim, jwtConfig: JwtConfig): IO[NonEmptyChunk[AuthenticationError], JwtClaim] =
-      val audVal = if (claims.audience.getOrElse(Set.empty).contains(jwtConfig.audience)) { Validation.succeed(claims) }
-      else { Validation.fail(InvalidAudience) }
-
-      val issVal = if (claims.issuer.contains(jwtConfig.issuer)) { Validation.succeed(claims) }
-      else { Validation.fail(InvalidIssuer) }
-
-      ZIO.fromEither(Validation.validateWith(issVal, audVal)((_, _) => claims).toEither)
-  }
-
-  val spec = suite("AuthenticationMiddleWareSpec")(
+  val spec = suite("AuthenticatorLive")(
     test("A valid token should be verified") {
       for {
         token <- validToken()
-        json  <- verifyToken(token)
+        json  <- Authenticator.authenticate(token)
       } yield assertTrue(token.nonEmpty, json != null)
     },
-    test("A expired token should fail with a JwtProblem") {
+    test("An expired token should fail with a JwtProblem") {
       for {
         expiration <- Clock.instant.map(_.minusSeconds(3600))
         token      <- expiredToken(expiration)
-        result     <- verifyToken(token).exit
+        result     <- Authenticator.authenticate(token).exit
       } yield assertTrue(
         result == Exit.fail(
           NonEmptyChunk(JwtProblem(s"The token is expired since ${expiration.truncatedTo(ChronoUnit.SECONDS)}"))
@@ -69,7 +40,7 @@ object AuthenticationMiddleWareSpec extends ZIOSpecDefault {
     },
     test("An invalid token should fail with JwtProblem") {
       for {
-        result <- verifyToken("invalid-token").exit
+        result <- Authenticator.authenticate("invalid-token").exit
       } yield assertTrue(
         result == Exit.fail(
           NonEmptyChunk(
@@ -81,7 +52,7 @@ object AuthenticationMiddleWareSpec extends ZIOSpecDefault {
     test("A token with invalid signature should fail with JwtProblem") {
       for {
         token  <- tokenWithInvalidSignature()
-        result <- verifyToken(token).exit
+        result <- Authenticator.authenticate(token).exit
       } yield assertTrue(
         result == Exit.fail(NonEmptyChunk(JwtProblem("Invalid signature for this token or wrong algorithm.")))
       )
@@ -89,16 +60,22 @@ object AuthenticationMiddleWareSpec extends ZIOSpecDefault {
     test("A token with invalid audience should fail with JwtProblem") {
       for {
         token  <- tokenWithInvalidAudience()
-        result <- verifyToken(token).exit
-      } yield assertTrue(result == Exit.fail(NonEmptyChunk(InvalidAudience)))
+        result <- Authenticator.authenticate(token).exit
+      } yield assertTrue(
+        result == Exit.fail(
+          NonEmptyChunk(InvalidAudience("Invalid audience: expected https://expected-audience.example.com"))
+        )
+      )
     },
     test("A token with invalid issuer should fail with JwtProblem") {
       for {
         token  <- tokenWithInvalidIssuer()
-        result <- verifyToken(token).exit
-      } yield assertTrue(result == Exit.fail(NonEmptyChunk(InvalidIssuer)))
+        result <- Authenticator.authenticate(token).exit
+      } yield assertTrue(
+        result == Exit.fail(NonEmptyChunk(InvalidIssuer("Invalid issuer: expected https://admin.swiss.dasch")))
+      )
     },
-  ).provideLayer(jwtConfigSpecLayer) @@ TestAspect.withLiveClock
+  ).provide(jwtConfigSpecLayer, AuthenticatorLive.layer) @@ TestAspect.withLiveClock
 
   private def validToken() =
     ZIO.serviceWithZIO[JwtConfig](token(_))
