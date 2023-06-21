@@ -14,10 +14,32 @@ import zio.nio.file.{ Files, Path }
 
 object Configuration {
 
+  final case class JwtConfig(
+      secret: String,
+      audience: String,
+      issuer: String,
+    )
+  object JwtConfig {
+    private val jwtConfigDescription =
+      nested("jwt") {
+        string("secret") <*>
+          string("audience") <*>
+          string("issuer")
+      }.to[JwtConfig]
+    private[Configuration] val layer = ZLayer(
+      read(
+        jwtConfigDescription.from(
+          TypesafeConfigSource.fromTypesafeConfig(
+            ZIO.attempt(ConfigFactory.defaultApplication().resolve())
+          )
+        )
+      )
+    )
+  }
+
   final case class DspApiConfig(
       host: String,
       port: Int,
-      jwtSecretKey: String,
     )
 
   object DspApiConfig {
@@ -25,8 +47,7 @@ object Configuration {
     private val serverConfigDescription =
       nested("dsp-api") {
         string("host") <*>
-          int("port") <*>
-          string("jwt-secret-key")
+          int("port")
       }.to[DspApiConfig]
 
     private[Configuration] val layer = ZLayer(
@@ -74,5 +95,6 @@ object Configuration {
         )
   }
 
-  val layer: Layer[ReadError[String], DspApiConfig with StorageConfig] = DspApiConfig.layer ++ StorageConfig.layer
+  val layer: Layer[ReadError[String], DspApiConfig with StorageConfig] =
+    DspApiConfig.layer ++ StorageConfig.layer ++ JwtConfig.layer
 }

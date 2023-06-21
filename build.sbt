@@ -23,7 +23,7 @@ lazy val root = (project in file("."))
     inThisBuild(
       List(
         organization := "daschswiss",
-        scalaVersion := "3.2.2",
+        scalaVersion := "3.3.0",
       )
     ),
     name                                 := "dsp-ingest",
@@ -35,17 +35,18 @@ lazy val root = (project in file("."))
       )
     ),
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio"                      % zioVersion,
-      "dev.zio"       %% "zio-streams"              % zioVersion,
-      "dev.zio"       %% "zio-http"                 % zioHttpVersion,
-      "dev.zio"       %% "zio-config"               % zioConfigVersion,
-      "dev.zio"       %% "zio-config-typesafe"      % zioConfigVersion,
-      "ch.qos.logback" % "logback-classic"          % logbackClassicVersion,
-      "dev.zio"       %% "zio-json"                 % zioJsonVersion,
-      "dev.zio"       %% "zio-nio"                  % zioNioVersion,
-      "dev.zio"       %% "zio-prelude"              % zioPreludeVersion,
-      "dev.zio"       %% "zio-json-interop-refined" % "0.5.0",
-      "eu.timepit"    %% "refined"                  % "0.10.3",
+      "dev.zio"              %% "zio"                      % zioVersion,
+      "dev.zio"              %% "zio-streams"              % zioVersion,
+      "dev.zio"              %% "zio-http"                 % zioHttpVersion,
+      "dev.zio"              %% "zio-config"               % zioConfigVersion,
+      "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
+      "ch.qos.logback"        % "logback-classic"          % logbackClassicVersion,
+      "dev.zio"              %% "zio-json"                 % zioJsonVersion,
+      "dev.zio"              %% "zio-nio"                  % zioNioVersion,
+      "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
+      "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
+      "eu.timepit"           %% "refined"                  % "0.10.3",
+      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
 
       // logging
       "dev.zio"       %% "zio-logging"       % zioLoggingVersion,
