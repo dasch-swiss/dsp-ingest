@@ -71,7 +71,7 @@ object AuthenticatorLiveSpec extends ZIOSpecDefault {
         result <- Authenticator.authenticate(token).exit
       } yield assertTrue(
         result == Exit.fail(
-          NonEmptyChunk(InvalidAudience("Invalid audience: expected https://expected-audience.example.com"))
+          NonEmptyChunk(InvalidAudience("Invalid audience: expected https://dsp-ingest.dev.dasch.swiss"))
         )
       )
     },
@@ -80,7 +80,7 @@ object AuthenticatorLiveSpec extends ZIOSpecDefault {
         token  <- tokenWithInvalidIssuer()
         result <- Authenticator.authenticate(token).exit
       } yield assertTrue(
-        result == Exit.fail(NonEmptyChunk(InvalidIssuer("Invalid issuer: expected https://admin.swiss.dasch")))
+        result == Exit.fail(NonEmptyChunk(InvalidIssuer("Invalid issuer: expected https://admin.dev.dasch.swiss")))
       )
     },
   ).provide(jwtConfigLayer, AuthenticatorLive.layer) @@ TestAspect.withLiveClock

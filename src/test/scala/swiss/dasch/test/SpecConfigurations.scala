@@ -16,7 +16,7 @@ import java.io.IOException
 object SpecConfigurations {
 
   val jwtConfigLayer: ULayer[JwtConfig] =
-    ZLayer.succeed(JwtConfig("secret-key", "https://expected-audience.example.com", "https://admin.swiss.dasch"))
+    ZLayer.succeed(JwtConfig("secret-key", "https://dsp-ingest.dev.dasch.swiss", "https://admin.dev.dasch.swiss"))
 
   val storageConfigLayer: Layer[IOException, StorageConfig] = ZLayer.scoped {
     for {
