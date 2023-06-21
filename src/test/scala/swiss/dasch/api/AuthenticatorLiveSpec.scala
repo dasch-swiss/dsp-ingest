@@ -7,8 +7,16 @@ package swiss.dasch.api
 
 import pdi.jwt.*
 import pdi.jwt.exceptions.JwtException
-
+import swiss.dasch.api.SpecJwtTokens.{
+  expiredToken,
+  tokenWithInvalidAudience,
+  tokenWithInvalidIssuer,
+  tokenWithInvalidSignature,
+  validToken,
+}
 import swiss.dasch.config.Configuration.{ DspApiConfig, JwtConfig }
+import swiss.dasch.test.SpecConfigurations
+import swiss.dasch.test.SpecConfigurations.jwtConfigLayer
 import zio.*
 import zio.json.ast.Json
 import zio.prelude.{ Validation, ZValidation }
@@ -75,40 +83,6 @@ object AuthenticatorLiveSpec extends ZIOSpecDefault {
         result == Exit.fail(NonEmptyChunk(InvalidIssuer("Invalid issuer: expected https://admin.swiss.dasch")))
       )
     },
-  ).provide(jwtConfigSpecLayer, AuthenticatorLive.layer) @@ TestAspect.withLiveClock
+  ).provide(jwtConfigLayer, AuthenticatorLive.layer) @@ TestAspect.withLiveClock
 
-  private def validToken() =
-    ZIO.serviceWithZIO[JwtConfig](token(_))
-
-  private def expiredToken(expiration: Instant) =
-    ZIO.serviceWithZIO[JwtConfig](c => token(c, expiration = Some(expiration)))
-  private def tokenWithInvalidSignature()       =
-    ZIO.serviceWithZIO[JwtConfig](c => token(c, secret = Some("aDifferentKey")))
-
-  private def tokenWithInvalidAudience() =
-    ZIO.serviceWithZIO[JwtConfig](c => token(c, audience = Some(Set("invalid-audience"))))
-
-  private def tokenWithInvalidIssuer() =
-    ZIO.serviceWithZIO[JwtConfig](c => token(c, issuer = Some("invalid-issuer")))
-  private def token(
-      jwtConfig: JwtConfig,
-      issuer: Option[String] = None,
-      subject: Option[String] = None,
-      audience: Option[Set[String]] = None,
-      expiration: Option[Instant] = None,
-      secret: Option[String] = None,
-    ) = for {
-    now       <- Clock.instant
-    jwtConfig <- ZIO.service[JwtConfig]
-    claim      = JwtClaim(
-                   issuer = issuer.orElse(Some(jwtConfig.issuer)),
-                   subject = subject.orElse(Some("some-subject")),
-                   audience = audience.orElse(Some(Set(jwtConfig.audience))),
-                   issuedAt = Some(now.getEpochSecond),
-                   expiration = expiration.orElse(Some(now.plusSeconds(3600))).map(_.getEpochSecond),
-                 )
-  } yield JwtZIOJson.encode(claim, secret.getOrElse(jwtConfig.secret), JwtAlgorithm.HS256)
-
-  def jwtConfigSpecLayer =
-    ZLayer.succeed(JwtConfig("secret-key", "https://expected-audience.example.com", "https://admin.swiss.dasch"))
 }

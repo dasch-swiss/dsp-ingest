@@ -4,16 +4,19 @@
  */
 
 package swiss.dasch.test
-import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.config.Configuration.{JwtConfig, StorageConfig}
 import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.Files.newDirectoryStream
-import zio.{ Layer, ZIO, ZLayer }
-import zio.nio.file.{ Files, Path }
+import zio.{Layer, ULayer, ZIO, ZLayer}
+import zio.nio.file.{Files, Path}
 import zio.stream.ZStream
 
 import java.io.IOException
 
 object SpecConfigurations {
+
+  val jwtConfigLayer: ULayer[JwtConfig] =
+    ZLayer.succeed(JwtConfig("secret-key", "https://expected-audience.example.com", "https://admin.swiss.dasch"))
 
   val storageConfigLayer: Layer[IOException, StorageConfig] = ZLayer.scoped {
     for {
