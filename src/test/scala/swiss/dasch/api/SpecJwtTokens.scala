@@ -13,6 +13,7 @@ import zio.test.{ TestAspect, ZIOSpecDefault, assertCompletes, assertTrue }
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import scala.util.Try
+
 object SpecJwtTokens {
   def validToken(): URIO[JwtConfig, String]                      = createToken()
   def expiredToken(expiration: Instant): URIO[JwtConfig, String] = createToken(expiration = Some(expiration))
