@@ -23,7 +23,7 @@ lazy val root = (project in file("."))
     inThisBuild(
       List(
         organization := "daschswiss",
-        scalaVersion := "3.2.2",
+        scalaVersion := "3.3.0",
       )
     ),
     name                                 := "dsp-ingest",
@@ -46,7 +46,12 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
       "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
       "eu.timepit"           %% "refined"                  % "0.10.3",
-      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.3.0", // 9.4.0 is not supported on scala 3.2.2 https://github.com/jwt-scala/jwt-scala/issues/486
+      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
+      // add the silencer lib for scala 2.13 in order to compile with scala 3 until https://github.com/zio/zio-config/pull/1171 is merged
+      // resolves problems when `sbt doc` failed with
+      // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
+      // [error] undefined: new com.github.ghik.silencer.silent #
+      "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.7.13",
 
       // logging
       "dev.zio"       %% "zio-logging"       % zioLoggingVersion,
