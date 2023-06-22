@@ -7,6 +7,7 @@ package swiss.dasch
 
 import swiss.dasch.api.*
 import swiss.dasch.api.healthcheck.*
+import swiss.dasch.api.info.InfoEndpoint
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ DspApiConfig, StorageConfig }
 import swiss.dasch.domain.{ AssetService, AssetServiceLive }
@@ -27,10 +28,17 @@ object Main extends ZIOAppDefault {
       }
       .orDie
 
+<<<<<<< Updated upstream
   private val routes: Http[AssetService with HealthCheckService with StorageConfig, Response, Request, Response] =
     HealthCheckRoutes.app ++ ExportEndpoint.app ++ ImportEndpoint.app
 
   private val program = Server.serve(routes)
+=======
+  private val serviceRoutes    = (ExportEndpoint.app ++ ImportEndpoint.app) @@ Authenticator.middleware
+  private val managementRoutes = HealthCheckRoutes.app ++ InfoEndpoint.app
+  private val routes           = managementRoutes ++ serviceRoutes
+  private val program          = Server.serve(routes) <* ZIO.log("Server started")
+>>>>>>> Stashed changes
 
   override val run: ZIO[Any with Scope, ReadError[String], Nothing] =
     program.provide(
