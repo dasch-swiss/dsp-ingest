@@ -66,8 +66,8 @@ lazy val root = (project in file("."))
       "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.7.13",
 
       // logging
-      "dev.zio"       %% "zio-logging"               % zioLoggingVersion,
-      "dev.zio"       %% "zio-logging-slf4j2-bridge" % zioLoggingVersion,
+      "dev.zio" %% "zio-logging"               % zioLoggingVersion,
+      "dev.zio" %% "zio-logging-slf4j2-bridge" % zioLoggingVersion,
 
       // test
       "dev.zio" %% "zio-test"          % zioVersion     % Test,
