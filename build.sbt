@@ -21,9 +21,15 @@ val zioHttpVersion        = "3.0.0-RC2"
 lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(
-    buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion, BuildInfoKey.action("gitCommit") {
-      "git rev-parse HEAD" !!
-    }),
+    buildInfoKeys    := Seq[BuildInfoKey](
+      name,
+      version,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey.action("gitCommit") {
+        "git rev-parse HEAD" !!
+      },
+    ),
     buildInfoOptions += BuildInfoOption.BuildTime,
     buildInfoPackage := "swiss.dasch.version",
   )

@@ -28,7 +28,7 @@ object Main extends ZIOAppDefault {
       }
       .orDie
 
-  private val serviceRoutes    = (ExportEndpoint.app ++ ImportEndpoint.app)
+  private val serviceRoutes    = ExportEndpoint.app ++ ImportEndpoint.app
   private val managementRoutes = HealthCheckRoutes.app ++ InfoEndpoint.app
   private val routes           = managementRoutes ++ serviceRoutes
   private val program          = Server.serve(routes) <* ZIO.log("Server started")
