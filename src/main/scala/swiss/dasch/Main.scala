@@ -21,10 +21,6 @@ object Main extends ZIOAppDefault {
 
   override val bootstrap: ULayer[Unit] = Logger.fromEnv()
 
-  private val serviceRoutes    = (ExportEndpoint.app ++ ImportEndpoint.app) @@ Authenticator.middleware
-  private val managementRoutes = HealthCheckRoutes.app ++ InfoEndpoint.app
-  private val routes           = managementRoutes ++ serviceRoutes
-
   override val run: ZIO[Any, Any, Nothing] = IngestApiServer
     .startup()
     .provide(
