@@ -1,9 +1,10 @@
-import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{ Docker, dockerRepository }
 import com.typesafe.sbt.packager.docker.Cmd
+import sbt._
 import sys.process._
 
-addCommandAlias("fmt", "; all root/scalafmtSbt root/scalafmtAll")
+addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
+addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
@@ -17,6 +18,15 @@ val zioNioVersion         = "2.0.1"
 val zioPreludeVersion     = "1.0.0-RC19"
 val zioHttpVersion        = "3.0.0-RC2"
 
+val gitCommit  = ("git rev-parse HEAD" !!).trim
+val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
+
+ThisBuild / organization      := "dasch.swiss"
+ThisBuild / version           := gitVersion
+ThisBuild / scalaVersion      := "3.3.0"
+ThisBuild / fork              := true
+ThisBuild / semanticdbEnabled := true
+
 lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(
@@ -25,20 +35,12 @@ lazy val root = (project in file("."))
       version,
       scalaVersion,
       sbtVersion,
-      BuildInfoKey.action("gitCommit") {
-        "git rev-parse HEAD" !!
-      },
+      BuildInfoKey.action("gitCommit")(gitCommit),
     ),
     buildInfoOptions += BuildInfoOption.BuildTime,
     buildInfoPackage := "swiss.dasch.version",
   )
   .settings(
-    inThisBuild(
-      List(
-        organization := "daschswiss",
-        scalaVersion := "3.3.0",
-      )
-    ),
     name                                 := "dsp-ingest",
     headerLicense                        := Some(
       HeaderLicense.Custom(
