@@ -27,7 +27,7 @@ object InfoEndpoint {
       scalaVersion = BuildInfo.scalaVersion,
       sbtVersion = BuildInfo.sbtVersion,
       buildTime = BuildInfo.builtAtString,
-      gitCommit = BuildInfo.gitCommit,
+      gitCommit = BuildInfo.gitCommit.trim,
     )
   }
 
