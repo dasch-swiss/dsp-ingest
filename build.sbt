@@ -47,7 +47,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
       "eu.timepit"           %% "refined"                  % "0.10.3",
       "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
-      // add the silencer lib for scala 2.13 in order to compile with scala 3 until https://github.com/zio/zio-config/pull/1171 is merged
+      // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
       // [error] undefined: new com.github.ghik.silencer.silent #
