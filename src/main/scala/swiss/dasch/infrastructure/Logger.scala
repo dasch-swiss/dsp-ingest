@@ -41,7 +41,7 @@ object Logger {
     ConsoleLoggerConfig(logFormatJson, logFilter)
   )
 
-  private val useJsonLogger = sys.env.getOrElse("DSP_INGEST_LOG_APPENDER", "TEXT") == "JSON"
+  private val useJsonLogger = sys.env.getOrElse("LOG_FORMAT", "TEXT") == "JSON"
 
   private val logger: ZLayer[Any, Nothing, Unit] =
     if (useJsonLogger) jsonLogger
