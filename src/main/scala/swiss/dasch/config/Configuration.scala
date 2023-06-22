@@ -39,18 +39,18 @@ object Configuration {
     )
   }
 
-  final case class DspApiConfig(
+  final case class DspIngestApiConfig(
       host: String,
       port: Int,
     )
 
-  object DspApiConfig {
+  object DspIngestApiConfig {
 
     private val serverConfigDescription =
-      nested("dsp-api") {
+      nested("dsp-ingest-api") {
         string("host") <*>
           int("port")
-      }.to[DspApiConfig]
+      }.to[DspIngestApiConfig]
 
     private[Configuration] val layer = ZLayer(
       read(
@@ -83,20 +83,12 @@ object Configuration {
             ZIO.attempt(ConfigFactory.defaultApplication().resolve())
           )
         )
-      ).tap(verifyFoldersExist)
+      )
     )
 
-    private def verifyFoldersExist(config: Configuration.StorageConfig) =
-      ZIO
-        .die(new IllegalStateException(s"Config paths $config folders must exist"))
-        .unlessZIO(
-          Files.isDirectory(config.assetPath) &&
-          Files.isDirectory(config.tempPath) &&
-          Files.isDirectory(config.exportPath) &&
-          Files.isDirectory(config.importPath)
-        )
+
   }
 
-  val layer: Layer[ReadError[String], DspApiConfig with JwtConfig with StorageConfig] =
-    DspApiConfig.layer ++ StorageConfig.layer ++ JwtConfig.layer
+  val layer: Layer[ReadError[String], DspIngestApiConfig with JwtConfig with StorageConfig] =
+    DspIngestApiConfig.layer ++ StorageConfig.layer ++ JwtConfig.layer
 }
