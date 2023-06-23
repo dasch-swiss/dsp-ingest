@@ -1,7 +1,6 @@
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{ Docker, dockerRepository }
 import com.typesafe.sbt.packager.docker.Cmd
-import sbt._
-import sys.process._
+import sys.process.*
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
