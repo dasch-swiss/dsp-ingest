@@ -7,7 +7,7 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint }
 import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint }
-import swiss.dasch.config.Configuration.DspIngestApiConfig
+import swiss.dasch.config.Configuration.ServiceConfig
 import zio.{ BuildInfo, URLayer, ZIO, ZLayer }
 import zio.http.{ App, Server }
 
@@ -20,14 +20,14 @@ object IngestApiServer {
   def startup() =
     ZIO.logInfo(s"Starting ${BuildInfo.name}") *>
       Server.install(app) *>
-      ZIO.serviceWithZIO[DspIngestApiConfig](c =>
+      ZIO.serviceWithZIO[ServiceConfig](c =>
         ZIO.logInfo(s"Started ${BuildInfo.name} on http://${c.host}:${c.port}/info")
       )
       *>
       ZIO.never
 
-  val layer: URLayer[DspIngestApiConfig, Server] = ZLayer
-    .service[DspIngestApiConfig]
+  val layer: URLayer[ServiceConfig, Server] = ZLayer
+    .service[ServiceConfig]
     .flatMap { cfg =>
       Server.defaultWith(_.binding(cfg.get.host, cfg.get.port))
     }

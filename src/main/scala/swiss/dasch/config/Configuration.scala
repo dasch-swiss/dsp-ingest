@@ -18,7 +18,7 @@ import zio.config.typesafe.FromConfigTypesafe
 object Configuration {
   final private case class ApplicationConf(
       jwt: JwtConfig,
-      dspIngestApi: DspIngestApiConfig,
+      service: ServiceConfig,
       storage: StorageConfig,
     )
 
@@ -29,7 +29,11 @@ object Configuration {
       disableAuth: Boolean = false,
     )
 
-  final case class DspIngestApiConfig(host: String, port: Int)
+  final case class ServiceConfig(
+      host: String,
+      port: Int,
+      logFormat: String,
+    )
 
   final case class StorageConfig(assetDir: String, tempDir: String) {
     val assetPath: Path  = Path(assetDir)
@@ -38,11 +42,11 @@ object Configuration {
     val importPath: Path = Path(tempDir) / "import"
   }
 
-  val layer: Layer[ReadError[String], DspIngestApiConfig with JwtConfig with StorageConfig] = {
+  val layer: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] = {
     val applicationConf = ZConfig.fromTypesafeConfig(
       ZIO.attempt(ConfigFactory.defaultApplication().resolve()),
       descriptor[ApplicationConf].mapKey(toKebabCase),
     )
-    applicationConf.project(_.dspIngestApi) ++ applicationConf.project(_.storage) ++ applicationConf.project(_.jwt)
+    applicationConf.project(_.service) ++ applicationConf.project(_.storage) ++ applicationConf.project(_.jwt)
   }
 }

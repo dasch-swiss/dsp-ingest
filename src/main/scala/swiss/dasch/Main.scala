@@ -5,20 +5,21 @@
 
 package swiss.dasch
 
-import swiss.dasch.version.BuildInfo
 import swiss.dasch.api.*
 import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
-import swiss.dasch.config.Configuration.{ DspIngestApiConfig, JwtConfig, StorageConfig }
+import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
 import swiss.dasch.domain.{ AssetService, AssetServiceLive }
 import swiss.dasch.infrastructure.{ IngestApiServer, Logger }
+import swiss.dasch.version.BuildInfo
 import zio.*
 import zio.config.*
-import zio.http.{ Http, HttpApp, Request, Response, Server }
+import zio.http.*
 
 object Main extends ZIOAppDefault {
 
-  override val bootstrap: ULayer[Unit] = Logger.fromEnv()
+  override val bootstrap: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] =
+    Configuration.layer >+> Logger.layer
 
   override val run: ZIO[Any, Any, Nothing] = IngestApiServer
     .startup()
