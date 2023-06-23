@@ -7,8 +7,7 @@ package swiss.dasch
 
 import swiss.dasch.version.BuildInfo
 import swiss.dasch.api.*
-import swiss.dasch.api.healthcheck.*
-import swiss.dasch.api.info.InfoEndpoint
+import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ DspIngestApiConfig, JwtConfig, StorageConfig }
 import swiss.dasch.domain.{ AssetService, AssetServiceLive }
