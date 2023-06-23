@@ -55,6 +55,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-http"                 % zioHttpVersion,
       "dev.zio"              %% "zio-config"               % zioConfigVersion,
       "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
+      "dev.zio"              %% "zio-config-magnolia"      % zioConfigVersion,
       "dev.zio"              %% "zio-json"                 % zioJsonVersion,
       "dev.zio"              %% "zio-nio"                  % zioNioVersion,
       "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
