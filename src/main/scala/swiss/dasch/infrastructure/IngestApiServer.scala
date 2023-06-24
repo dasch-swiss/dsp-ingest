@@ -5,7 +5,7 @@
 
 package swiss.dasch.infrastructure
 
-import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint }
+import swiss.dasch.api.monitoring.{HealthEndpoint, InfoEndpoint, MetricsEndpoint}
 import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint }
 import swiss.dasch.config.Configuration.ServiceConfig
 import zio.{ BuildInfo, URLayer, ZIO, ZLayer }
@@ -14,7 +14,7 @@ import zio.http.{ App, Server }
 object IngestApiServer {
 
   private val serviceApps    = (ExportEndpoint.app ++ ImportEndpoint.app) @@ Authenticator.middleware
-  private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app
+  private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = managementApps ++ serviceApps
 
   def startup() =

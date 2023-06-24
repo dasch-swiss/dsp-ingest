@@ -24,10 +24,11 @@ object Main extends ZIOAppDefault {
   override val run: ZIO[Any, Any, Nothing] = IngestApiServer
     .startup()
     .provide(
-      HealthCheckServiceLive.layer,
-      Configuration.layer,
-      IngestApiServer.layer,
       AssetServiceLive.layer,
       AuthenticatorLive.layer,
+      Configuration.layer,
+      HealthCheckServiceLive.layer,
+      IngestApiServer.layer,
+      Metrics.layer,
     )
 }

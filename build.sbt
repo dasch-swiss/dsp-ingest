@@ -7,15 +7,16 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-val zioVersion            = "2.0.13"
-val zioJsonVersion        = "0.5.0"
-val zioConfigVersion      = "3.0.7"
-val zioLoggingVersion     = "2.1.12"
-val testContainersVersion = "0.40.15"
-val zioMockVersion        = "1.0.0-RC11"
-val zioNioVersion         = "2.0.1"
-val zioPreludeVersion     = "1.0.0-RC19"
-val zioHttpVersion        = "3.0.0-RC2"
+val zioVersion                  = "2.0.13"
+val zioJsonVersion              = "0.5.0"
+val zioConfigVersion            = "3.0.7"
+val zioLoggingVersion           = "2.1.12"
+val testContainersVersion       = "0.40.15"
+val zioMetricsConnectorsVersion = "2.0.8"
+val zioMockVersion              = "1.0.0-RC11"
+val zioNioVersion               = "2.0.1"
+val zioPreludeVersion           = "1.0.0-RC19"
+val zioHttpVersion              = "3.0.0-RC2"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
 val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
@@ -50,15 +51,16 @@ lazy val root = (project in file("."))
     ),
     libraryDependencies ++= Seq(
       "dev.zio"              %% "zio"                      % zioVersion,
-      "dev.zio"              %% "zio-streams"              % zioVersion,
-      "dev.zio"              %% "zio-http"                 % zioHttpVersion,
       "dev.zio"              %% "zio-config"               % zioConfigVersion,
-      "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
       "dev.zio"              %% "zio-config-magnolia"      % zioConfigVersion,
+      "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
+      "dev.zio"              %% "zio-http"                 % zioHttpVersion,
       "dev.zio"              %% "zio-json"                 % zioJsonVersion,
+      "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
+      "dev.zio"              %% "zio-metrics-connectors"   % zioMetricsConnectorsVersion,
       "dev.zio"              %% "zio-nio"                  % zioNioVersion,
       "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
-      "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
+      "dev.zio"              %% "zio-streams"              % zioVersion,
       "eu.timepit"           %% "refined"                  % "0.10.3",
       "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
