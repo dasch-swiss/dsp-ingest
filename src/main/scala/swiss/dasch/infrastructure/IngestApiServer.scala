@@ -5,17 +5,20 @@
 
 package swiss.dasch.infrastructure
 
-import swiss.dasch.api.monitoring.{HealthEndpoint, InfoEndpoint, MetricsEndpoint}
+import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
 import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint }
-import swiss.dasch.config.Configuration.ServiceConfig
+import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
 import zio.{ BuildInfo, URLayer, ZIO, ZLayer }
-import zio.http.{ App, Server }
+import zio.http.*
+import zio.http.internal.middlewares.Cors.CorsConfig
 
 object IngestApiServer {
 
   private val serviceApps    = (ExportEndpoint.app ++ ImportEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
-  private val app            = managementApps ++ serviceApps
+  private val app            = ((managementApps ++ serviceApps)
+    @@ HttpRoutesMiddlewares.dropTrailingSlash)
+    @@ HttpRoutesMiddlewares.cors(CorsConfig())
 
   def startup() =
     ZIO.logInfo(s"Starting ${BuildInfo.name}") *>
