@@ -28,7 +28,6 @@ jobs:
         run: echo "tag=$(git describe --tag --dirty --abbrev=7 --always)" >> "$GITHUB_OUTPUT"
         shell: bash # Explicit for fail-fast behaviour
 
-
   trigger-dev-deployment:
     name: Trigger deployment to DEV
     runs-on: ubuntu-latest
