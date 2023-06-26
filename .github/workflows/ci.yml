@@ -64,7 +64,7 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Build and push image
-        run: sbt Docker/publish
+        run: export DOCKER_BUILDKIT=1; sbt Docker/publish
       - name: Output docker image tag
         id: output_docker_image_tag
         run: echo "tag=$(git describe --tag --dirty --abbrev=7 --always)" >> "$GITHUB_OUTPUT"
