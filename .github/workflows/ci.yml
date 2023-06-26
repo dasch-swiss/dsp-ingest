@@ -17,11 +17,10 @@ jobs:
         java-version: [ 17 ]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout current branch (full)
-        uses: actions/checkout@v2
+      - name: Checkout current branch
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -45,8 +44,16 @@ jobs:
     outputs:
       tag: ${{ steps.output_docker_image_tag.outputs.tag }}
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v3
+      - name: Checkout current branch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+          cache: sbt
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
