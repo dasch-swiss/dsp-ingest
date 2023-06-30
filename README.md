@@ -1,4 +1,4 @@
-## Dsp-Ingest
+# Dsp-Ingest
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Build And Test](https://github.com/dasch-swiss/dsp-ingest/actions/workflows/ci.yml/badge.svg)
@@ -12,7 +12,7 @@ meta-data extraction, and storage, ensuring that the data is readily available f
 This service aims to enhance the overall performance and effectiveness of DSP applications by simplifying and
 accelerating the data ingestion workflow.
 
-## Docuementation
+# Documentation
 
 The `./docs` folder contains the sources to the documentation.
 The documentation is published under <https://docs.dasch.swiss/> and managed
