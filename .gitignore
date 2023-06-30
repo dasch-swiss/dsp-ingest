@@ -231,4 +231,8 @@ Temporary Items
 # End of https://www.toptal.com/developers/gitignore/api/macos
 
 # Application specific
+# Local development files create when running the service
 localdev/storage/
+# Generated documentation site from mkdocs
+site/
+
