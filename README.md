@@ -18,3 +18,8 @@ The `./docs` folder contains the sources to the documentation.
 The documentation is published under <https://docs.dasch.swiss/> and managed
 by [DSP-DOCS](https://github.com/dasch-swiss/dsp-docs) repository.
 Documentation is written in [Markdown](https://www.markdownguide.org/) and built with [MkDocs](https://www.mkdocs.org/).
+
+## Writing documentation // Build and serve the docs locally
+
+Follow the installation instructions from the dsp-docs repository in order to build and serve the documentation locally.
+Once the necessary software is installed you can use `mkdocs serve` for a live preview on  http://127.0.0.1:8000/.
