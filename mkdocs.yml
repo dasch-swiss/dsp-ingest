@@ -4,13 +4,16 @@ nav:
   - Overview:
       - Introduction: introduction.md
       - API documentation:
-          - Endpoints: api-endpoints.md
+          - Project Endpoints: api-endpoints-project.md
+          - Monitoring Endpoints: api-endpoints-monitoring.md
           - Authentication: api-authentication.md
 
 plugins:
   - include-markdown
   - search
   - git-revision-date
+  - neoteroi.mkdocsoad:
+      use_pymdownx: true
 
 theme:
   name: material
@@ -21,7 +24,6 @@ theme:
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -29,3 +31,8 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - css/mkdocsoad.css

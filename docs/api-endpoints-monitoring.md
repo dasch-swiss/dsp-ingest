@@ -1,38 +1,9 @@
-# API Endpoints
-
-## Service Endpoints
-
-These endpoints are used for user/system interaction with the service and provide asset management capabilities.
-All endpoints are secured with [JWT](https://jwt.io/) [authentication](api-authentication.md).
-
-### Project Endpoints
-
-Projects are identified by their `shortcode` and are used to group assets.
-
-All project endpoint urls start with:
-
-```http
- /projects/{shortcode}…
-```
-
-#### Export a Project
-
-```http
-POST /projects/{shortcode}/export
-```
-
-#### Import a Project
-
-```http 
-POST /projects/{shortcode}/import
-```
-
-## Monitoring Endpoints
+# Monitoring Endpoints
 
 These endpoints are used to operate the service and provide information about the service.
 These endpoints are not secured.
 
-### Health Endpoint 
+## Health Endpoint 
 
 Provides a health check endpoint for the service.
 The endpoint returns a 200 OK if the service is healthy.
@@ -54,7 +25,7 @@ content-type: application/json
 }
 ```
 
-### Metrics Endpoint
+## Metrics Endpoint
 
 Provides a metrics endpoint for the service.
 
@@ -65,7 +36,7 @@ GET /metrics
 Metrics are exposed as content type `text/plain` in the [Prometheus](https://prometheus.io/docs/introduction/overview/)
 format.
 
-### Info Endpoint
+## Info Endpoint
 
 The info endpoint provides information about the service artefact.
 

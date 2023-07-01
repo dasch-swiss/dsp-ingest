@@ -235,4 +235,6 @@ Temporary Items
 localdev/storage/
 # Generated documentation site from mkdocs
 site/
+# Virtual env file for mkdocs dependencies
+.venv
 
