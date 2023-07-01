@@ -2,7 +2,7 @@ site_name: DSP-INGEST
 
 nav:
   - Overview:
-      - Introduction: introduction.md
+      - Introduction: index.md
       - API documentation:
           - Project Endpoints: api-endpoints-project.md
           - Monitoring Endpoints: api-endpoints-monitoring.md
