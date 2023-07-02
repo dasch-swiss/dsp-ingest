@@ -7,10 +7,10 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-val zioVersion                  = "2.0.13"
+val zioVersion                  = "2.0.15"
 val zioJsonVersion              = "0.5.0"
 val zioConfigVersion            = "3.0.7"
-val zioLoggingVersion           = "2.1.12"
+val zioLoggingVersion           = "2.1.13"
 val testContainersVersion       = "0.40.15"
 val zioMetricsConnectorsVersion = "2.0.8"
 val zioMockVersion              = "1.0.0-RC11"
@@ -60,13 +60,13 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-nio"                  % zioNioVersion,
       "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
       "dev.zio"              %% "zio-streams"              % zioVersion,
-      "eu.timepit"           %% "refined"                  % "0.10.3",
+      "eu.timepit"           %% "refined"                  % "0.11.0",
       "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
       // [error] undefined: new com.github.ghik.silencer.silent #
-      "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.7.13",
+      "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.17.13",
 
       // logging
       "dev.zio" %% "zio-logging"               % zioLoggingVersion,
