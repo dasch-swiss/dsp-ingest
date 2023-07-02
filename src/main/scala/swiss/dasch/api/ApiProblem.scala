@@ -7,8 +7,8 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.ProjectShortcode
 import zio.http.Header.ContentType
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
-import zio.schema.{DeriveSchema, Schema}
+import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.schema.{ DeriveSchema, Schema }
 
 sealed trait ApiProblem
 
@@ -31,13 +31,13 @@ case class IllegalArgument(argument: String, reason: String)
 case class InternalProblem(errorMessage: String) extends ApiProblem
 
 object ApiProblem {
-  implicit val projectNotFoundEncoder: JsonEncoder[ProjectNotFound] = DeriveJsonEncoder.gen[ProjectNotFound]
-  implicit val projectNotFoundSchema: Schema[ProjectNotFound] = DeriveSchema.gen[ProjectNotFound]
+  implicit val projectNotFoundEncoder: JsonEncoder[ProjectNotFound]   = DeriveJsonEncoder.gen[ProjectNotFound]
+  implicit val projectNotFoundSchema: Schema[ProjectNotFound]         = DeriveSchema.gen[ProjectNotFound]
   implicit val illegalArgumentsEncoder: JsonEncoder[IllegalArguments] = DeriveJsonEncoder.gen[IllegalArguments]
-  implicit val illegalArgumentsSchema: Schema[IllegalArguments] = DeriveSchema.gen[IllegalArguments]
-  implicit val illegalArgumentEncoder: JsonEncoder[IllegalArgument] = DeriveJsonEncoder.gen[IllegalArgument]
-  implicit val internalErrorEncoder: JsonEncoder[InternalProblem] = DeriveJsonEncoder.gen[InternalProblem]
-  implicit val internalErrorSchema: Schema[InternalProblem] = DeriveSchema.gen[InternalProblem]
+  implicit val illegalArgumentsSchema: Schema[IllegalArguments]       = DeriveSchema.gen[IllegalArguments]
+  implicit val illegalArgumentEncoder: JsonEncoder[IllegalArgument]   = DeriveJsonEncoder.gen[IllegalArgument]
+  implicit val internalErrorEncoder: JsonEncoder[InternalProblem]     = DeriveJsonEncoder.gen[InternalProblem]
+  implicit val internalErrorSchema: Schema[InternalProblem]           = DeriveSchema.gen[InternalProblem]
 
   def internalError(t: Throwable): InternalProblem =
     InternalProblem(t.getMessage)
@@ -45,16 +45,16 @@ object ApiProblem {
   val bodyIsEmpty: IllegalArguments = IllegalArguments("Body", "Body is empty")
 
   def invalidPathVariable(
-                           key: String,
-                           value: String,
-                           reason: String,
-                         ): IllegalArguments = IllegalArguments(s"Path variable: '$key''", s"'$value' is invalid: $reason")
+      key: String,
+      value: String,
+      reason: String,
+    ): IllegalArguments = IllegalArguments(s"Path variable: '$key''", s"'$value' is invalid: $reason")
 
   def invalidHeader(
-                     key: String,
-                     value: String,
-                     reason: String,
-                   ): IllegalArguments = IllegalArguments(s"Header: '$key''", s"'$value' is invalid: $reason")
+      key: String,
+      value: String,
+      reason: String,
+    ): IllegalArguments = IllegalArguments(s"Header: '$key''", s"'$value' is invalid: $reason")
 
   def invalidHeaderContentType(actual: ContentType, expected: ContentType): IllegalArguments =
     invalidHeader("Content-Type", actual.toString, s"expected '$expected'")
