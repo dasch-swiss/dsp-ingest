@@ -6,7 +6,9 @@ info:
     These endpoints are used to operate the service and provide information about the service.
     These endpoints are not secured.
 servers:
-  - url: https://ingest.dev.dasch.swiss/info
+  - url: http://localhost:3340
+    description: Local Development server
+  - url: https://ingest.dev.dasch.swiss
     description: Development server
 paths:
   /info:
