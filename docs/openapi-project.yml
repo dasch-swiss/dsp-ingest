@@ -2,17 +2,32 @@ openapi: 3.1.0
 info:
   title: Project API
   version: 0.0.1
-  description: > 
+  description: >
     The Project API is used to manage assets of a project.
     All endpoints are secured with [Bearer authentication](api-authentication.md).
+  contact:
+    name: dsp-ingest API
+    email: info@dasch.swiss
+    url: https://dasch.swiss
 servers:
-  - url: https://ingest.dev.dasch.swiss/info
+  - url: http://localhost:3340
+    description: Local development server
+  - url: https://ingest.dev.dasch.swiss
     description: Development server
+
+tags:
+  - name: project
+    description: DaSCH projects
+
 paths:
 
   /project:
     get:
-      summary: Lists all projects containing assets
+      summary: List all projects
+      description: List all projects containing assets and return their shortcode
+      operationId: list-projects
+      tags:
+        - project
       responses:
         '200':
           description: Successful response
@@ -37,6 +52,9 @@ paths:
       description: >
         This endpoint imports assets into a project from a zip file.
         The zip file must contain a directory with all asset of a project.
+      operationId: import-project
+      tags:
+        - project
       parameters:
         - name: shortcode
           in: path
@@ -80,6 +98,9 @@ paths:
       summary: Exports assets of a project
       description: >
         This endpoint exports all assets of a project as a zip file.
+      operationId: export-project
+      tags:
+        - project
       parameters:
         - name: shortcode
           in: path
@@ -135,3 +156,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IllegalArgument'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: [ ]
