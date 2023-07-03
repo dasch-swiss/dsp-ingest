@@ -50,19 +50,20 @@ lazy val root = (project in file("."))
       )
     ),
     libraryDependencies ++= Seq(
-      "dev.zio"              %% "zio"                      % zioVersion,
-      "dev.zio"              %% "zio-config"               % zioConfigVersion,
-      "dev.zio"              %% "zio-config-magnolia"      % zioConfigVersion,
-      "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
-      "dev.zio"              %% "zio-http"                 % zioHttpVersion,
-      "dev.zio"              %% "zio-json"                 % zioJsonVersion,
-      "dev.zio"              %% "zio-json-interop-refined" % "0.5.0",
-      "dev.zio"              %% "zio-metrics-connectors"   % zioMetricsConnectorsVersion,
-      "dev.zio"              %% "zio-nio"                  % zioNioVersion,
-      "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
-      "dev.zio"              %% "zio-streams"              % zioVersion,
-      "eu.timepit"           %% "refined"                  % "0.10.3",
-      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.0",
+      "dev.zio"              %% "zio"                               % zioVersion,
+      "dev.zio"              %% "zio-config"                        % zioConfigVersion,
+      "dev.zio"              %% "zio-config-magnolia"               % zioConfigVersion,
+      "dev.zio"              %% "zio-config-typesafe"               % zioConfigVersion,
+      "dev.zio"              %% "zio-http"                          % zioHttpVersion,
+      "dev.zio"              %% "zio-json"                          % zioJsonVersion,
+      "dev.zio"              %% "zio-json-interop-refined"          % "0.5.0",
+      "dev.zio"              %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
+      "dev.zio"              %% "zio-metrics-connectors-prometheus" % ZioMetricsConnectorsVersion,
+      "dev.zio"              %% "zio-nio"                           % zioNioVersion,
+      "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
+      "dev.zio"              %% "zio-streams"                       % zioVersion,
+      "eu.timepit"           %% "refined"                           % "0.10.3",
+      "com.github.jwt-scala" %% "jwt-zio-json"                      % "9.4.0",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
