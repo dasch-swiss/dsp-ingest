@@ -58,7 +58,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-json"                          % zioJsonVersion,
       "dev.zio"              %% "zio-json-interop-refined"          % "0.5.0",
       "dev.zio"              %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
-      "dev.zio"              %% "zio-metrics-connectors-prometheus" % ZioMetricsConnectorsVersion,
+      "dev.zio"              %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
       "dev.zio"              %% "zio-nio"                           % zioNioVersion,
       "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
       "dev.zio"              %% "zio-streams"                       % zioVersion,
