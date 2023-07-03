@@ -18,7 +18,8 @@ accelerating the data ingestion workflow.
 The `./docs` folder contains the sources to the documentation.
 The documentation is published under <https://docs.dasch.swiss/> and managed
 by [DSP-DOCS](https://github.com/dasch-swiss/dsp-docs) repository.
-Documentation is written in [Markdown](https://www.markdownguide.org/) and built with [MkDocs](https://www.mkdocs.org/).
+Documentation is written in [Markdown](https://www.markdownguide.org/) and built with [MkDocs](https://www.mkdocs.org/)
+using [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) for layout and styling.
 
 ## Writing documentation // Build and serve the docs locally
 
