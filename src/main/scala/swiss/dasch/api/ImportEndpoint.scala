@@ -24,7 +24,7 @@ import zio.nio.file.Files
 import zio.schema.codec.JsonCodec.JsonEncoder
 import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.{ ZSink, ZStream }
-import zio.{ Chunk, Exit, IO, Scope, URIO, ZIO, ZNothing }
+import zio.*
 
 import java.io.IOException
 import java.util.zip.ZipFile
