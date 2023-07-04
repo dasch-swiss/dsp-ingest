@@ -37,21 +37,25 @@ object SipiCommand {
   }
 }
 
-trait ImageHandler {}
+trait ImageHandler {
+  def help(): String
+  def compare(file1: String, file2: String): String
+}
 final case class ImageHandlerLive(sc: SipiCommand) extends ImageHandler {
   def help(): String                        = Process(sc.help()).!!
-  def compare(file1: String, file2: String) = Process(sc.compare(file1, file2)).!!
+  def compare(file1: String, file2: String): String = Process(sc.compare(file1, file2)).!!
 }
 
 object ImageHandlerLive {
-  val layer = ZLayer.fromFunction(ImageHandlerLive.apply _)
+  val layer: ZLayer[SipiCommand, Nothing, ImageHandlerLive] =
+    ZLayer.fromFunction(ImageHandlerLive.apply _)
 }
 
 object ImageHandler extends ZIOAppDefault {
   val run =
     ZIO
       .service[ImageHandler]
-      .tap(runSipi => println(runSipi.help()))
+      .tap(runSipi => zio.Console.printLine(runSipi.help()))
       // .tap(runSipi => println(runSipi.compare()))
       .provide(SipiCommand.layer, Configuration.layer, ImageHandlerLive.layer)
 }
