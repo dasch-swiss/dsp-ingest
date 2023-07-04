@@ -6,7 +6,7 @@ There are a couple of groups of variables:
 
 * [Service](#service) - configuration of the service itself, e.g. ports and logging
 * [Storage](#storage) - configuration of the storage, e.g. file paths to asset folder
-* [Jwt](#jwt) - configuration of the JWT authentication, e.g. secret key and expiration time
+* [Jwt](#jwt) - configuration of the JWT authentication, e.g. secret key
 
 ## Service
 
