@@ -10,16 +10,22 @@ import swiss.dasch.config.Configuration.SipiConfig
 
 trait SipiCommand {
   def help(): String
+  def compare(file1: String, file2: String): String
 }
 
 case class SipiLocalDev() extends SipiCommand {
-  private val runSipi = SipiInContainer()
+  private val runSipi                = SipiInContainer()
+  private val dockerImageCmd: String = "docker run daschswiss/knora-sipi:latest -exec"
 
-  override def help(): String = s"docker run daschswiss/knora-sipi:latest -exec ${runSipi.help()}"
+  override def help(): String                                = s"$dockerImageCmd ${runSipi.help()}"
+  override def compare(file1: String, file2: String): String = s"$dockerImageCmd ${runSipi.compare(file1, file2)}"
 }
 
 case class SipiInContainer() extends SipiCommand {
-  override def help(): String = "/sipi/sipi --help"
+  private val sipiPath: String = "/sipi/sipi"
+
+  override def help(): String                                = s"$sipiPath --help"
+  override def compare(file1: String, file2: String): String = s"$sipiPath --Compare $file1 --Compare $file2"
 }
 
 object SipiCommand {
@@ -31,9 +37,10 @@ object SipiCommand {
   }
 }
 
-trait ImageHandler
+trait ImageHandler {}
 final case class ImageHandlerLive(sc: SipiCommand) extends ImageHandler {
-  def help(): String = Process(sc.help()).!!
+  def help(): String                        = Process(sc.help()).!!
+  def compare(file1: String, file2: String) = Process(sc.compare(file1, file2)).!!
 }
 
 object ImageHandlerLive {
@@ -45,5 +52,6 @@ object ImageHandler extends ZIOAppDefault {
     ZIO
       .service[ImageHandler]
       .tap(runSipi => println(runSipi.help()))
+      // .tap(runSipi => println(runSipi.compare()))
       .provide(SipiCommand.layer, Configuration.layer, ImageHandlerLive.layer)
 }
