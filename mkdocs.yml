@@ -37,4 +37,4 @@ markdown_extensions:
       alternate_style: true
 
 extra_css:
-  - css/mkdocsoad.css
+  - css/mkdocsoad-v1.0.2.css
