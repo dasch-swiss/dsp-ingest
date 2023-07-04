@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ApiPaths.projects
+import swiss.dasch.api.ApiPathCodecSegments.projects
 import swiss.dasch.domain.{ AssetService, ProjectShortcode }
 import zio.*
 import zio.http.{ App, Status }

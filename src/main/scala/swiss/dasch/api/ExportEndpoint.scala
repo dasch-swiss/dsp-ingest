@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ApiPaths.{ projects, shortcodePathVar }
+import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.domain.{ AssetService, ProjectShortcode }
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*

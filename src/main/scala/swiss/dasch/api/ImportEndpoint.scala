@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import eu.timepit.refined.auto.autoUnwrap
-import swiss.dasch.api.ApiPaths.{ projects, shortcodePathVar }
+import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.{ AssetService, ProjectShortcode }
