@@ -58,16 +58,20 @@ object ImportEndpoint {
           actual: ContentType,
         ) =>
         for {
-          pShortcode <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
-          _          <- verifyContentType(actual, ContentType(MediaType.application.zip))
-          tempFile   <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$pShortcode.zip")
-          _          <- stream
-                          .run(ZSink.fromFile(tempFile.toFile))
-                          .mapError(ApiProblem.internalError)
-          _          <- validateInputFile(tempFile)
-          _          <- AssetService
-                          .importProject(pShortcode, tempFile)
-                          .mapError(ApiProblem.internalError)
+          pShortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
+          _                 <- verifyContentType(actual, ContentType(MediaType.application.zip))
+          tempFile          <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$pShortcode.zip")
+          writeFileErrorMsg  = s"Error while writing file $tempFile for project $shortcode"
+          _                 <- stream
+                                 .run(ZSink.fromFile(tempFile.toFile))
+                                 .logError(writeFileErrorMsg)
+                                 .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
+          _                 <- validateInputFile(tempFile)
+          importFileErrorMsg = s"Error while importing project $shortcode"
+          _                 <- AssetService
+                                 .importProject(pShortcode, tempFile)
+                                 .logError(importFileErrorMsg)
+                                 .mapError(e => ApiProblem.internalError(importFileErrorMsg, e))
         } yield UploadResponse()
     )
     .toApp
@@ -86,7 +90,7 @@ object ImportEndpoint {
 
           def release(zipFile: ZipFile) = ZIO.succeed(zipFile.close())
 
-          ZIO.acquireRelease(acquire)(release).orElseFail(IllegalArguments("body", "body is not a zip file"))
+          ZIO.acquireRelease(acquire)(release).orElseFail(ApiProblem.invalidBody("Body does not contain a zip file"))
         }
     } yield ()).tapError(_ => Files.deleteIfExists(tempFile).mapError(ApiProblem.internalError))
 

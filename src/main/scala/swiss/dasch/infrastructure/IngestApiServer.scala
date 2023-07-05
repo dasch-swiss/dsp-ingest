@@ -8,7 +8,8 @@ package swiss.dasch.infrastructure
 import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
 import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint, ListProjectsEndpoint }
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
-import zio.{ BuildInfo, URLayer, ZIO, ZLayer }
+import swiss.dasch.version.BuildInfo
+import zio.{ URLayer, ZIO, ZLayer }
 import zio.http.*
 import zio.http.internal.middlewares.Cors.CorsConfig
 
@@ -19,7 +20,7 @@ object IngestApiServer {
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)
-    @@ HttpRoutesMiddlewares.cors(CorsConfig())
+    @@ HttpRoutesMiddlewares.cors(CorsConfig()) @@ requestLogging
 
   def startup() =
     ZIO.logInfo(s"Starting ${BuildInfo.name}") *>
@@ -33,7 +34,7 @@ object IngestApiServer {
   val layer: URLayer[ServiceConfig, Server] = ZLayer
     .service[ServiceConfig]
     .flatMap { cfg =>
-      Server.defaultWith(_.binding(cfg.get.host, cfg.get.port))
+      Server.defaultWith(_.binding(cfg.get.host, cfg.get.port).enableRequestStreaming)
     }
     .orDie
 }
