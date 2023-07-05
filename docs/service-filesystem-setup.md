@@ -40,7 +40,7 @@ Each asset is stored in a file named `{internal_filename}` which consists of two
 The `{asset_id}` is a unique identifier for the asset and the `{ext}` is the file extension.
 Every derivative and metadata file of an asset are stored in files starting with `{asset_id}` and the respective `{ext}`.
 
-For each asset are different files:
+For each asset there are different files in the `{asset_segment_2}` folder:
 
 * `{internal_filename}`: (mandatory) the asset, `{asset_id}.jp2` for images, `{asset_id}.mp4` for videos, etc.
 * `{asset_id}.info`: (mandatory) the metadata of the asset
