@@ -9,6 +9,7 @@ nav:
           - Authentication: api-authentication.md
       - Service documentation:
           - Configuration: service-configuration.md
+          - Filesystem Setup: service-filesystem-setup.md
 
 plugins:
   - include-markdown
