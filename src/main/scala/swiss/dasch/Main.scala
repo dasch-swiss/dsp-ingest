@@ -31,9 +31,9 @@ object Main extends ZIOAppDefault {
         AssetServiceLive.layer,
         AuthenticatorLive.layer,
         Configuration.layer,
+        FileSystemCheckLive.layer,
         HealthCheckServiceLive.layer,
         IngestApiServer.layer,
         Metrics.layer,
-        FileSystemCheckLive.layer,
       )
 }
