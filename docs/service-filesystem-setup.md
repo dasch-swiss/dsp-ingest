@@ -34,7 +34,8 @@ Here is a description of the folders:
 * `{temp_directory}/export`: the folder where exported files are temporarily stored
 * `{temp_directory}/import`: the folder where imported files are temporarily stored
 
-Files are stored in the `{asset_directory}/{project_folder}/{asset_segment_1}/{asset_segment_2}` folder.
+Files are stored in the `{asset_directory}/{project_folder}/{asset_segment_1}/{asset_segment_2}` folder,
+`{asset_directory}/0123/ab/cd/abcdefg.jp2` for example.
 
 Each asset is stored in a file named `{internal_filename}` which consists of two parts `{asset_id}.{ext}`.
 The `{asset_id}` is a unique identifier for the asset and the `{ext}` is the file extension.
