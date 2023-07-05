@@ -7,7 +7,7 @@ It provides a RESTful [API](api-endpoints-projects.md) for the digital asset man
 
 # Assets
 
-Assets are the core of the Dsp-Ingest service. They can be images, videos, audio files, Excel file, etc.
+Assets are the core of the Dsp-Ingest service. They can be different sort of files, like: images, videos, audios, etc.
 For each asset, the service stores the metadata, its original file and possibly derivative files such as keyframes for
 videos.
 
