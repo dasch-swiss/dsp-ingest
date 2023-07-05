@@ -43,7 +43,7 @@ object FileSystemCheckLiveSpec extends ZIOSpecDefault {
         config             <- ZIO.service[StorageConfig]
         _                  <- FileSystemCheck.createTempFolders()
         exportFolderExists <- Files.isDirectory(config.importPath)
-        importFolderExists <- Files.exists(config.exportPath)
+        importFolderExists <- Files.isDirectory(config.exportPath)
       } yield assertTrue(exportFolderExists, importFolderExists)
     }.provide(
       ZLayer.scoped(createOnlyAssetAndTempFolder.map(StorageConfig.apply)),
