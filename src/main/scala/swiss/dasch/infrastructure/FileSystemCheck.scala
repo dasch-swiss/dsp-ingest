@@ -42,7 +42,7 @@ final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCh
     checkExpectedFoldersExist()
       .filterOrDie(identity)(
         new IllegalStateException(
-          s"Stopping to start up: Asset ${config.assetPath} and temp ${config.tempPath} not found. Stopping."
+          s"Stopping the start up. Asset ${config.assetPath} and temp ${config.tempPath} directories not found."
         )
       )
       .unit
