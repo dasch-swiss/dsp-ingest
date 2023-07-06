@@ -28,12 +28,12 @@ object FileSystemCheckLiveSpec extends ZIOSpecDefault {
   } yield (assetDirAbsolutePath.toString, tempDirAbsolutePath.toString)
 
   def spec = suite("FileSystemCheck")(
-    test("should pass smoke test given the folder exist") {
+    test("should pass smoke test given the expected folders exist") {
       for {
         _ <- FileSystemCheck.smokeTestOrDie()
       } yield assertCompletes
     }.provide(SpecConfigurations.storageConfigLayer, FileSystemCheckLive.layer),
-    test("should fail smoke test given the folder does not exist") {
+    test("should fail smoke test given the expected folders do not exist") {
       for {
         result <- FileSystemCheck.smokeTestOrDie().exit
       } yield assertTrue(result.isFailure)
