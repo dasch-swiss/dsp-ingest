@@ -9,7 +9,7 @@ import swiss.dasch.api.*
 import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
-import swiss.dasch.domain.{ AssetService, AssetServiceLive }
+import swiss.dasch.domain.{ AssetService, AssetServiceLive, SipiCommandRunnerServiceLive, SipiCommand }
 import swiss.dasch.infrastructure.{ IngestApiServer, Logger }
 import swiss.dasch.version.BuildInfo
 import zio.*
@@ -29,6 +29,8 @@ object Main extends ZIOAppDefault {
       Configuration.layer,
       HealthCheckServiceLive.layer,
       IngestApiServer.layer,
+      SipiCommandRunnerServiceLive.layer,
       Metrics.layer,
+      SipiCommand.layer,
     )
 }
