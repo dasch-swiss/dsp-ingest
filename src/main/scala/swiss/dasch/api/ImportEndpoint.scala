@@ -9,7 +9,7 @@ import eu.timepit.refined.auto.autoUnwrap
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.{ AssetService, ProjectShortcode }
+import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root
@@ -50,7 +50,7 @@ object ImportEndpoint {
         HttpCodec.error[InternalProblem](Status.InternalServerError),
       )
 
-  val app: App[StorageConfig with AssetService] = importEndpoint
+  val app: App[StorageConfig with ProjectService] = importEndpoint
     .implement(
       (
           shortcode: String,
@@ -68,7 +68,7 @@ object ImportEndpoint {
                                  .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
           _                 <- validateInputFile(tempFile)
           importFileErrorMsg = s"Error while importing project $shortcode"
-          _                 <- AssetService
+          _                 <- ProjectService
                                  .importProject(pShortcode, tempFile)
                                  .logError(importFileErrorMsg)
                                  .mapError(e => ApiProblem.internalError(importFileErrorMsg, e))

@@ -9,7 +9,7 @@ import swiss.dasch.api.*
 import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
-import swiss.dasch.domain.{ AssetService, AssetServiceLive }
+import swiss.dasch.domain.{ ProjectService, ProjectServiceLive }
 import swiss.dasch.infrastructure.{ FileSystemCheck, FileSystemCheckLive, IngestApiServer, Logger }
 import swiss.dasch.version.BuildInfo
 import zio.*
@@ -28,7 +28,7 @@ object Main extends ZIOAppDefault {
   override val run: ZIO[Any, Any, Nothing] =
     (ensureFilesystem *> IngestApiServer.startup())
       .provide(
-        AssetServiceLive.layer,
+        ProjectServiceLive.layer,
         AuthenticatorLive.layer,
         Configuration.layer,
         FileSystemCheckLive.layer,

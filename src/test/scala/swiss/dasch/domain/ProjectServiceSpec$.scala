@@ -14,7 +14,7 @@ import zio.nio.file.{ Files, Path }
 import zio.{ Chunk, Scope, ZIO, ZLayer }
 import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue }
 
-object AssetServiceSpec extends ZIOSpecDefault {
+object ProjectServiceSpec$ extends ZIOSpecDefault {
 
   private val configLayer = ZLayer.scoped {
     for {
@@ -29,33 +29,33 @@ object AssetServiceSpec extends ZIOSpecDefault {
     suite("AssetServiceSpec")(
       test("should list all projects which contain assets in the asset directory") {
         for {
-          projects <- AssetService.listAllProjects()
+          projects <- ProjectService.listAllProjects()
         } yield assertTrue(projects == Chunk(existingProject))
       },
       suite("findProject path")(
         test("should find existing projects which contain at least one non hidden regular file") {
           for {
-            project <- AssetService.findProject(existingProject)
+            project <- ProjectService.findProject(existingProject)
           } yield assertTrue(project.isDefined)
         },
         test("should not find not existing projects") {
           for {
-            project <- AssetService.findProject(nonExistentProject)
+            project <- ProjectService.findProject(nonExistentProject)
           } yield assertTrue(project.isEmpty)
         },
       ),
       suite("zipping a project")(
         test("given it does not exist, should return None") {
           for {
-            zip <- AssetService.zipProject(nonExistentProject)
+            zip <- ProjectService.zipProject(nonExistentProject)
           } yield assertTrue(zip.isEmpty)
         },
         test("given it does exists, should zip and return file path") {
           for {
             tempDir <- ZIO.serviceWith[StorageConfig](_.tempPath)
-            zip     <- AssetService.zipProject(existingProject)
+            zip     <- ProjectService.zipProject(existingProject)
           } yield assertTrue(zip.contains(tempDir / "zipped" / "0001.zip"))
         },
       ),
-    ).provide(AssetServiceLive.layer, configLayer)
+    ).provide(ProjectServiceLive.layer, configLayer)
 }

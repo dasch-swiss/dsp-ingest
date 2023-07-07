@@ -8,7 +8,7 @@ package swiss.dasch.api
 import swiss.dasch.api.ImportEndpointSpec.postImport
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
-import swiss.dasch.domain.{ AssetService, AssetServiceLive, ProjectShortcode }
+import swiss.dasch.domain.{ ProjectService, ProjectServiceLive, ProjectShortcode }
 import swiss.dasch.test.{ SpecConfigurations, SpecConstants, SpecPaths }
 import swiss.dasch.test.SpecConstants.{ emptyProject, existingProject, nonExistentProject }
 import swiss.dasch.test.SpecPaths.pathFromResource
@@ -68,7 +68,7 @@ object ImportEndpointSpec extends ZIOSpecDefault {
         } yield assertTrue(response.status == Status.BadRequest, importDoesNotExist)
       },
     )
-  ).provide(AssetServiceLive.layer, SpecConfigurations.storageConfigLayer)
+  ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer)
 
   private def validateImportedProjectExists(storageConfig: StorageConfig, shortcode: String | ProjectShortcode)
       : UIO[Boolean] =

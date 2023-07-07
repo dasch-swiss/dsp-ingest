@@ -37,28 +37,28 @@ object DotInfoFileContent {
   implicit val codec: JsonCodec[DotInfoFileContent] = DeriveJsonCodec.gen[DotInfoFileContent]
 }
 
-trait AssetService {
+trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
   def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit]
 }
 
-object AssetService {
-  def listAllProjects(): ZIO[AssetService, IOException, Chunk[ProjectShortcode]] =
-    ZIO.serviceWithZIO[AssetService](_.listAllProjects())
+object ProjectService {
+  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]] =
+    ZIO.serviceWithZIO[ProjectService](_.listAllProjects())
 
-  def findProject(shortcode: ProjectShortcode): ZIO[AssetService, IOException, Option[Path]] =
-    ZIO.serviceWithZIO[AssetService](_.findProject(shortcode))
+  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[Path]] =
+    ZIO.serviceWithZIO[ProjectService](_.findProject(shortcode))
 
-  def zipProject(shortcode: ProjectShortcode): ZIO[AssetService, Throwable, Option[Path]] =
-    ZIO.serviceWithZIO[AssetService](_.zipProject(shortcode))
+  def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]] =
+    ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
 
-  def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[AssetService, Throwable, Unit] =
-    ZIO.serviceWithZIO[AssetService](_.importProject(shortcode, zipFile))
+  def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[ProjectService, Throwable, Unit] =
+    ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }
 
-final case class AssetServiceLive(config: StorageConfig) extends AssetService {
+final case class ProjectServiceLive(config: StorageConfig) extends ProjectService {
 
   private val existingProjectDirectories               = Files.list(config.assetPath).filterZIO(Files.isDirectory(_))
   private val existingTempFiles                        = Files.list(config.tempPath).filterZIO(Files.isRegularFile(_))
@@ -113,6 +113,6 @@ final case class AssetServiceLive(config: StorageConfig) extends AssetService {
       .run(ZSink.sum) <* delete(path)
 }
 
-object AssetServiceLive {
-  val layer: URLayer[StorageConfig, AssetService] = ZLayer.fromFunction(AssetServiceLive.apply _)
+object ProjectServiceLive {
+  val layer: URLayer[StorageConfig, ProjectService] = ZLayer.fromFunction(ProjectServiceLive.apply _)
 }

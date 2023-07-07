@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.projects
-import swiss.dasch.domain.{ AssetService, ProjectShortcode }
+import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
 import zio.*
 import zio.http.{ App, Status }
 import zio.http.codec.HttpCodec
@@ -34,9 +34,9 @@ object ListProjectsEndpoint {
     .out[ProjectsResponse]
     .outError[InternalProblem](Status.InternalServerError)
 
-  val app: App[AssetService] = listProjectsEndpoint
+  val app: App[ProjectService] = listProjectsEndpoint
     .implement(_ =>
-      AssetService
+      ProjectService
         .listAllProjects()
         .mapBoth(
           ApiProblem.internalError,
