@@ -62,12 +62,15 @@ object SipiCommand {
   */
 trait SipiCommandRunnerService {
   def help(): IO[IOException, String]
-//  def compare(file1: String, file2: String): String
+  def compare(file1: String, file2: String): IO[IOException, String]
 }
 
 object SipiCommandRunnerService {
   def help(): ZIO[SipiCommandRunnerService, IOException, String] =
     ZIO.serviceWithZIO[SipiCommandRunnerService](_.help())
+    
+  def compare(file1: String, file2: String): ZIO[SipiCommandRunnerService, IOException, String] =
+    ZIO.serviceWithZIO[SipiCommandRunnerService](_.compare(file1, file2))
 }
 
 final case class SipiCommandRunnerServiceLive() extends SipiCommandRunnerService {
@@ -75,6 +78,9 @@ final case class SipiCommandRunnerServiceLive() extends SipiCommandRunnerService
   private val runSipi                          = SipiInContainer()
   override def help(): IO[IOException, String] =
     ZIO.logInfo("Command --help executed.") *> ZIO.succeed(Process(runSipi.help()).!!)
+
+  override def compare(file1: String, file2: String): IO[IOException, String] =
+    ZIO.logInfo("Command --compare executed.") *> ZIO.succeed(Process(runSipi.compare(file1, file2)).!!)
 //  def help(): String                        = Process(sc.help()).!!
 //  def compare(file1: String, file2: String): String = Process(sc.compare(file1, file2)).!!
 }

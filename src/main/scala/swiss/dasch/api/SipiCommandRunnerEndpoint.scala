@@ -31,7 +31,8 @@ object SipiCommandRunnerEndpoint {
 
   private val command = commandPathVar.toString match
     case "help" => SipiCommandRunnerService.help()
-    case _      => SipiCommandRunnerService.help()
+    case "compare" => SipiCommandRunnerService.compare("x", "y")
+//    case _      => 
 
   val app: App[SipiCommandRunnerService] =
     getHelpResponse
