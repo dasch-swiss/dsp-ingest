@@ -45,18 +45,23 @@ object ProjectService {
 
 final case class ProjectServiceLive(storage: StorageService) extends ProjectService {
 
-  private val existingProjectDirectories =
-    ZStream.fromZIO(storage.getAssetDirectory()).flatMap(Files.list(_).filterZIO(Files.isDirectory(_)))
-
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
-    existingProjectDirectories
-      .filterZIO(directoryTreeContainsNonHiddenRegularFiles)
-      .map(_.filename.toString)
+    ZStream
+      .fromZIO(storage.getAssetDirectory())
+      .flatMap(Files.list(_).filterZIO(Files.isDirectory(_)))
+      .filterZIO(containsNonHiddenRegularFilesRecursive)
       .runCollect
-      .map(_.sorted.flatMap(ProjectShortcode.make(_).toOption))
+      .map(toProjectShortcodes)
 
-  private def directoryTreeContainsNonHiddenRegularFiles(path: Path) =
-    Files.walk(path).findZIO(it => Files.isRegularFile(it) && Files.isHidden(it).map(!_)).runCollect.map(_.nonEmpty)
+  private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
+    _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.make(_).toOption)
+
+  private def containsNonHiddenRegularFilesRecursive(path: Path) =
+    Files
+      .walk(path)
+      .filterZIO(it => Files.isRegularFile(it) && Files.isHidden(it).negate)
+      .runHead
+      .map(_.isDefined)
 
   override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] =
     for {
