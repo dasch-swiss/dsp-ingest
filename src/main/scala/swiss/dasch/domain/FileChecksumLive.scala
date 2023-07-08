@@ -29,12 +29,7 @@ object FileChecksum {
 case class FileChecksumLive() extends FileChecksum {
 
   def createHashSha256(path: Path): Task[Sha256Hash] =
-    ZIO.scoped {
-      for {
-        fis        <- ZIO.acquireRelease(ZIO.attempt(new FileInputStream(path.toFile)))(fis => ZIO.succeed(fis.close()))
-        hashString <- hashSha256(fis)
-      } yield hashString
-    }
+    ZIO.scoped(ZIO.fromAutoCloseable(ZIO.attempt(new FileInputStream(path.toFile))).flatMap(hashSha256))
 
   private def hashSha256(fis: FileInputStream): UIO[Sha256Hash] = {
     val digest    = java.security.MessageDigest.getInstance("SHA-256")
