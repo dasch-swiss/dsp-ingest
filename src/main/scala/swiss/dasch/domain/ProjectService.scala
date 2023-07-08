@@ -43,7 +43,7 @@ object ProjectService {
     ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }
 
-final case class ProjectServiceLive(config: StorageConfig, storage: StorageService) extends ProjectService {
+final case class ProjectServiceLive(storage: StorageService) extends ProjectService {
 
   private val existingProjectDirectories =
     ZStream.fromZIO(storage.getAssetDirectory()).flatMap(Files.list(_).filterZIO(Files.isDirectory(_)))
@@ -69,10 +69,10 @@ final case class ProjectServiceLive(config: StorageConfig, storage: StorageServi
       findProject(shortcode).flatMap(_.map(zipProjectPath).getOrElse(ZIO.none)) <*
       ZIO.logInfo(s"Zipping project $shortcode was successful")
 
-  private def zipProjectPath(projectPath: Path) = {
-    val targetFolder = config.tempPath / "zipped"
-    ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
-  }
+  private def zipProjectPath(projectPath: Path) = for {
+    targetFolder <- storage.getTempDirectory().map(_ / "zipped")
+    zippedPath   <- ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
+  } yield zippedPath
 
   override def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] =
     storage.getProjectDirectory(shortcode).flatMap { projectPath =>
