@@ -14,7 +14,7 @@ import zio.nio.file.{ Files, Path }
 import zio.{ Chunk, Scope, ZIO, ZLayer }
 import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue }
 
-object ProjectServiceSpec$ extends ZIOSpecDefault {
+object ProjectServiceSpec extends ZIOSpecDefault {
 
   private val configLayer = ZLayer.scoped {
     for {

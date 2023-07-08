@@ -11,16 +11,17 @@ import zio.nio.file.*
 import java.io.{ FileInputStream, IOException }
 
 trait FileChecksum {
-  def checksum(path: Path): Task[String]
+  def createHashSha256(path: Path): Task[String]
 }
 
 object FileChecksum {
-  def checksum(path: Path): ZIO[FileChecksum, Throwable, String] = ZIO.serviceWithZIO[FileChecksum](_.checksum(path))
+  def createHashSha256(path: Path): ZIO[FileChecksum, Throwable, String] =
+    ZIO.serviceWithZIO[FileChecksum](_.createHashSha256(path))
 }
 
 case class FileChecksumLive() extends FileChecksum {
 
-  def checksum(path: Path): Task[String] =
+  def createHashSha256(path: Path): Task[String] =
     ZIO.scoped {
       for {
         fis        <- ZIO.acquireRelease(ZIO.attempt(new FileInputStream(path.toFile)))(fis => ZIO.succeed(fis.close()))

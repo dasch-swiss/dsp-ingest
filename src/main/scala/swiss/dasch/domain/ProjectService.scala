@@ -25,18 +25,6 @@ object ProjectShortcode {
   def make(shortcode: String): Either[String, ProjectShortcode] = refineV(shortcode.toUpperCase)
 }
 
-final case class DotInfoFileContent(
-    internalFilename: String,
-    originalInternalFilename: String,
-    originalFilename: String,
-    checksumOriginal: String,
-    checksumDerivative: String,
-  )
-
-object DotInfoFileContent {
-  implicit val codec: JsonCodec[DotInfoFileContent] = DeriveJsonCodec.gen[DotInfoFileContent]
-}
-
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
@@ -79,10 +67,10 @@ final case class ProjectServiceLive(config: StorageConfig) extends ProjectServic
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
-      findProject(shortcode).flatMap(_.map(zipProjectPath(_, shortcode)).getOrElse(ZIO.none)) <*
+      findProject(shortcode).flatMap(_.map(zipProjectPath).getOrElse(ZIO.none)) <*
       ZIO.logInfo(s"Zipping project $shortcode was successful")
 
-  private def zipProjectPath(projectPath: Path, shortcode: ProjectShortcode) = {
+  private def zipProjectPath(projectPath: Path) = {
     val targetFolder = config.tempPath / "zipped"
     ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
   }

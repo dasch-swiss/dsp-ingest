@@ -5,7 +5,8 @@
 
 package swiss.dasch.test
 
-import swiss.dasch.domain.ProjectShortcode
+import eu.timepit.refined.refineV
+import swiss.dasch.domain.{ Asset, AssetId, ProjectShortcode }
 
 object SpecConstants {
 
@@ -13,8 +14,18 @@ object SpecConstants {
   val existingProject: ProjectShortcode    = "0001".toProjectShortcode
   val emptyProject: ProjectShortcode       = "0002".toProjectShortcode
 
+  object AssetIds {
+    val existingAsset: AssetId = "FGiLaT4zzuV-CqwbEDFAFeS".toAssetId
+  }
+
+  object Assets {
+    val existingAsset: Asset = Asset(AssetIds.existingAsset, existingProject)
+  }
   extension (s: String) {
     def toProjectShortcode: ProjectShortcode = ProjectShortcode
+      .make(s)
+      .fold(err => throw new IllegalArgumentException(err), identity)
+    def toAssetId: AssetId                   = AssetId
       .make(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
   }
