@@ -29,7 +29,10 @@ final case class AssetInfo(
     originalFilename: String,
     checksumOriginal: String,
     checksumDerivative: String,
-  )
+  ) {
+  def getDerivativeChecksumAndFile: (String, Path) = (checksumDerivative, derivativeFile)
+  def getOrigChecksumAndFile: (String, Path)       = (checksumOriginal, originalFile)
+}
 
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]

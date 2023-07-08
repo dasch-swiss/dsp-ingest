@@ -37,10 +37,10 @@ object AssetService {
 
 final case class AssetServiceLive(storage: StorageService, checksum: FileChecksum) extends AssetService {
   override def verifyChecksumOrig(asset: Asset): Task[Boolean] =
-    verifyChecksum(asset, i => (i.checksumOriginal, i.originalFile))
+    verifyChecksum(asset, _.getOrigChecksumAndFile)
 
   override def verifyChecksumDerivative(asset: Asset): Task[Boolean] =
-    verifyChecksum(asset, i => (i.checksumDerivative, i.derivativeFile))
+    verifyChecksum(asset, _.getDerivativeChecksumAndFile)
 
   private def verifyChecksum(
       asset: Asset,
