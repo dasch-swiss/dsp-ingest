@@ -50,7 +50,7 @@ final case class AssetServiceLive(storage: StorageService, checksum: FileChecksu
       infoFile           <- storage.loadInfoFile(asset)
       checkFile           = checksumAndFile(infoFile)
       checksumCalculated <- checksum
-                              .createHashSha256(checkFile.file)
+                              .createSha256Hash(checkFile.file)
                               .logError(s"Unable to calculate checksum for ${checkFile.file} of $asset")
     } yield checkFile.checksum == checksumCalculated
 }

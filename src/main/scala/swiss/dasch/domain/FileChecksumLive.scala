@@ -18,17 +18,17 @@ object Sha256Hash  {
   def make(value: String): Either[String, Sha256Hash] = refineV(value)
 }
 trait FileChecksum {
-  def createHashSha256(path: Path): Task[Sha256Hash]
+  def createSha256Hash(path: Path): Task[Sha256Hash]
 }
 
 object FileChecksum {
-  def createHashSha256(path: Path): ZIO[FileChecksum, Throwable, Sha256Hash] =
-    ZIO.serviceWithZIO[FileChecksum](_.createHashSha256(path))
+  def createSha256Hash(path: Path): ZIO[FileChecksum, Throwable, Sha256Hash] =
+    ZIO.serviceWithZIO[FileChecksum](_.createSha256Hash(path))
 }
 
 case class FileChecksumLive() extends FileChecksum {
 
-  def createHashSha256(path: Path): Task[Sha256Hash] =
+  def createSha256Hash(path: Path): Task[Sha256Hash] =
     ZIO.scoped(ZIO.fromAutoCloseable(ZIO.attempt(new FileInputStream(path.toFile))).flatMap(hashSha256))
 
   private def hashSha256(fis: FileInputStream): UIO[Sha256Hash] = {
