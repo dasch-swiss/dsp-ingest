@@ -21,10 +21,12 @@ val zioHttpVersion              = "3.0.0-RC2"
 val gitCommit  = ("git rev-parse HEAD" !!).trim
 val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
 
-ThisBuild / organization      := "dasch.swiss"
-ThisBuild / version           := gitVersion
-ThisBuild / scalaVersion      := "3.3.0"
-ThisBuild / fork              := true
+ThisBuild / organization := "dasch.swiss"
+ThisBuild / version      := gitVersion
+ThisBuild / scalaVersion := "3.3.0"
+ThisBuild / fork         := true
+
+scalacOptions ++= Seq("-old-syntax", "-rewrite")
 
 lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
@@ -67,7 +69,7 @@ lazy val root = (project in file("."))
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
       // [error] undefined: new com.github.ghik.silencer.silent #
-      "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.17.13",
+      "com.github.ghik"       % "silencer-lib_2.13.11"              % "1.17.13",
 
       // logging
       "dev.zio" %% "zio-logging"               % zioLoggingVersion,

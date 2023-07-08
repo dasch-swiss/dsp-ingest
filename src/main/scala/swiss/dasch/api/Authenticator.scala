@@ -56,7 +56,7 @@ final case class AuthenticatorLive(jwtConfig: JwtConfig) extends Authenticator {
       _     <- verifyClaim(claim)
     } yield claim
 
-  private def verifyClaim(claim: JwtClaim): IO[NonEmptyChunk[AuthenticationError], JwtClaim] =
+  private def verifyClaim(claim: JwtClaim): IO[NonEmptyChunk[AuthenticationError], JwtClaim] = {
     val audVal = if (claim.audience.getOrElse(Set.empty).contains(audience)) { Validation.succeed(claim) }
     else { Validation.fail(AuthenticationError.invalidAudience(jwtConfig)) }
 
@@ -64,6 +64,7 @@ final case class AuthenticatorLive(jwtConfig: JwtConfig) extends Authenticator {
     else { Validation.fail(AuthenticationError.invalidIssuer(jwtConfig)) }
 
     ZIO.fromEither(Validation.validateWith(issVal, audVal)((_, _) => claim).toEither)
+  }
 }
 
 object AuthenticatorLive {
