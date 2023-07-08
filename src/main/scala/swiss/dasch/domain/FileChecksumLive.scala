@@ -32,18 +32,18 @@ case class FileChecksumLive() extends FileChecksum {
     ZIO.scoped {
       for {
         fis        <- ZIO.acquireRelease(ZIO.attempt(new FileInputStream(path.toFile)))(fis => ZIO.succeed(fis.close()))
-        hashString <- ZIO.attempt(hashSha256(fis))
+        hashString <- hashSha256(fis)
       } yield hashString
     }
 
-  private def hashSha256(fis: FileInputStream): Sha256Hash = {
+  private def hashSha256(fis: FileInputStream): UIO[Sha256Hash] = {
     val digest    = java.security.MessageDigest.getInstance("SHA-256")
     val buffer    = new Array[Byte](8192)
     var bytesRead = 0
     while ({ bytesRead = fis.read(buffer); bytesRead != -1 }) digest.update(buffer, 0, bytesRead)
     val sb        = new StringBuilder
     for (byte <- digest.digest()) sb.append(String.format("%02x", Byte.box(byte)))
-    Sha256Hash.make(sb.toString()).getOrElse(throw new IllegalStateException("Could not create hash"))
+    ZIO.fromEither(Sha256Hash.make(sb.toString())).mapError(IllegalStateException(_)).orDie
   }
 }
 object FileChecksumLive {
