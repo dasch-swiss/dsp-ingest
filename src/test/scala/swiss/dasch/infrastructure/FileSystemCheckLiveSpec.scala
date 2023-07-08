@@ -7,9 +7,9 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConfigurations
-import zio.{ Exit, Scope, ZIO, ZLayer }
-import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
 import zio.nio.file.*
+import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
+import zio.{ Exit, Scope, ZIO, ZLayer }
 
 import java.io.IOException
 

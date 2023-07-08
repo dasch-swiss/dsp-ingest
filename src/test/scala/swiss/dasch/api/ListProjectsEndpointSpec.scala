@@ -8,10 +8,10 @@ package swiss.dasch.api
 import swiss.dasch.api.ListProjectsEndpoint.{ ProjectResponse, ProjectsResponse }
 import swiss.dasch.domain.{ ProjectService, ProjectServiceLive, StorageServiceLive }
 import swiss.dasch.test.SpecConfigurations
-import zio.{ Chunk, http }
 import zio.http.{ Request, Root, Status, URL }
-import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
 import zio.json.*
+import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
+import zio.{ Chunk, http }
 
 object ListProjectsEndpointSpec extends ZIOSpecDefault {
 

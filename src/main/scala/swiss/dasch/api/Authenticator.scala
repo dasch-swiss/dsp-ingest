@@ -5,12 +5,12 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.config.Configuration.JwtConfig
-import zio.*
-import zio.prelude.Validation
 import pdi.jwt.*
 import pdi.jwt.exceptions.JwtException
+import swiss.dasch.config.Configuration.JwtConfig
+import zio.*
 import zio.http.{ HttpAppMiddleware, RequestHandlerMiddleware }
+import zio.prelude.Validation
 
 trait Authenticator  {
   def authenticate(token: String): ZIO[Any, NonEmptyChunk[AuthenticationError], JwtClaim]

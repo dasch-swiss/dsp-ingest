@@ -8,9 +8,9 @@ package swiss.dasch.domain
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConstants.*
-import zio.test.*
 import zio.*
 import zio.nio.file.Path
+import zio.test.*
 object StorageServiceLiveSpec extends ZIOSpecDefault {
 
   val spec = suite("StorageServiceLiveSpec")(

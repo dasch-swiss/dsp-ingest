@@ -10,6 +10,7 @@ import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
+import zio.*
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root
@@ -24,7 +25,6 @@ import zio.nio.file.Files
 import zio.schema.codec.JsonCodec.JsonEncoder
 import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.{ ZSink, ZStream }
-import zio.*
 
 import java.io.IOException
 import java.util.zip.ZipFile

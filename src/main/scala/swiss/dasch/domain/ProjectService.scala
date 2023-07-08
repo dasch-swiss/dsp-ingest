@@ -33,15 +33,12 @@ trait ProjectService {
 }
 
 object ProjectService {
-  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]] =
+  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]]                    =
     ZIO.serviceWithZIO[ProjectService](_.listAllProjects())
-
-  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[Path]] =
+  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[Path]]        =
     ZIO.serviceWithZIO[ProjectService](_.findProject(shortcode))
-
-  def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]] =
+  def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]]           =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-
   def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[ProjectService, Throwable, Unit] =
     ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }

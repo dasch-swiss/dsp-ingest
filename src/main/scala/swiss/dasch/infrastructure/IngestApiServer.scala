@@ -9,9 +9,9 @@ import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoin
 import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint, ListProjectsEndpoint }
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
 import swiss.dasch.version.BuildInfo
-import zio.{ URLayer, ZIO, ZLayer }
 import zio.http.*
 import zio.http.internal.middlewares.Cors.CorsConfig
+import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
