@@ -6,9 +6,10 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.StorageConfig
-import zio.*
+import zio.{ prelude, * }
 import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
+import zio.schema.validation.Validation
 
 import java.io.IOException
 
@@ -85,25 +86,28 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     ): Task[AssetInfo] = Files
     .readAllLines(infoFile)
     .logError(s"Unable to load info file for $asset")
-    .map(_.mkString.fromJson[AssetInfoFileContent])
-    .absolve
-    .mapBoth(
-      {
-        case s: String    => new IllegalStateException(s"Unable to parse info file for $asset: $s")
-        case e: Throwable => e
-      },
-      toAssetInfo(_, assetDir),
-    )
+    .flatMap(lines => parseJson(lines.mkString, asset))
+    .flatMap(toAssetInfo(_, assetDir))
 
-  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path): AssetInfo = (for {
-    checksumDerivative <- Sha256Hash.make(raw.checksumDerivative)
-    checksumOriginal   <- Sha256Hash.make(raw.checksumOriginal)
-  } yield AssetInfo(
-    derivative = FileAndChecksum(assetDir / raw.internalFilename, checksumDerivative),
-    original = FileAndChecksum(assetDir / raw.originalInternalFilename, checksumOriginal),
-    originalFilename = raw.originalFilename,
-  )).getOrElse(throw new IllegalStateException(s"Invalid asset info file content $raw, $assetDir"))
+  private def parseJson(json: String, asset: Asset) =
+    ZIO
+      .fromEither(json.fromJson[AssetInfoFileContent])
+      .mapError(errMsg => IllegalArgumentException(s"Unable to parse info file content for $asset: $errMsg"))
 
+  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path): Task[AssetInfo] =
+    val derivativeCheck = prelude.Validation.fromEither(Sha256Hash.make(raw.checksumDerivative))
+    val origCheck       = prelude.Validation.fromEither(Sha256Hash.make(raw.checksumOriginal))
+    prelude
+      .Validation
+      .validateWith(origCheck, derivativeCheck) { (o, d) =>
+        AssetInfo(
+          derivative = FileAndChecksum(assetDir / raw.internalFilename, d),
+          original = FileAndChecksum(assetDir / raw.originalInternalFilename, o),
+          originalFilename = raw.originalFilename,
+        )
+      }
+      .toZIO
+      .mapError(e => new IllegalArgumentException(s"Invalid asset info file content $raw, $assetDir, $e"))
 }
 object StorageServiceLive {
   val layer = ZLayer.fromFunction(StorageServiceLive.apply _)
