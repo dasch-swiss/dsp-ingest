@@ -63,11 +63,10 @@ final case class ProjectServiceLive(storage: StorageService) extends ProjectServ
       .runHead
       .map(_.isDefined)
 
-  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] =
-    for {
-      projectPath <- storage.getProjectDirectory(shortcode)
-      projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
-    } yield projectDir
+  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] = for {
+    projectPath <- storage.getProjectDirectory(shortcode)
+    projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
+  } yield projectDir
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
