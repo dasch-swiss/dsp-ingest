@@ -64,9 +64,7 @@ final case class ProjectServiceLive(config: StorageConfig, storage: StorageServi
   override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] =
     for {
       projectPath <- storage.getProjectDirectory(shortcode)
-      projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(
-                       ZIO.succeed(projectPath)
-                     )
+      projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
     } yield projectDir
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
@@ -80,21 +78,19 @@ final case class ProjectServiceLive(config: StorageConfig, storage: StorageServi
   }
 
   override def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] =
-    storage.getAssetDirectory().flatMap { assetPath =>
-      val targetFolder = assetPath / shortcode.toString
+    storage.getProjectDirectory(shortcode).flatMap { projectPath =>
       ZIO.logInfo(s"Importing project $shortcode") *>
-        deleteExistingProjectFiles(shortcode).flatMap(no => ZIO.logDebug(s"Deleted $no files in $targetFolder")) *>
-        Files.createDirectories(targetFolder) *>
-        ZipUtility.unzipFile(zipFile, targetFolder) *>
+        deleteExistingProjectFiles(projectPath) *>
+        Files.createDirectories(projectPath) *>
+        ZipUtility.unzipFile(zipFile, projectPath) *>
         ZIO.logInfo(s"Importing project $shortcode was successful")
     }
 
-  private def deleteExistingProjectFiles(shortcode: ProjectShortcode): IO[IOException, Long] = for {
-    projectPath <- storage.getProjectDirectory(shortcode)
-    nrDeleted   <- deleteRecursive(projectPath)
-                     .whenZIO(Files.exists(projectPath))
-                     .map(_.getOrElse(0L))
-  } yield nrDeleted
+  private def deleteExistingProjectFiles(projectPath: Path): IO[IOException, Long] =
+    deleteRecursive(projectPath)
+      .whenZIO(Files.exists(projectPath))
+      .map(_.getOrElse(0L))
+      .tap(count => ZIO.logDebug(s"Deleted $count files in $projectPath"))
 
   // The zio.nio.file.Files.deleteRecursive function has a bug in 2.0.1
   // https://github.com/zio/zio-nio/pull/588/files <- this PR fixes it
