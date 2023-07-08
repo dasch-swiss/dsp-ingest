@@ -46,11 +46,9 @@ object ProjectService {
     ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }
 
-final case class ProjectServiceLive(config: StorageConfig) extends ProjectService {
+final case class ProjectServiceLive(config: StorageConfig, storage: StorageService) extends ProjectService {
 
   private val existingProjectDirectories               = Files.list(config.assetPath).filterZIO(Files.isDirectory(_))
-  private val existingTempFiles                        = Files.list(config.tempPath).filterZIO(Files.isRegularFile(_))
-  private def projectPath(shortcode: ProjectShortcode) = config.assetPath / shortcode.toString
 
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
     existingProjectDirectories
@@ -63,7 +61,12 @@ final case class ProjectServiceLive(config: StorageConfig) extends ProjectServic
     Files.walk(path).findZIO(it => Files.isRegularFile(it) && Files.isHidden(it).map(!_)).runCollect.map(_.nonEmpty)
 
   override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] =
-    existingProjectDirectories.filter(_.filename.toString == shortcode.toString).runHead
+    for {
+      projectPath <- storage.getProjectDirectory(shortcode)
+      projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(
+                       ZIO.succeed(projectPath)
+                     )
+    } yield projectDir
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
@@ -84,8 +87,12 @@ final case class ProjectServiceLive(config: StorageConfig) extends ProjectServic
       ZIO.logInfo(s"Importing project $shortcode was successful")
   }
 
-  private def deleteExistingProjectFiles(shortcode: ProjectShortcode): IO[IOException, Long] =
-    deleteRecursive(projectPath(shortcode)).whenZIO(Files.exists(projectPath(shortcode))).map(_.getOrElse(0L))
+  private def deleteExistingProjectFiles(shortcode: ProjectShortcode): IO[IOException, Long] = for {
+    projectPath <- storage.getProjectDirectory(shortcode)
+    nrDeleted   <- deleteRecursive(projectPath)
+                     .whenZIO(Files.exists(projectPath))
+                     .map(_.getOrElse(0L))
+  } yield nrDeleted
 
   // The zio.nio.file.Files.deleteRecursive function has a bug in 2.0.1
   // https://github.com/zio/zio-nio/pull/588/files <- this PR fixes it
@@ -102,5 +109,5 @@ final case class ProjectServiceLive(config: StorageConfig) extends ProjectServic
 }
 
 object ProjectServiceLive {
-  val layer: URLayer[StorageConfig, ProjectService] = ZLayer.fromFunction(ProjectServiceLive.apply _)
+  val layer = ZLayer.fromFunction(ProjectServiceLive.apply _)
 }

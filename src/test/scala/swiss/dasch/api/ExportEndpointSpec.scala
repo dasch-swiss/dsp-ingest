@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.{ ProjectService, ProjectServiceLive, ProjectShortcode }
+import swiss.dasch.domain.{ ProjectService, ProjectServiceLive, ProjectShortcode, StorageServiceLive }
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.{ existingProject, nonExistentProject }
 import zio.{ Scope, ZIO }
@@ -48,5 +48,5 @@ object ExportEndpointSpec extends ZIOSpecDefault {
           )
         },
       )
-    ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer)
+    ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer, StorageServiceLive.layer)
 }

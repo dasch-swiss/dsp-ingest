@@ -8,22 +8,13 @@ package swiss.dasch.domain
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConstants.*
-import swiss.dasch.test.SpecPaths
+import swiss.dasch.test.{ SpecConfigurations, SpecPaths }
 import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.{ Files, Path }
 import zio.{ Chunk, Scope, ZIO, ZLayer }
 import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue }
 
 object ProjectServiceSpec extends ZIOSpecDefault {
-
-  private val configLayer = ZLayer.scoped {
-    for {
-      tmpDir <- Files.createTempDirectoryScoped(None, List.empty)
-    } yield StorageConfig(
-      assetDir = SpecPaths.testFolder.toFile.getAbsolutePath,
-      tempDir = tmpDir.toFile.toString,
-    )
-  }
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("AssetServiceSpec")(
@@ -57,5 +48,5 @@ object ProjectServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(zip.contains(tempDir / "zipped" / "0001.zip"))
         },
       ),
-    ).provide(ProjectServiceLive.layer, configLayer)
+    ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer, StorageServiceLive.layer)
 }

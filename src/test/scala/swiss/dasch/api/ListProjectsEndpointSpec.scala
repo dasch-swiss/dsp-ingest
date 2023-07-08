@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ListProjectsEndpoint.{ ProjectResponse, ProjectsResponse }
-import swiss.dasch.domain.{ ProjectService, ProjectServiceLive }
+import swiss.dasch.domain.{ ProjectService, ProjectServiceLive, StorageServiceLive }
 import swiss.dasch.test.SpecConfigurations
 import zio.{ Chunk, http }
 import zio.http.{ Request, Root, Status, URL }
@@ -22,5 +22,5 @@ object ListProjectsEndpointSpec extends ZIOSpecDefault {
         body     <- response.body.asString
       } yield assertTrue(response.status == Status.Ok, body == ProjectsResponse(Chunk(ProjectResponse("0001"))).toJson)
     }
-  ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer)
+  ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer, StorageServiceLive.layer)
 }
