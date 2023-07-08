@@ -5,6 +5,7 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
 import zio.prelude.Validation
@@ -28,7 +29,7 @@ object AssetInfoFileContent {
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
 final case class AssetInfo(
     original: FileAndChecksum,
-    originalFilename: String,
+    originalFilename: NonEmptyString,
     derivative: FileAndChecksum,
   )
 
@@ -99,12 +100,18 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       .validateWith(
         Validation.fromEither(Sha256Hash.make(raw.checksumOriginal)),
         Validation.fromEither(Sha256Hash.make(raw.checksumDerivative)),
-      ) { (origChecksum, derivativeChecksum) =>
-        AssetInfo(
-          original = FileAndChecksum(assetDir / raw.originalInternalFilename, origChecksum),
-          originalFilename = raw.originalFilename,
-          derivative = FileAndChecksum(assetDir / raw.internalFilename, derivativeChecksum),
-        )
+        Validation.fromEither(NonEmptyString.from(raw.originalFilename)),
+      ) {
+        (
+            origChecksum,
+            derivativeChecksum,
+            origFilename,
+          ) =>
+          AssetInfo(
+            original = FileAndChecksum(assetDir / raw.originalInternalFilename, origChecksum),
+            originalFilename = origFilename,
+            derivative = FileAndChecksum(assetDir / raw.internalFilename, derivativeChecksum),
+          )
       }
       .toZIO
       .mapError(e => new IllegalArgumentException(s"Invalid asset info file content $raw, $assetDir, $e"))
