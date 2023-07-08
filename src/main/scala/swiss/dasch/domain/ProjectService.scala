@@ -52,13 +52,14 @@ final case class ProjectServiceLive(storage: StorageService) extends ProjectServ
       .filterZIO(directoryContainsNonHiddenRegularFile)
       .runCollect
       .map(toProjectShortcodes)
-  private def directoryContainsNonHiddenRegularFile(path: Path)            =
+
+  private def directoryContainsNonHiddenRegularFile(path: Path) =
     Files.isDirectory(path) &&
-      Files
-        .walk(path)
-        .filterZIO(it => Files.isRegularFile(it) && Files.isHidden(it).negate)
-        .runHead
-        .map(_.isDefined)
+    Files
+      .walk(path)
+      .filterZIO(it => Files.isRegularFile(it) && Files.isHidden(it).negate)
+      .runHead
+      .map(_.isDefined)
 
   private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
     _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.make(_).toOption)
