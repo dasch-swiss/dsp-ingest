@@ -9,23 +9,22 @@ import zio.test.*
 
 object AssetIdSpec extends ZIOSpecDefault {
 
+  private val validCharacters = Gen.oneOf(Gen.alphaNumericChar, Gen.const('-'))
+
   val spec = suite("AssetIdSpec")(
     test("AssetId should be created from a valid string") {
-      val valid = Gen.stringBounded(1, 20)(Gen.oneOf(Gen.alphaNumericChar, Gen.const('-')))
-      check(valid) { s =>
-        assertTrue(AssetId.make(s).exists(_.toString == s))
-      }
+      val valid = Gen.stringBounded(4, 20)(validCharacters)
+      check(valid)(s => assertTrue(AssetId.make(s).exists(_.toString == s)))
     },
-    test("AssetId should not be created from an empty string") {
-      assertTrue(AssetId.make("").isLeft)
-    },
-    test("AssetId should not be created from an string containing invalid characters") {
+    test("AssetId should not be created from an String containing invalid characters") {
       val invalid = Gen.stringBounded(1, 20)(
         Gen.fromIterable(List('/', '!', '$', '%', '&', '(', ')', '=', '?', ' ', '+', '*', '#', '@', '€', '£', '§'))
       )
-      check(invalid) { c =>
-        assertTrue(AssetId.make(c).isLeft)
-      }
+      check(invalid)(s => assertTrue(AssetId.make(s).isLeft))
+    },
+    test("AssetId should not be created from a String shorter than four characters") {
+      val validButTooShort = Gen.stringBounded(0, 3)(validCharacters)
+      check(validButTooShort)(s => assertTrue(AssetId.make(s).isLeft))
     },
   )
 }

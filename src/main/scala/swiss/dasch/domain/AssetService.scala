@@ -16,7 +16,7 @@ import zio.nio.file.{ Files, Path }
 
 import java.io.IOException
 
-opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-]+$"]
+opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-]{4,}$"]
 
 object AssetId      {
   def make(id: String): Either[String, AssetId] = refineV(id)
