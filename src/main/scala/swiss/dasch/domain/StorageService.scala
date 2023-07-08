@@ -6,10 +6,10 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.StorageConfig
-import zio.{ prelude, * }
+import zio.*
+import zio.prelude.Validation
 import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
-import zio.schema.validation.Validation
 
 import java.io.IOException
 
@@ -27,9 +27,9 @@ object AssetInfoFileContent {
 
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
 final case class AssetInfo(
-    derivative: FileAndChecksum,
     original: FileAndChecksum,
     originalFilename: String,
+    derivative: FileAndChecksum,
   )
 
 trait StorageService  {
@@ -95,15 +95,15 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       .mapError(errMsg => IllegalArgumentException(s"Unable to parse info file content for $asset: $errMsg"))
 
   private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path): Task[AssetInfo] =
-    val derivativeCheck = prelude.Validation.fromEither(Sha256Hash.make(raw.checksumDerivative))
-    val origCheck       = prelude.Validation.fromEither(Sha256Hash.make(raw.checksumOriginal))
-    prelude
-      .Validation
-      .validateWith(origCheck, derivativeCheck) { (o, d) =>
+    Validation
+      .validateWith(
+        Validation.fromEither(Sha256Hash.make(raw.checksumOriginal)),
+        Validation.fromEither(Sha256Hash.make(raw.checksumDerivative)),
+      ) { (origChecksum, derivativeChecksum) =>
         AssetInfo(
-          derivative = FileAndChecksum(assetDir / raw.internalFilename, d),
-          original = FileAndChecksum(assetDir / raw.originalInternalFilename, o),
+          original = FileAndChecksum(assetDir / raw.originalInternalFilename, origChecksum),
           originalFilename = raw.originalFilename,
+          derivative = FileAndChecksum(assetDir / raw.internalFilename, derivativeChecksum),
         )
       }
       .toZIO
