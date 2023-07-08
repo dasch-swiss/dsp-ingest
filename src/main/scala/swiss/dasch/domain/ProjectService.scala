@@ -48,7 +48,8 @@ object ProjectService {
 
 final case class ProjectServiceLive(config: StorageConfig, storage: StorageService) extends ProjectService {
 
-  private val existingProjectDirectories               = Files.list(config.assetPath).filterZIO(Files.isDirectory(_))
+  private val existingProjectDirectories =
+    ZStream.fromZIO(storage.getAssetDirectory()).flatMap(Files.list(_).filterZIO(Files.isDirectory(_)))
 
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
     existingProjectDirectories
@@ -78,14 +79,15 @@ final case class ProjectServiceLive(config: StorageConfig, storage: StorageServi
     ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
   }
 
-  override def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] = {
-    val targetFolder = config.assetPath / shortcode.toString
-    ZIO.logInfo(s"Importing project $shortcode") *>
-      deleteExistingProjectFiles(shortcode).flatMap(no => ZIO.logDebug(s"Deleted $no files in $targetFolder")) *>
-      Files.createDirectories(targetFolder) *>
-      ZipUtility.unzipFile(zipFile, targetFolder) *>
-      ZIO.logInfo(s"Importing project $shortcode was successful")
-  }
+  override def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] =
+    storage.getAssetDirectory().flatMap { assetPath =>
+      val targetFolder = assetPath / shortcode.toString
+      ZIO.logInfo(s"Importing project $shortcode") *>
+        deleteExistingProjectFiles(shortcode).flatMap(no => ZIO.logDebug(s"Deleted $no files in $targetFolder")) *>
+        Files.createDirectories(targetFolder) *>
+        ZipUtility.unzipFile(zipFile, targetFolder) *>
+        ZIO.logInfo(s"Importing project $shortcode was successful")
+    }
 
   private def deleteExistingProjectFiles(shortcode: ProjectShortcode): IO[IOException, Long] = for {
     projectPath <- storage.getProjectDirectory(shortcode)

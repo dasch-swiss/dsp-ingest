@@ -34,6 +34,7 @@ final case class AssetInfo(
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]
   def getAssetDirectory(asset: Asset): UIO[Path]
+  def getAssetDirectory(): UIO[Path]
   def loadInfoFile(asset: Asset): Task[AssetInfo]
 }
 object StorageService {
@@ -41,15 +42,19 @@ object StorageService {
     ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))
   def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                         =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory(asset))
+  def getAssetDirectory(): RIO[StorageService, Path]                                     =
+    ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
   def loadInfoFile(asset: Asset): ZIO[StorageService, Throwable, AssetInfo]              =
     ZIO.serviceWithZIO[StorageService](_.loadInfoFile(asset))
 }
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {
   override def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path] =
-    ZIO.succeed(config.assetPath / projectShortcode.toString)
+    getAssetDirectory().map(_ / projectShortcode.toString)
   override def getAssetDirectory(asset: Asset): UIO[Path]                         =
     getProjectDirectory(asset.belongsToProject).map(_ / segments(asset.id))
+  override def getAssetDirectory(): UIO[Path]                                     =
+    ZIO.succeed(config.assetPath)
   private def segments(assetId: AssetId): Path                                    = {
     val assetString = assetId.toString
     val segment1    = assetString.substring(0, 2)
