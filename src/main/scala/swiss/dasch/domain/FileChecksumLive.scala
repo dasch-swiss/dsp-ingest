@@ -5,23 +5,30 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.refineV
+import eu.timepit.refined.string.MatchesRegex
 import zio.*
 import zio.nio.file.*
 
 import java.io.{ FileInputStream, IOException }
 
+opaque type Sha256Hash = String Refined MatchesRegex["^[A-Fa-f0-9]{64}$"]
+object Sha256Hash  {
+  def make(value: String): Either[String, Sha256Hash] = refineV(value)
+}
 trait FileChecksum {
-  def createHashSha256(path: Path): Task[String]
+  def createHashSha256(path: Path): Task[Sha256Hash]
 }
 
 object FileChecksum {
-  def createHashSha256(path: Path): ZIO[FileChecksum, Throwable, String] =
+  def createHashSha256(path: Path): ZIO[FileChecksum, Throwable, Sha256Hash] =
     ZIO.serviceWithZIO[FileChecksum](_.createHashSha256(path))
 }
 
 case class FileChecksumLive() extends FileChecksum {
 
-  def createHashSha256(path: Path): Task[String] =
+  def createHashSha256(path: Path): Task[Sha256Hash] =
     ZIO.scoped {
       for {
         fis        <- ZIO.acquireRelease(ZIO.attempt(new FileInputStream(path.toFile)))(fis => ZIO.succeed(fis.close()))
@@ -29,14 +36,14 @@ case class FileChecksumLive() extends FileChecksum {
       } yield hashString
     }
 
-  private def hashSha256(fis: FileInputStream) = {
+  private def hashSha256(fis: FileInputStream): Sha256Hash = {
     val digest    = java.security.MessageDigest.getInstance("SHA-256")
     val buffer    = new Array[Byte](8192)
     var bytesRead = 0
     while ({ bytesRead = fis.read(buffer); bytesRead != -1 }) digest.update(buffer, 0, bytesRead)
     val sb        = new StringBuilder
     for (byte <- digest.digest()) sb.append(String.format("%02x", Byte.box(byte)))
-    sb.toString()
+    Sha256Hash.make(sb.toString()).getOrElse(throw new IllegalStateException("Could not create hash"))
   }
 }
 object FileChecksumLive {

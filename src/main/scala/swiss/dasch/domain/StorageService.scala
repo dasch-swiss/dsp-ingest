@@ -23,16 +23,13 @@ final private case class AssetInfoFileContent(
 object AssetInfoFileContent {
   implicit val codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
 }
+
+final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
 final case class AssetInfo(
-    derivativeFile: Path,
-    originalFile: Path,
+    derivative: FileAndChecksum,
+    original: FileAndChecksum,
     originalFilename: String,
-    checksumOriginal: String,
-    checksumDerivative: String,
-  ) {
-  def getDerivativeChecksumAndFile: (String, Path) = (checksumDerivative, derivativeFile)
-  def getOrigChecksumAndFile: (String, Path)       = (checksumOriginal, originalFile)
-}
+  )
 
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]
@@ -98,14 +95,15 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       toAssetInfo(_, assetDir),
     )
 
-  private def toAssetInfo(raw: AssetInfoFileContent, assetDirectory: Path): AssetInfo =
-    AssetInfo(
-      derivativeFile = assetDirectory / raw.internalFilename,
-      originalFile = assetDirectory / raw.originalInternalFilename,
-      originalFilename = raw.originalFilename,
-      checksumOriginal = raw.checksumOriginal,
-      checksumDerivative = raw.checksumDerivative,
-    )
+  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path): AssetInfo = (for {
+    checksumDerivative <- Sha256Hash.make(raw.checksumDerivative)
+    checksumOriginal   <- Sha256Hash.make(raw.checksumOriginal)
+  } yield AssetInfo(
+    derivative = FileAndChecksum(assetDir / raw.internalFilename, checksumDerivative),
+    original = FileAndChecksum(assetDir / raw.originalInternalFilename, checksumOriginal),
+    originalFilename = raw.originalFilename,
+  )).getOrElse(throw new IllegalStateException(s"Invalid asset info file content $raw, $assetDir"))
+
 }
 object StorageServiceLive {
   val layer = ZLayer.fromFunction(StorageServiceLive.apply _)

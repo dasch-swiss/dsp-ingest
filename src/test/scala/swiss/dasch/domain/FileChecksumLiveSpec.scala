@@ -19,13 +19,13 @@ object FileChecksumLiveSpec extends ZIOSpecDefault {
       for {
         checksum <-
           FileChecksum.createHashSha256(pathFromResource(fileprefix + ".jp2.orig"))
-      } yield assertTrue(checksum == checksumOrig)
+      } yield assertTrue(checksum.toString == checksumOrig)
     },
     test("checksum of .jp2 should not match orig") {
       for {
         checksum <-
           FileChecksum.createHashSha256(pathFromResource(fileprefix + ".jp2"))
-      } yield assertTrue(checksum != checksumOrig)
+      } yield assertTrue(checksum.toString != checksumOrig)
     },
   ).provide(FileChecksumLive.layer)
 }

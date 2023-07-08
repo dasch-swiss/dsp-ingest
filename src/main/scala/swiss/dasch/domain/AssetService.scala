@@ -37,22 +37,22 @@ object AssetService {
 
 final case class AssetServiceLive(storage: StorageService, checksum: FileChecksum) extends AssetService {
   override def verifyChecksumOrig(asset: Asset): Task[Boolean] =
-    verifyChecksum(asset, _.getOrigChecksumAndFile)
+    verifyChecksum(asset, _.original)
 
   override def verifyChecksumDerivative(asset: Asset): Task[Boolean] =
-    verifyChecksum(asset, _.getDerivativeChecksumAndFile)
+    verifyChecksum(asset, _.derivative)
 
   private def verifyChecksum(
       asset: Asset,
-      checksumAndFile: AssetInfo => (String, Path),
+      checksumAndFile: AssetInfo => FileAndChecksum,
     ): Task[Boolean] =
     for {
-      infoFile                <- storage.loadInfoFile(asset)
-      (checksumExpected, file) = checksumAndFile(infoFile)
-      checksumCalculated      <- checksum
-                                   .createHashSha256(file)
-                                   .logError(s"Unable to calculate checksum for $file of $asset")
-    } yield checksumExpected == checksumCalculated
+      infoFile           <- storage.loadInfoFile(asset)
+      checkFile           = checksumAndFile(infoFile)
+      checksumCalculated <- checksum
+                              .createHashSha256(checkFile.file)
+                              .logError(s"Unable to calculate checksum for ${checkFile.file} of $asset")
+    } yield checkFile.checksum == checksumCalculated
 }
 
 object AssetServiceLive {
