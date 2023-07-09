@@ -48,5 +48,10 @@ object ProjectServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(zip.contains(tempDir / "zipped" / "0001.zip"))
         },
       ),
-    ).provide(ProjectServiceLive.layer, SpecConfigurations.storageConfigLayer, StorageServiceLive.layer)
+    ).provide(
+      ProjectServiceLive.layer,
+      SpecConfigurations.storageConfigLayer,
+      StorageServiceLive.layer,
+      FileChecksumLive.layer,
+    )
 }

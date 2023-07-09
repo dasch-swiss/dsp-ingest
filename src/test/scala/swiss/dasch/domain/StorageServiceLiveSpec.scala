@@ -5,23 +5,64 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.refineV
+import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.*
+import swiss.dasch.test.SpecConstants.Assets.existingAsset
 import zio.*
 import zio.nio.file.Path
 import zio.test.*
+
 object StorageServiceLiveSpec extends ZIOSpecDefault {
 
   val spec = suite("StorageServiceLiveSpec")(
     test("should return the path of the folder where the asset is stored") {
       for {
         assetPath <- ZIO.serviceWith[StorageConfig](_.assetPath)
-        path      <- StorageService.getAssetDirectory(Asset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode))
-      } yield assertTrue(path == assetPath / "0001" / "fg" / "il")
+        actual    <-
+          StorageService.getAssetDirectory(Asset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode))
+      } yield assertTrue(actual == assetPath / "0001" / "fg" / "il")
     },
-    test("should return the path of the folder where the asset is stored") {
-      assertCompletes
+    test("should return asset path") {
+      for {
+        expected <- ZIO.serviceWith[StorageConfig](_.assetPath)
+        actual   <- StorageService.getAssetDirectory()
+      } yield assertTrue(expected == actual)
     },
-  ).provide(StorageServiceLive.layer, Configuration.layer)
+    test("should return temp path") {
+      for {
+        expected <- ZIO.serviceWith[StorageConfig](_.tempPath)
+        actual   <- StorageService.getTempDirectory()
+      } yield assertTrue(expected == actual)
+    },
+    test("should return project directory") {
+      for {
+        expected <- ZIO.serviceWith[StorageConfig](_.assetPath).map(_ / existingProject.toString)
+        actual   <- StorageService.getProjectDirectory(existingProject)
+      } yield assertTrue(expected == actual)
+    },
+    test("should load asset info file") {
+      val asset = Asset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode)
+      val name  = NonEmptyString.unsafeFrom("250x250.jp2")
+      for {
+        projectPath <- ZIO.serviceWith[StorageConfig](_.assetPath).map(_ / asset.belongsToProject.toString)
+        expected     = AssetInfo(
+                         asset = asset,
+                         original = FileAndChecksum(
+                           projectPath / "fg" / "il" / s"${asset.id.toString}.jp2.orig",
+                           "fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c".toSha256Hash,
+                         ),
+                         originalFilename = name,
+                         derivative = FileAndChecksum(
+                           projectPath / "fg" / "il" / s"${asset.id.toString}.jp2",
+                           "0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc".toSha256Hash,
+                         ),
+                       )
+        actual      <- StorageService.loadInfoFile(asset)
+      } yield assertTrue(expected == actual)
+    },
+  ).provide(StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
 }

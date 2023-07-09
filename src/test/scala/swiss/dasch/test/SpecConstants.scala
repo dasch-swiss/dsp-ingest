@@ -6,7 +6,8 @@
 package swiss.dasch.test
 
 import eu.timepit.refined.refineV
-import swiss.dasch.domain.{ Asset, AssetId, ProjectShortcode }
+import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.{Asset, AssetId, ProjectShortcode, Sha256Hash}
 
 object SpecConstants {
 
@@ -28,5 +29,10 @@ object SpecConstants {
     def toAssetId: AssetId                   = AssetId
       .make(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
+    def toSha256Hash: Sha256Hash                 = Sha256Hash
+      .make(s)
+      .fold(err => throw new IllegalArgumentException(err), identity)
+    def toNonEmptyString: NonEmptyString =
+      NonEmptyString.unsafeFrom(s)
   }
 }

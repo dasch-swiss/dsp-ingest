@@ -26,13 +26,16 @@ trait AssetService  {
   def verifyChecksumOrig(asset: Asset): Task[Boolean]
 
   def verifyChecksumDerivative(asset: Asset): Task[Boolean]
+
+  def verifyChecksum(assetInfo: AssetInfo): Task[Boolean]
 }
 object AssetService {
-  def verifyChecksumOrig(asset: Asset): ZIO[AssetService, Throwable, Boolean] =
+  def verifyChecksumOrig(asset: Asset): ZIO[AssetService, Throwable, Boolean]       =
     ZIO.serviceWithZIO[AssetService](_.verifyChecksumOrig(asset))
-
   def verifyChecksumDerivative(asset: Asset): ZIO[AssetService, Throwable, Boolean] =
     ZIO.serviceWithZIO[AssetService](_.verifyChecksumDerivative(asset))
+  def verifyChecksum(assetInfo: AssetInfo): ZIO[AssetService, Throwable, Boolean]   =
+    ZIO.serviceWithZIO[AssetService](_.verifyChecksum(assetInfo))
 }
 
 final case class AssetServiceLive(storage: StorageService, checksum: FileChecksum) extends AssetService {
@@ -42,17 +45,18 @@ final case class AssetServiceLive(storage: StorageService, checksum: FileChecksu
   override def verifyChecksumDerivative(asset: Asset): Task[Boolean] =
     verifyChecksum(asset, _.derivative)
 
-  private def verifyChecksum(
-      asset: Asset,
-      checksumAndFile: AssetInfo => FileAndChecksum,
-    ): Task[Boolean] =
+  private def verifyChecksum(asset: Asset, checksumAndFile: AssetInfo => FileAndChecksum): Task[Boolean] =
+    storage.loadInfoFile(asset).map(checksumAndFile).flatMap(verifyChecksum)
+
+  private def verifyChecksum(fileAndChecksum: FileAndChecksum): Task[Boolean] =
     for {
-      infoFile           <- storage.loadInfoFile(asset)
-      checkFile           = checksumAndFile(infoFile)
       checksumCalculated <- checksum
-                              .createSha256Hash(checkFile.file)
-                              .logError(s"Unable to calculate checksum for ${checkFile.file} of $asset")
-    } yield checkFile.checksum == checksumCalculated
+                              .createSha256Hash(fileAndChecksum.file)
+                              .logError(s"Unable to calculate checksum for ${fileAndChecksum.file}")
+    } yield fileAndChecksum.checksum == checksumCalculated
+
+  override def verifyChecksum(assetInfo: AssetInfo): Task[Boolean] =
+    verifyChecksum(assetInfo.original) && verifyChecksum(assetInfo.derivative)
 }
 
 object AssetServiceLive {

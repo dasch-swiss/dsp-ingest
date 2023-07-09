@@ -28,6 +28,7 @@ object AssetInfoFileContent {
 
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
 final case class AssetInfo(
+    asset: Asset,
     original: FileAndChecksum,
     originalFilename: NonEmptyString,
     derivative: FileAndChecksum,
@@ -88,14 +89,14 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     .readAllLines(infoFile)
     .logError(s"Unable to load info file for $asset")
     .flatMap(lines => parseJson(lines.mkString, asset))
-    .flatMap(toAssetInfo(_, assetDir))
+    .flatMap(toAssetInfo(_, assetDir, asset))
 
   private def parseJson(json: String, asset: Asset) =
     ZIO
       .fromEither(json.fromJson[AssetInfoFileContent])
       .mapError(errMsg => IllegalArgumentException(s"Unable to parse info file content for $asset: $errMsg"))
 
-  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path): Task[AssetInfo] =
+  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path, asset: Asset): Task[AssetInfo] =
     Validation
       .validateWith(
         Validation.fromEither(Sha256Hash.make(raw.checksumOriginal)),
@@ -108,6 +109,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
             origFilename,
           ) =>
           AssetInfo(
+            asset = asset,
             original = FileAndChecksum(assetDir / raw.originalInternalFilename, origChecksum),
             originalFilename = origFilename,
             derivative = FileAndChecksum(assetDir / raw.internalFilename, derivativeChecksum),

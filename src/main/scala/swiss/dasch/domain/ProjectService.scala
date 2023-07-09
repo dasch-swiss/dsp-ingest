@@ -28,6 +28,7 @@ object ProjectShortcode {
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
+//  def findAssetsOfProject(shortcode: ProjectShortcode): IO[IOException, Chunk[AssetInfo]]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
   def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit]
 }
@@ -43,7 +44,7 @@ object ProjectService {
     ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }
 
-final case class ProjectServiceLive(storage: StorageService) extends ProjectService {
+final case class ProjectServiceLive(storage: StorageService, checksum: FileChecksum) extends ProjectService {
 
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
     ZStream
@@ -84,9 +85,12 @@ final case class ProjectServiceLive(storage: StorageService) extends ProjectServ
       ZIO.logInfo(s"Importing project $shortcode") *>
         deleteExistingProjectFiles(projectPath) *>
         Files.createDirectories(projectPath) *>
-        ZipUtility.unzipFile(zipFile, projectPath) *>
+        unzipAndValidate(zipFile, projectPath) *>
         ZIO.logInfo(s"Importing project $shortcode was successful")
     }
+
+  private def unzipAndValidate(zipFile: Path, projectPath: Path) =
+    ZipUtility.unzipFile(zipFile, projectPath) // TODO: *> validateChecksumsProject(projectPath)
 
   private def deleteExistingProjectFiles(projectPath: Path): IO[IOException, Long] =
     deleteRecursive(projectPath)
