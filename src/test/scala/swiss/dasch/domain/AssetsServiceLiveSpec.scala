@@ -16,7 +16,7 @@ import zio.test.*
 object AssetsServiceLiveSpec extends ZIOSpecDefault {
 
   val spec = suite("AssetServiceLive")(
-    test("should verify the checksums of an asset") {
+    test("should verify the checksums of an asset's original") {
       for {
         checksumMatches <- AssetService.verifyChecksumOrig(existingAsset)
       } yield assertTrue(checksumMatches)
@@ -24,6 +24,12 @@ object AssetsServiceLiveSpec extends ZIOSpecDefault {
     test("should verify the checksums of an asset's derivative") {
       for {
         checksumMatches <- AssetService.verifyChecksumDerivative(existingAsset)
+      } yield assertTrue(checksumMatches)
+    },
+    test("should verify the checksums of an asset's derivative and original") {
+      for {
+        assetInfo       <- StorageService.loadInfoFile(existingAsset)
+        checksumMatches <- AssetService.verifyChecksum(assetInfo)
       } yield assertTrue(checksumMatches)
     },
   ).provide(
