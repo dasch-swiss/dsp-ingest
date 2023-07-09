@@ -12,6 +12,7 @@ import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Assets.existingAsset
+import swiss.dasch.test.SpecConstants.Projects.existingProject
 import zio.*
 import zio.nio.file.Path
 import zio.test.*

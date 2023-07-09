@@ -7,19 +7,19 @@ package swiss.dasch.test
 
 import eu.timepit.refined.refineV
 import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.{Asset, AssetId, ProjectShortcode, Sha256Hash}
+import swiss.dasch.domain.{ Asset, AssetId, ProjectShortcode, Sha256Hash }
+import swiss.dasch.test.SpecConstants.Projects.existingProject
 
 object SpecConstants {
-
-  val nonExistentProject: ProjectShortcode = "0042".toProjectShortcode
-  val existingProject: ProjectShortcode    = "0001".toProjectShortcode
-  val emptyProject: ProjectShortcode       = "0002".toProjectShortcode
-
+  object Projects {
+    val nonExistentProject: ProjectShortcode = "0042".toProjectShortcode
+    val existingProject: ProjectShortcode    = "0001".toProjectShortcode
+    val emptyProject: ProjectShortcode       = "0002".toProjectShortcode
+  }
   object AssetIds {
     val existingAsset: AssetId = "FGiLaT4zzuV-CqwbEDFAFeS".toAssetId
   }
-
-  object Assets {
+  object Assets   {
     val existingAsset: Asset = Asset(AssetIds.existingAsset, existingProject)
   }
   extension (s: String) {
@@ -29,10 +29,10 @@ object SpecConstants {
     def toAssetId: AssetId                   = AssetId
       .make(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
-    def toSha256Hash: Sha256Hash                 = Sha256Hash
+    def toSha256Hash: Sha256Hash             = Sha256Hash
       .make(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
-    def toNonEmptyString: NonEmptyString =
+    def toNonEmptyString: NonEmptyString     =
       NonEmptyString.unsafeFrom(s)
   }
 }

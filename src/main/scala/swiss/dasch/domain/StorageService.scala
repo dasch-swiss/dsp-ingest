@@ -96,7 +96,11 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       .fromEither(json.fromJson[AssetInfoFileContent])
       .mapError(errMsg => IllegalArgumentException(s"Unable to parse info file content for $asset: $errMsg"))
 
-  private def toAssetInfo(raw: AssetInfoFileContent, assetDir: Path, asset: Asset): Task[AssetInfo] =
+  private def toAssetInfo(
+      raw: AssetInfoFileContent,
+      assetDir: Path,
+      asset: Asset,
+    ): Task[AssetInfo] =
     Validation
       .validateWith(
         Validation.fromEither(Sha256Hash.make(raw.checksumOriginal)),

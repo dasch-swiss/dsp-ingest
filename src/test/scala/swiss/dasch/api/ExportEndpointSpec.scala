@@ -5,9 +5,9 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.{ FileChecksumLive, ProjectService, ProjectServiceLive, ProjectShortcode, StorageServiceLive }
+import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConfigurations
-import swiss.dasch.test.SpecConstants.{ existingProject, nonExistentProject }
+import swiss.dasch.test.SpecConstants.Projects.*
 import zio.http.*
 import zio.test.Assertion.equalTo
 import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue, assertZIO }
