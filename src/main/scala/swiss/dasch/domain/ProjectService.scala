@@ -86,8 +86,8 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
   private def loadInfo(shortcode: ProjectShortcode, path: Path): ZStream[Any, Throwable, AssetInfo] = {
     val filename   = path.filename.toString
     val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))
-    val assetMaybe = AssetId.make(assetIdStr).map(Asset(_, shortcode))
-    assetMaybe.map(id => ZStream.fromZIO(storage.loadInfoFile(id))).getOrElse(ZStream.empty)
+    val assetMaybe = AssetId.make(assetIdStr).map(Asset(_, shortcode)).toOption
+    ZStream.fromIterable(assetMaybe).mapZIO(storage.loadInfoFile)
   }
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
