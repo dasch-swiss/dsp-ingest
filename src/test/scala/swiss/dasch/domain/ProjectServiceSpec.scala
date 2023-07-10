@@ -18,7 +18,7 @@ import zio.{ Chunk, Scope, ZIO, ZLayer }
 object ProjectServiceSpec extends ZIOSpecDefault {
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("AssetServiceSpec")(
+    suite("ProjectService")(
       test("should list all projects which contain assets in the asset directory") {
         for {
           projects <- ProjectService.listAllProjects()
@@ -34,6 +34,18 @@ object ProjectServiceSpec extends ZIOSpecDefault {
           for {
             project <- ProjectService.findProject(nonExistentProject)
           } yield assertTrue(project.isEmpty)
+        },
+      ),
+      suite("findAssetsOfProject path")(
+        test("should find asset infos from existing project") {
+          for {
+            infos <- ProjectService.findAssetInfosOfProject(existingProject)
+          } yield assertTrue(infos.nonEmpty)
+        },
+        test("should not find non existing projects") {
+          for {
+            infos <- ProjectService.findAssetInfosOfProject(nonExistentProject)
+          } yield assertTrue(infos.isEmpty)
         },
       ),
       suite("zipping a project")(
