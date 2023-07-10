@@ -72,17 +72,18 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
     projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
   } yield projectDir
 
-  override def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]         = for {
-    projectMaybe <- findProject(shortcode)
-    infos        <- projectMaybe.map(findInfoFiles(shortcode, _)).getOrElse(ZIO.succeed(Chunk.empty))
-  } yield infos
+  override def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]         =
+    ZStream
+      .fromZIO(findProject(shortcode))
+      .flatMap(ZStream.fromIterable(_))
+      .flatMap(findInfoFiles(shortcode, _))
+      .runCollect
   private def findInfoFiles(shortcode: ProjectShortcode, path: Path)                                =
     Files
       .walk(path, maxDepth = 3)
       .filter(_.filename.toString.endsWith(".info"))
       .filterZIO(Files.isRegularFile(_))
       .flatMap(loadInfo(shortcode, _))
-      .runCollect
   private def loadInfo(shortcode: ProjectShortcode, path: Path): ZStream[Any, Throwable, AssetInfo] = {
     val filename   = path.filename.toString
     val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))
