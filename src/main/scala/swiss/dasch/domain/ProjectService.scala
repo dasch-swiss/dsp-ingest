@@ -67,29 +67,27 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
   private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
     _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.make(_).toOption)
 
-  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]                      = for {
+  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] = for {
     projectPath <- storage.getProjectDirectory(shortcode)
     projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
   } yield projectDir
-  override def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]                 = for {
-    project   <- findProject(shortcode).map(it => Chunk.fromIterable(it))
-    infoFiles <- ZIO.foreach(project)(findInfoFilesRecursive(shortcode)).map(_.flatten)
-    infos     <- ZIO.foreach(infoFiles)(loadInfo(shortcode)).map(_.flatten)
+
+  override def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]         = for {
+    projectMaybe <- findProject(shortcode)
+    infos        <- projectMaybe.map(findInfoFiles(shortcode, _)).getOrElse(ZIO.succeed(Chunk.empty))
   } yield infos
-  private def findInfoFilesRecursive(shortcode: ProjectShortcode)(path: Path): IO[IOException, Chunk[Path]] =
-    newDirectoryStream(path)
-      .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(findInfoFilesRecursive(shortcode)(p), ZIO.succeed(Chunk(p))))
-      .flatMap(it => ZStream.fromChunk(it))
-      .filterZIO(it => Files.isRegularFile(it) && ZIO.succeed(it.filename.toString.endsWith(".info")))
+  private def findInfoFiles(shortcode: ProjectShortcode, path: Path)                                =
+    Files
+      .walk(path, maxDepth = 3)
+      .filter(_.filename.toString.endsWith(".info"))
+      .filterZIO(Files.isRegularFile(_))
+      .flatMap(loadInfo(shortcode, _))
       .runCollect
-  private def loadInfo(shortcode: ProjectShortcode)(path: Path): Task[Option[AssetInfo]]                    = {
+  private def loadInfo(shortcode: ProjectShortcode, path: Path): ZStream[Any, Throwable, AssetInfo] = {
     val filename   = path.filename.toString
     val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))
-    AssetId
-      .make(assetIdStr)
-      .map(Asset(_, shortcode))
-      .map(storage.loadInfoFile(_).map(Some(_)))
-      .getOrElse(ZIO.none)
+    val assetMaybe = AssetId.make(assetIdStr).map(Asset(_, shortcode))
+    assetMaybe.map(id => ZStream.fromZIO(storage.loadInfoFile(id))).getOrElse(ZStream.empty)
   }
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
