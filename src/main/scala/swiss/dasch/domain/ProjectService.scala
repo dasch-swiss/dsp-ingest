@@ -82,7 +82,7 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
       .flatMap(it => ZStream.fromChunk(it))
       .filterZIO(it => Files.isRegularFile(it) && ZIO.succeed(it.filename.toString.endsWith(".info")))
       .runCollect
-  private def loadInfo(shortcode: ProjectShortcode)(path: Path): Task[Option[AssetInfo]] = {
+  private def loadInfo(shortcode: ProjectShortcode)(path: Path): Task[Option[AssetInfo]]                    = {
     val filename   = path.filename.toString
     val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))
     AssetId
