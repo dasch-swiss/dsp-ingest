@@ -72,29 +72,22 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
   }
 
   override def loadInfoFile(asset: Asset): Task[AssetInfo] =
-    for {
-      infoFile <- getInfoFilePath(asset)
-      assetDir <- getAssetDirectory(asset)
-      content  <- parseAssetInfoFile(asset, infoFile, assetDir)
-    } yield content
+    getInfoFilePath(asset).flatMap(parseAssetInfoFile(asset, _))
 
   private def getInfoFilePath(asset: Asset): UIO[Path] =
     getAssetDirectory(asset).map(_ / s"${asset.id.toString}.info")
 
-  private def parseAssetInfoFile(
-      asset: Asset,
-      infoFile: Path,
-      assetDir: Path,
-    ): Task[AssetInfo] = Files
+  private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] = Files
     .readAllLines(infoFile)
     .logError(s"Unable to load info file for $asset")
-    .flatMap(lines => parseJson(lines.mkString, asset))
-    .flatMap(toAssetInfo(_, assetDir, asset))
+    .map(_.mkString)
+    .flatMap(toAssetInfoFileContent(_, asset))
+    .flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
 
-  private def parseJson(json: String, asset: Asset) =
+  private def toAssetInfoFileContent(json: String, asset: Asset) =
     ZIO
       .fromEither(json.fromJson[AssetInfoFileContent])
-      .mapError(errMsg => IllegalArgumentException(s"Unable to parse info file content for $asset: $errMsg"))
+      .mapError(errMsg => IllegalStateException(s"Unable to parse info file content for $asset: $errMsg"))
 
   private def toAssetInfo(
       raw: AssetInfoFileContent,

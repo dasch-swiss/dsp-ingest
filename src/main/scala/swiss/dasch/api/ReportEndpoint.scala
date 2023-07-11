@@ -35,7 +35,7 @@ object ReportEndpoint {
   }
 
   final case class AssetCheckResultResponse(assetId: String, results: List[SingleFileCheckResultResponse])
-  private object AssetCheckResultResponse      {
+  private object AssetCheckResultResponse {
     implicit val encoder: JsonEncoder[AssetCheckResultResponse] = DeriveJsonEncoder.gen[AssetCheckResultResponse]
     implicit val schema: Schema[AssetCheckResultResponse]       = DeriveSchema.gen[AssetCheckResultResponse]
 
