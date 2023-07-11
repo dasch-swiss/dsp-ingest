@@ -22,7 +22,9 @@ import zio.stream.ZStream
 import zio.{ Chunk, Exit, Scope, URIO, ZIO, ZNothing }
 
 import scala.collection.immutable.Map
+
 object ReportEndpoint {
+
   final case class SingleFileCheckResultResponse(filename: String, checksumMatches: Boolean)
   private object SingleFileCheckResultResponse {
     implicit val encoder: JsonEncoder[SingleFileCheckResultResponse] =
@@ -31,6 +33,7 @@ object ReportEndpoint {
     def make(result: ChecksumResult): SingleFileCheckResultResponse  =
       SingleFileCheckResultResponse(result.file.filename.toString, result.checksumMatches)
   }
+
   final case class AssetCheckResultResponse(assetId: String, results: List[SingleFileCheckResultResponse])
   private object AssetCheckResultResponse      {
     implicit val encoder: JsonEncoder[AssetCheckResultResponse] = DeriveJsonEncoder.gen[AssetCheckResultResponse]
