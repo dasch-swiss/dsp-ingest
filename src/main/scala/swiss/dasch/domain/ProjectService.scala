@@ -28,21 +28,21 @@ object ProjectShortcode {
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
-  def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]
+  def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
   def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit]
 }
 
 object ProjectService {
-  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]]                           =
+  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]]                        =
     ZIO.serviceWithZIO[ProjectService](_.listAllProjects())
-  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[Path]]               =
+  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[Path]]            =
     ZIO.serviceWithZIO[ProjectService](_.findProject(shortcode))
-  def findAssetInfosOfProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Chunk[AssetInfo]] =
-    ZIO.serviceWithZIO[ProjectService](_.findAssetInfosOfProject(shortcode))
-  def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]]                  =
+  def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[ProjectService, Throwable, AssetInfo] =
+    ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
+  def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]]               =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-  def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[ProjectService, Throwable, Unit]        =
+  def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[ProjectService, Throwable, Unit]     =
     ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
 }
 
@@ -67,23 +67,22 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
   private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
     _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.make(_).toOption)
 
-  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] = for {
-    projectPath <- storage.getProjectDirectory(shortcode)
-    projectDir  <- ZIO.whenZIO(Files.isDirectory(projectPath))(ZIO.succeed(projectPath))
-  } yield projectDir
+  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]] =
+    storage.getProjectDirectory(shortcode).flatMap(path => ZIO.whenZIO(Files.isDirectory(path))(ZIO.succeed(path)))
 
-  override def findAssetInfosOfProject(shortcode: ProjectShortcode): Task[Chunk[AssetInfo]]         =
+  override def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
     ZStream
       .fromZIO(findProject(shortcode))
       .flatMap(ZStream.fromIterable(_))
       .flatMap(findInfoFiles(shortcode, _))
-      .runCollect
-  private def findInfoFiles(shortcode: ProjectShortcode, path: Path)                                =
+
+  private def findInfoFiles(shortcode: ProjectShortcode, path: Path) =
     Files
       .walk(path, maxDepth = 3)
       .filter(_.filename.toString.endsWith(".info"))
       .filterZIO(Files.isRegularFile(_))
       .flatMap(loadInfo(shortcode, _))
+
   private def loadInfo(shortcode: ProjectShortcode, path: Path): ZStream[Any, Throwable, AssetInfo] = {
     val filename   = path.filename.toString
     val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))

@@ -39,12 +39,12 @@ object ProjectServiceSpec extends ZIOSpecDefault {
       suite("findAssetsOfProject path")(
         test("should find asset infos from existing project") {
           for {
-            infos <- ProjectService.findAssetInfosOfProject(existingProject)
+            infos <- ProjectService.findAssetInfosOfProject(existingProject).runCollect
           } yield assertTrue(infos.nonEmpty)
         },
         test("should not find non existing projects") {
           for {
-            infos <- ProjectService.findAssetInfosOfProject(nonExistentProject)
+            infos <- ProjectService.findAssetInfosOfProject(nonExistentProject).runCollect
           } yield assertTrue(infos.isEmpty)
         },
       ),

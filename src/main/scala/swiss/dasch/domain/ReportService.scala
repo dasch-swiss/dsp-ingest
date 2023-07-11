@@ -13,10 +13,11 @@ object ReportService {
 
 final case class ReportServiceLive(projectService: ProjectService, assetService: AssetService) extends ReportService {
   override def verificationReport(projectShortcode: ProjectShortcode): Task[Report] =
-    for {
-      infos   <- projectService.findAssetInfosOfProject(projectShortcode)
-      results <- ZIO.foreach(infos)(info => assetService.verifyChecksum(info).map((info, _)))
-    } yield Report(results.toMap)
+    projectService
+      .findAssetInfosOfProject(projectShortcode)
+      .mapZIO(info => assetService.verifyChecksum(info).map((info, _)))
+      .runCollect
+      .map(it => Report(it.toMap))
 }
 object ReportServiceLive {
   val layer = ZLayer.fromFunction(ReportServiceLive.apply _)
