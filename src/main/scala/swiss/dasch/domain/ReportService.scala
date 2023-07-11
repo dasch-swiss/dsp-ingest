@@ -7,7 +7,11 @@ package swiss.dasch.domain
 
 import zio.*
 
-final case class Report(map: Map[AssetInfo, Chunk[ChecksumResult]])
+final case class Report(results: Map[AssetInfo, Chunk[ChecksumResult]])
+object Report {
+  def make(map: Map[AssetInfo, Chunk[ChecksumResult]]): Report = Report(map)
+}
+
 trait ReportService  {
   def verificationReport(projectShortcode: ProjectShortcode): Task[Report]
 }
@@ -22,7 +26,8 @@ final case class ReportServiceLive(projectService: ProjectService, assetService:
       .findAssetInfosOfProject(projectShortcode)
       .mapZIO(info => assetService.verifyChecksum(info).map((info, _)))
       .runCollect
-      .map(it => Report(it.toMap))
+      .map(_.toMap)
+      .map(Report.make)
 }
 object ReportServiceLive {
   val layer = ZLayer.fromFunction(ReportServiceLive.apply _)

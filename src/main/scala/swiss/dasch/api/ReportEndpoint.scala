@@ -40,7 +40,7 @@ object ReportEndpoint {
     implicit val schema: Schema[AssetCheckResultResponse]       = DeriveSchema.gen[AssetCheckResultResponse]
 
     def make(report: Report): List[AssetCheckResultResponse]                               =
-      report.map.map { case (info, results) => AssetCheckResultResponse.to(info.asset, results) }.toList
+      report.results.map { case (info, results) => AssetCheckResultResponse.to(info.asset, results) }.toList
     private def to(asset: Asset, results: Chunk[ChecksumResult]): AssetCheckResultResponse =
       AssetCheckResultResponse(asset.id.toString, results.map(SingleFileCheckResultResponse.make).toList)
   }
