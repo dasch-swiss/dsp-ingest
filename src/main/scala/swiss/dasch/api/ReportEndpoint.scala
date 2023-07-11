@@ -1,7 +1,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.*
-import swiss.dasch.domain.{ AssetInfo, ChecksumResult, Report, ReportService }
+import swiss.dasch.domain.{ Asset, AssetInfo, ChecksumResult, Report, ReportService }
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root
@@ -18,31 +18,28 @@ import zio.{ Chunk, Exit, Scope, URIO, ZIO, ZNothing }
 
 import scala.collection.immutable.Map
 object ReportEndpoint {
-
-  final case class FileChecksumResponse(filename: String, checksumMatches: Boolean)
-  object FileChecksumResponse   {
-    implicit val encoder: JsonEncoder[FileChecksumResponse] = DeriveJsonEncoder.gen[FileChecksumResponse]
-    implicit val schema: Schema[FileChecksumResponse]       = DeriveSchema.gen[FileChecksumResponse]
-    def make(result: ChecksumResult): FileChecksumResponse  =
-      FileChecksumResponse(result.file.filename.toString, result.checksumMatches)
+  final case class SingleFileCheckResultResponse(filename: String, checksumMatches: Boolean)
+  private object SingleFileCheckResultResponse {
+    implicit val encoder: JsonEncoder[SingleFileCheckResultResponse] =
+      DeriveJsonEncoder.gen[SingleFileCheckResultResponse]
+    implicit val schema: Schema[SingleFileCheckResultResponse]       = DeriveSchema.gen[SingleFileCheckResultResponse]
+    def make(result: ChecksumResult): SingleFileCheckResultResponse  =
+      SingleFileCheckResultResponse(result.file.filename.toString, result.checksumMatches)
   }
-  final case class ChecksumReportResponse(asset: Map[String, Chunk[FileChecksumResponse]])
-  object ChecksumReportResponse {
-    implicit val encoder: JsonEncoder[ChecksumReportResponse] = DeriveJsonEncoder.gen[ChecksumReportResponse]
-    implicit val schema: Schema[ChecksumReportResponse]       = DeriveSchema.gen[ChecksumReportResponse]
+  final case class AssetCheckResultResponse(assetId: String, results: List[SingleFileCheckResultResponse])
+  private object AssetCheckResultResponse      {
+    implicit val encoder: JsonEncoder[AssetCheckResultResponse] = DeriveJsonEncoder.gen[AssetCheckResultResponse]
+    implicit val schema: Schema[AssetCheckResultResponse]       = DeriveSchema.gen[AssetCheckResultResponse]
 
-    def make(report: Report): ChecksumReportResponse = {
-      val cnt = report.map.map {
-        case (key: AssetInfo, value: Chunk[ChecksumResult]) =>
-          (key.asset.id.toString, value.map(FileChecksumResponse.make))
-      }
-      ChecksumReportResponse(cnt)
-    }
+    def make(report: Report): List[AssetCheckResultResponse]                               =
+      report.map.map { case (info, results) => AssetCheckResultResponse.to(info.asset, results) }.toList
+    private def to(asset: Asset, results: Chunk[ChecksumResult]): AssetCheckResultResponse =
+      AssetCheckResultResponse(asset.id.toString, results.map(SingleFileCheckResultResponse.make).toList)
   }
 
   private val endpoint = Endpoint
     .get(projects / shortcodePathVar / "checksumreport")
-    .out[ChecksumReportResponse]
+    .out[List[AssetCheckResultResponse]]
     .outErrors(
       HttpCodec.error[ProjectNotFound](Status.NotFound),
       HttpCodec.error[IllegalArguments](Status.BadRequest),
@@ -52,7 +49,7 @@ object ReportEndpoint {
   val app = endpoint
     .implement((shortcode: String) =>
       ApiStringConverters.fromPathVarToProjectShortcode(shortcode).flatMap {
-        ReportService.verificationReport(_).mapBoth(ApiProblem.internalError, ChecksumReportResponse.make)
+        ReportService.verificationReport(_).mapBoth(ApiProblem.internalError, AssetCheckResultResponse.make)
       }
     )
     .toApp
