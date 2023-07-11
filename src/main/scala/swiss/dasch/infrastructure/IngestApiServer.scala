@@ -6,7 +6,7 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
-import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint, ListProjectsEndpoint }
+import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint, ListProjectsEndpoint, ReportEndpoint }
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
 import swiss.dasch.version.BuildInfo
 import zio.http.*
@@ -16,7 +16,7 @@ import zio.{ URLayer, ZIO, ZLayer }
 object IngestApiServer {
 
   private val serviceApps    =
-    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app) @@ Authenticator.middleware
+    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app ++ ReportEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)

@@ -28,9 +28,9 @@ object AssetsServiceLiveSpec extends ZIOSpecDefault {
     },
     test("should verify the checksums of an asset's derivative and original") {
       for {
-        assetInfo       <- StorageService.loadInfoFile(existingAsset)
-        checksumMatches <- AssetService.verifyChecksum(assetInfo)
-      } yield assertTrue(checksumMatches)
+        assetInfo      <- StorageService.loadInfoFile(existingAsset)
+        checksumResult <- AssetService.verifyChecksum(assetInfo)
+      } yield assertTrue(checksumResult.forall(_.checksumMatches == true))
     },
   ).provide(
     AssetServiceLive.layer,

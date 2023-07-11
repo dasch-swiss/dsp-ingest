@@ -6,8 +6,8 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.StorageConfig
-import zio.nio.file.{ Files, Path }
-import zio.{ UIO, URLayer, ZIO, ZLayer }
+import zio.nio.file.{Files, Path}
+import zio.{UIO, URLayer, ZIO, ZLayer}
 
 import java.io.IOException
 
@@ -45,7 +45,7 @@ final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCh
           s"Stopping the start up. Asset ${config.assetPath} and temp ${config.tempPath} directories not found."
         )
       )
-      .unit
+      .unit *> ZIO.logInfo(s"Serving from ${config.assetPath} and ${config.tempPath} directories.")
 }
 
 object FileSystemCheckLive {

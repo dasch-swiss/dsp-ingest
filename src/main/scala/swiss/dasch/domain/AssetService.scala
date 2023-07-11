@@ -18,23 +18,25 @@ import java.io.IOException
 
 opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-]{4,}$"]
 
-object AssetId      {
+object AssetId {
   def make(id: String): Either[String, AssetId] = refineV(id)
 }
 final case class Asset(id: AssetId, belongsToProject: ProjectShortcode)
+final case class ChecksumResult(file: Path, checksumMatches: Boolean)
+
 trait AssetService  {
   def verifyChecksumOrig(asset: Asset): Task[Boolean]
 
   def verifyChecksumDerivative(asset: Asset): Task[Boolean]
 
-  def verifyChecksum(assetInfo: AssetInfo): Task[Boolean]
+  def verifyChecksum(assetInfo: AssetInfo): Task[Chunk[ChecksumResult]]
 }
 object AssetService {
-  def verifyChecksumOrig(asset: Asset): ZIO[AssetService, Throwable, Boolean]       =
+  def verifyChecksumOrig(asset: Asset): ZIO[AssetService, Throwable, Boolean]                   =
     ZIO.serviceWithZIO[AssetService](_.verifyChecksumOrig(asset))
-  def verifyChecksumDerivative(asset: Asset): ZIO[AssetService, Throwable, Boolean] =
+  def verifyChecksumDerivative(asset: Asset): ZIO[AssetService, Throwable, Boolean]             =
     ZIO.serviceWithZIO[AssetService](_.verifyChecksumDerivative(asset))
-  def verifyChecksum(assetInfo: AssetInfo): ZIO[AssetService, Throwable, Boolean]   =
+  def verifyChecksum(assetInfo: AssetInfo): ZIO[AssetService, Throwable, Chunk[ChecksumResult]] =
     ZIO.serviceWithZIO[AssetService](_.verifyChecksum(assetInfo))
 }
 
@@ -55,8 +57,14 @@ final case class AssetServiceLive(storage: StorageService, checksum: FileChecksu
                               .logError(s"Unable to calculate checksum for ${fileAndChecksum.file}")
     } yield fileAndChecksum.checksum == checksumCalculated
 
-  override def verifyChecksum(assetInfo: AssetInfo): Task[Boolean] =
-    verifyChecksum(assetInfo.original) && verifyChecksum(assetInfo.derivative)
+  override def verifyChecksum(assetInfo: AssetInfo): Task[Chunk[ChecksumResult]] = {
+    val original   = assetInfo.original
+    val derivative = assetInfo.derivative
+    for {
+      origResult       <- verifyChecksum(original).map(ChecksumResult(original.file, _))
+      derivativeResult <- verifyChecksum(derivative).map(ChecksumResult(derivative.file, _))
+    } yield Chunk(origResult, derivativeResult)
+  }
 }
 
 object AssetServiceLive {
