@@ -26,9 +26,7 @@ final case class ChecksumResult(file: Path, checksumMatches: Boolean)
 
 trait AssetService  {
   def verifyChecksumOrig(asset: Asset): Task[Boolean]
-
   def verifyChecksumDerivative(asset: Asset): Task[Boolean]
-
   def verifyChecksum(assetInfo: AssetInfo): Task[Chunk[ChecksumResult]]
 }
 object AssetService {
