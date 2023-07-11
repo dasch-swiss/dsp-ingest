@@ -57,7 +57,7 @@ object ReportEndpoint {
   val app = endpoint
     .implement((shortcode: String) =>
       ApiStringConverters.fromPathVarToProjectShortcode(shortcode).flatMap {
-        ReportService.verificationReport(_).mapBoth(ApiProblem.internalError, AssetCheckResultResponse.make)
+        ReportService.checksumReport(_).mapBoth(ApiProblem.internalError, AssetCheckResultResponse.make)
       }
     )
     .toApp

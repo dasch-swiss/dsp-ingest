@@ -13,15 +13,15 @@ object Report {
 }
 
 trait ReportService  {
-  def verificationReport(projectShortcode: ProjectShortcode): Task[Report]
+  def checksumReport(projectShortcode: ProjectShortcode): Task[Report]
 }
 object ReportService {
-  def verificationReport(projectShortcode: ProjectShortcode): RIO[ReportService, Report] =
-    ZIO.serviceWithZIO[ReportService](_.verificationReport(projectShortcode))
+  def checksumReport(projectShortcode: ProjectShortcode): RIO[ReportService, Report] =
+    ZIO.serviceWithZIO[ReportService](_.checksumReport(projectShortcode))
 }
 
 final case class ReportServiceLive(projectService: ProjectService, assetService: AssetService) extends ReportService {
-  override def verificationReport(projectShortcode: ProjectShortcode): Task[Report] =
+  override def checksumReport(projectShortcode: ProjectShortcode): Task[Report] =
     projectService
       .findAssetInfosOfProject(projectShortcode)
       .mapZIO(info => assetService.verifyChecksum(info).map((info, _)))
