@@ -71,6 +71,7 @@ object ImportEndpointSpec extends ZIOSpecDefault {
     )
   ).provide(
     AssetInfoServiceLive.layer,
+    AssetServiceLive.layer,
     FileChecksumLive.layer,
     ImportServiceLive.layer,
     ProjectServiceLive.layer,

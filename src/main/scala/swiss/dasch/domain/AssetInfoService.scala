@@ -10,6 +10,7 @@ import zio.*
 import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
+import zio.stream.ZStream
 
 final private case class AssetInfoFileContent(
     internalFilename: String,
@@ -33,6 +34,7 @@ final case class AssetInfo(
 trait AssetInfoService  {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
   def findByAsset(asset: Asset): Task[AssetInfo]
+  def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
 }
 object AssetInfoService {
   def findByAsset(asset: Asset): ZIO[AssetInfoService, Throwable, AssetInfo]                                       =
@@ -98,6 +100,13 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
       }
       .toZIO
       .mapError(e => new IllegalArgumentException(s"Invalid asset info file content $raw, $infoFileDirectory, $e"))
+
+  override def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
+    Files
+      .walk(path, maxDepth = 3)
+      .filter(_.filename.toString.endsWith(".info"))
+      .filterZIO(Files.isRegularFile(_))
+      .mapZIO(loadFromFilesystem(_, shortcode))
 }
 object AssetInfoServiceLive {
   val layer = ZLayer.fromFunction(AssetInfoServiceLive.apply _)

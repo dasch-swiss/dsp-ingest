@@ -78,7 +78,7 @@ final case class ProjectServiceLive(
     ZStream
       .fromZIO(findProject(shortcode))
       .flatMap(ZStream.fromIterable(_))
-      .flatMap(findInfoFiles(shortcode, _))
+      .flatMap(assetInfos.findAllInPath(_, shortcode))
 
   private def findInfoFiles(shortcode: ProjectShortcode, path: Path) =
     Files
