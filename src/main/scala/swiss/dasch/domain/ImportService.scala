@@ -29,14 +29,14 @@ final case class ImportServiceLive(projectService: ProjectService, storageServic
              .mapError(ImportIoError(_))
     } yield ()
 
-  private def validateUploadedFile(uploadedFolder: Path): IO[ImportFailed, Unit] =
+  private def validateUploadedFile(uploadedFolder: Path): IO[ImportFailed, Unit]             =
     for {
       _ <- checkIsNotEmptyFile(uploadedFolder)
       _ <- checkIsZipFile(uploadedFolder)
     } yield ()
-  private def checkIsNotEmptyFile(path: Path): IO[ImportFailed, Unit]            =
+  private def checkIsNotEmptyFile(path: Path): IO[ImportFailed, Unit]                        =
     ZIO.fail(InputFileEmpty).whenZIO(Files.size(path).mapBoth(ImportIoError(_), _ == 0)).unit
-  private def checkIsZipFile(path: Path): IO[InputFileInvalid.type, Unit]        = ZIO.scoped {
+  private def checkIsZipFile(path: Path): IO[InputFileInvalid.type, Unit]                    = ZIO.scoped {
     ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new ZipFile(path.toFile))).orElseFail(InputFileInvalid).unit
   }
   private def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] =
@@ -53,5 +53,6 @@ final case class ImportServiceLive(projectService: ProjectService, storageServic
 
 }
 object ImportServiceLive {
-  val layer: ZLayer[ProjectService with StorageService, Nothing, ImportService] = ZLayer.fromFunction(ImportServiceLive.apply _)
+  val layer: ZLayer[ProjectService with StorageService, Nothing, ImportService] =
+    ZLayer.fromFunction(ImportServiceLive.apply _)
 }
