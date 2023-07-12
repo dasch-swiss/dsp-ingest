@@ -5,13 +5,19 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ListProjectsEndpoint.{ProjectResponse, ProjectsResponse}
-import swiss.dasch.domain.{AssetInfoServiceLive, FileChecksumLive, ProjectService, ProjectServiceLive, StorageServiceLive}
+import swiss.dasch.api.ListProjectsEndpoint.{ ProjectResponse, ProjectsResponse }
+import swiss.dasch.domain.{
+  AssetInfoServiceLive,
+  FileChecksumLive,
+  ProjectService,
+  ProjectServiceLive,
+  StorageServiceLive,
+}
 import swiss.dasch.test.SpecConfigurations
-import zio.http.{Request, Root, Status, URL}
+import zio.http.{ Request, Root, Status, URL }
 import zio.json.*
-import zio.test.{ZIOSpecDefault, assertCompletes, assertTrue}
-import zio.{Chunk, http}
+import zio.test.{ ZIOSpecDefault, assertCompletes, assertTrue }
+import zio.{ Chunk, http }
 
 object ListProjectsEndpointSpec extends ZIOSpecDefault {
 
