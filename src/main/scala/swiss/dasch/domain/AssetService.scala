@@ -38,7 +38,7 @@ object AssetService {
     ZIO.serviceWithZIO[AssetService](_.verifyChecksum(assetInfo))
 }
 
-final case class AssetServiceLive(storage: StorageService, checksum: FileChecksum) extends AssetService {
+final case class AssetServiceLive(assetInfos: AssetInfoService, checksum: FileChecksum) extends AssetService {
   override def verifyChecksumOrig(asset: Asset): Task[Boolean] =
     verifyChecksum(asset, _.original)
 
@@ -46,7 +46,7 @@ final case class AssetServiceLive(storage: StorageService, checksum: FileChecksu
     verifyChecksum(asset, _.derivative)
 
   private def verifyChecksum(asset: Asset, checksumAndFile: AssetInfo => FileAndChecksum): Task[Boolean] =
-    storage.loadInfoFile(asset).map(checksumAndFile).flatMap(verifyChecksum)
+    assetInfos.findByAsset(asset).map(checksumAndFile).flatMap(verifyChecksum)
 
   private def verifyChecksum(fileAndChecksum: FileAndChecksum): Task[Boolean] =
     for {
@@ -66,5 +66,6 @@ final case class AssetServiceLive(storage: StorageService, checksum: FileChecksu
 }
 
 object AssetServiceLive {
-  val layer = ZLayer.fromFunction(AssetServiceLive.apply _)
+  val layer: URLayer[AssetInfoService with FileChecksum, AssetService] =
+    ZLayer.fromFunction(AssetServiceLive.apply _)
 }

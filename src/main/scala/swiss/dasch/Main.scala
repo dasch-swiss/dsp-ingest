@@ -10,6 +10,7 @@ import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
 import swiss.dasch.domain.{
+  AssetInfoServiceLive,
   AssetServiceLive,
   FileChecksumLive,
   ImportServiceLive,
@@ -37,6 +38,7 @@ object Main extends ZIOAppDefault {
   override val run: ZIO[Any, Any, Nothing] =
     (ensureFilesystem *> IngestApiServer.startup())
       .provide(
+        AssetInfoServiceLive.layer,
         AssetServiceLive.layer,
         AuthenticatorLive.layer,
         Configuration.layer,
@@ -49,5 +51,6 @@ object Main extends ZIOAppDefault {
         ProjectServiceLive.layer,
         ReportServiceLive.layer,
         StorageServiceLive.layer,
+//        ZLayer.Debug.mermaid ,
       )
 }

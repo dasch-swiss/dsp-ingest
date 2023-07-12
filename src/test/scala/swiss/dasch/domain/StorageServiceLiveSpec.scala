@@ -62,8 +62,8 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
                            "0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc".toSha256Hash,
                          ),
                        )
-        actual      <- StorageService.loadInfoFile(asset)
+        actual      <- AssetInfoService.findByAsset(asset)
       } yield assertTrue(expected == actual)
     },
-  ).provide(StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
+  ).provide(AssetInfoServiceLive.layer, StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
 }

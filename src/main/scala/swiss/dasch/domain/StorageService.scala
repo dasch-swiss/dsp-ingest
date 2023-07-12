@@ -14,32 +14,11 @@ import zio.nio.file.{ Files, Path }
 
 import java.io.IOException
 
-final private case class AssetInfoFileContent(
-    internalFilename: String,
-    originalInternalFilename: String,
-    originalFilename: String,
-    checksumOriginal: String,
-    checksumDerivative: String,
-  )
-
-object AssetInfoFileContent {
-  implicit val codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
-}
-
-final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
-final case class AssetInfo(
-    asset: Asset,
-    original: FileAndChecksum,
-    originalFilename: NonEmptyString,
-    derivative: FileAndChecksum,
-  )
-
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]
   def getAssetDirectory(asset: Asset): UIO[Path]
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
-  def loadInfoFile(asset: Asset): Task[AssetInfo]
 }
 object StorageService {
   def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path] =
@@ -50,8 +29,6 @@ object StorageService {
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
   def getTempDirectory(): RIO[StorageService, Path]                                      =
     ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
-  def loadInfoFile(asset: Asset): ZIO[StorageService, Throwable, AssetInfo]              =
-    ZIO.serviceWithZIO[StorageService](_.loadInfoFile(asset))
 }
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {
@@ -70,51 +47,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     val segment2    = assetString.substring(2, 4)
     Path(segment1.toLowerCase, segment2.toLowerCase)
   }
-
-  override def loadInfoFile(asset: Asset): Task[AssetInfo] =
-    getInfoFilePath(asset).flatMap(parseAssetInfoFile(asset, _))
-
-  private def getInfoFilePath(asset: Asset): UIO[Path] =
-    getAssetDirectory(asset).map(_ / s"${asset.id.toString}.info")
-
-  private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] = Files
-    .readAllLines(infoFile)
-    .logError(s"Unable to load info file for $asset")
-    .map(_.mkString)
-    .flatMap(toAssetInfoFileContent(_, asset))
-    .flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
-
-  private def toAssetInfoFileContent(json: String, asset: Asset) =
-    ZIO
-      .fromEither(json.fromJson[AssetInfoFileContent])
-      .mapError(errMsg => IllegalStateException(s"Unable to parse info file content for $asset: $errMsg"))
-
-  private def toAssetInfo(
-      raw: AssetInfoFileContent,
-      assetDir: Path,
-      asset: Asset,
-    ): Task[AssetInfo] =
-    Validation
-      .validateWith(
-        Validation.fromEither(Sha256Hash.make(raw.checksumOriginal)),
-        Validation.fromEither(Sha256Hash.make(raw.checksumDerivative)),
-        Validation.fromEither(NonEmptyString.from(raw.originalFilename)),
-      ) {
-        (
-            origChecksum,
-            derivativeChecksum,
-            origFilename,
-          ) =>
-          AssetInfo(
-            asset = asset,
-            original = FileAndChecksum(assetDir / raw.originalInternalFilename, origChecksum),
-            originalFilename = origFilename,
-            derivative = FileAndChecksum(assetDir / raw.internalFilename, derivativeChecksum),
-          )
-      }
-      .toZIO
-      .mapError(e => new IllegalArgumentException(s"Invalid asset info file content $raw, $assetDir, $e"))
 }
 object StorageServiceLive {
-  val layer = ZLayer.fromFunction(StorageServiceLive.apply _)
+  val layer: URLayer[StorageConfig, StorageService] = ZLayer.fromFunction(StorageServiceLive.apply _)
 }

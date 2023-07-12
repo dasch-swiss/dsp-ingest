@@ -46,7 +46,11 @@ object ProjectService {
     ZIO.serviceWithZIO[ProjectService](_.deleteProject(shortcode))
 }
 
-final case class ProjectServiceLive(storage: StorageService, checksum: FileChecksum) extends ProjectService {
+final case class ProjectServiceLive(
+    assetInfos: AssetInfoService,
+    storage: StorageService,
+    checksum: FileChecksum,
+  ) extends ProjectService {
 
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
     ZStream
@@ -81,14 +85,7 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
       .walk(path, maxDepth = 3)
       .filter(_.filename.toString.endsWith(".info"))
       .filterZIO(Files.isRegularFile(_))
-      .flatMap(loadInfo(shortcode, _))
-
-  private def loadInfo(shortcode: ProjectShortcode, path: Path): ZStream[Any, Throwable, AssetInfo] = {
-    val filename   = path.filename.toString
-    val assetIdStr = filename.substring(0, filename.lastIndexOf(".info"))
-    val assetMaybe = AssetId.make(assetIdStr).map(Asset(_, shortcode)).toOption
-    ZStream.fromIterable(assetMaybe).mapZIO(storage.loadInfoFile)
-  }
+      .mapZIO(infoFile => assetInfos.loadFromFilesystem(infoFile, shortcode))
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
@@ -123,5 +120,6 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
 }
 
 object ProjectServiceLive {
-  val layer = ZLayer.fromFunction(ProjectServiceLive.apply _)
+  val layer: ZLayer[AssetInfoService with StorageService with FileChecksum, Nothing, ProjectService] =
+    ZLayer.fromFunction(ProjectServiceLive.apply _)
 }

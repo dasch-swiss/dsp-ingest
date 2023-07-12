@@ -70,11 +70,12 @@ object ImportEndpointSpec extends ZIOSpecDefault {
       },
     )
   ).provide(
+    AssetInfoServiceLive.layer,
+    FileChecksumLive.layer,
     ImportServiceLive.layer,
     ProjectServiceLive.layer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
-    FileChecksumLive.layer,
   )
 
   private def validateImportedProjectExists(storageConfig: StorageConfig, shortcode: String | ProjectShortcode)
