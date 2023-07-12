@@ -81,13 +81,6 @@ final case class ProjectServiceLive(
       .flatMap(ZStream.fromIterable(_))
       .flatMap(assetInfos.findAllInPath(_, shortcode))
 
-  private def findInfoFiles(shortcode: ProjectShortcode, path: Path) =
-    Files
-      .walk(path, maxDepth = 3)
-      .filter(_.filename.toString.endsWith(".info"))
-      .filterZIO(Files.isRegularFile(_))
-      .mapZIO(infoFile => assetInfos.loadFromFilesystem(infoFile, shortcode))
-
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
       findProject(shortcode).flatMap(_.map(zipProjectPath).getOrElse(ZIO.none)) <*
