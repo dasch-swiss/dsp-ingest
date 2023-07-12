@@ -15,9 +15,10 @@ import java.nio.file.StandardCopyOption
 import java.util.zip.ZipFile
 
 sealed trait ImportFailed
-case class ImportIoError(e: Throwable) extends ImportFailed
-case object InputFileEmpty             extends ImportFailed
-case object InputFileInvalid           extends ImportFailed
+case class IoError(e: Throwable) extends ImportFailed
+case object EmptyFile            extends ImportFailed
+case object NoZipFile            extends ImportFailed
+case object InvalidChecksums     extends ImportFailed
 
 trait ImportService      {
   def importZipFile(shortcode: ProjectShortcode, tempFile: Path): IO[ImportFailed, Unit]
@@ -39,7 +40,7 @@ final case class ImportServiceLive(
       unzippedFolder <- validateZipFile(shortcode, zipFile)
       _              <- importProject(shortcode, unzippedFolder)
                           .logError(s"Error while importing project $shortcode")
-                          .mapError(ImportIoError(_))
+                          .mapError(IoError(_))
     } yield ()
   }.logError
 
@@ -50,20 +51,20 @@ final case class ImportServiceLive(
       unzippedPath <- checkUnzipAndCheckProject(shortcode, zipFile)
     } yield unzippedPath
   private def checkIsNotEmptyFile(zipFile: Path): IO[ImportFailed, Unit]                                            =
-    ZIO.fail(InputFileEmpty).whenZIO(Files.size(zipFile).mapBoth(ImportIoError(_), _ == 0)).unit
-  private def checkIsZipFile(zipFile: Path): IO[InputFileInvalid.type, Unit]                                        = ZIO.scoped {
-    ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new ZipFile(zipFile.toFile))).orElseFail(InputFileInvalid).unit
+    ZIO.fail(EmptyFile).whenZIO(Files.size(zipFile).mapBoth(IoError(_), _ == 0)).unit
+  private def checkIsZipFile(zipFile: Path): IO[NoZipFile.type, Unit]                                               = ZIO.scoped {
+    ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new ZipFile(zipFile.toFile))).orElseFail(NoZipFile).unit
   }
   private def checkUnzipAndCheckProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path] =
     for {
-      tempDir <- Files.createTempDirectoryScoped(Some("import"), List.empty).mapError(ImportIoError(_))
-      _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(ImportIoError(_))
+      tempDir <- Files.createTempDirectoryScoped(Some("import"), List.empty).mapError(IoError(_))
+      _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(IoError(_))
       checks  <- assetInfos
                    .findAllInPath(tempDir, shortcode)
                    .mapZIO(assetService.verifyChecksum)
                    .runCollect
-                   .mapBoth(ImportIoError(_), _.flatten)
-      _       <- ZIO.fail(InputFileInvalid).when(checks.exists(!_.checksumMatches))
+                   .mapBoth(IoError(_), _.flatten)
+      _       <- ZIO.fail(InvalidChecksums).when(checks.exists(!_.checksumMatches))
     } yield tempDir
 
   private def importProject(shortcode: ProjectShortcode, unzippedFolder: Path): IO[Throwable, Unit] =

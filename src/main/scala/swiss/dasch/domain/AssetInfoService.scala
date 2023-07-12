@@ -103,9 +103,9 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
 
   override def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
     Files
-      .walk(path, maxDepth = 3)
+      .walk(path)
       .filter(_.filename.toString.endsWith(".info"))
-      .filterZIO(Files.isRegularFile(_))
+      .filterZIO(path => Files.isRegularFile(path) && Files.isHidden(path).negate)
       .mapZIO(loadFromFilesystem(_, shortcode))
 }
 object AssetInfoServiceLive {
