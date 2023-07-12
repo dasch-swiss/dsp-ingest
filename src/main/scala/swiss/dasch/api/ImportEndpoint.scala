@@ -50,7 +50,7 @@ object ImportEndpoint {
         HttpCodec.error[InternalProblem](Status.InternalServerError),
       )
 
-  val app: App[StorageConfig with ImportService] = importEndpoint
+  val app: App[StorageService with ImportService] = importEndpoint
     .implement(
       (
           shortcodeStr: String,
@@ -58,26 +58,33 @@ object ImportEndpoint {
           actual: ContentType,
         ) =>
         ZIO.scoped {
-          ZIO.serviceWith[StorageConfig](_.importPath / s"import-$shortcodeStr.zip").flatMap { tempFile =>
-            (for {
-              shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
-              _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
-              writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
-              _                <- stream
-                                    .run(ZSink.fromFile(tempFile.toFile))
-                                    .logError(writeFileErrorMsg)
-                                    .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
-              _                <- ImportService
-                                    .importZipFile(shortcode, tempFile)
-                                    .mapError {
-                                      case IoError(e)       => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
-                                      case EmptyFile        => ApiProblem.invalidBody("The uploaded file is empty")
-                                      case NoZipFile        => ApiProblem.invalidBody("The uploaded file is not a zip file")
-                                      case InvalidChecksums =>
-                                        ApiProblem.invalidBody("The uploaded file contains invalid checksums")
-                                    }
-            } yield UploadResponse()).withFinalizer(_ => Files.deleteIfExists(tempFile).logError.ignore)
-          }
+          for {
+            tempFile         <- StorageService
+                                  .createTempDirectoryScoped(s"import-$shortcodeStr")
+                                  .flatMap { p =>
+                                    val path = p / s"import-$shortcodeStr.zip"
+                                    Files.createFile(path).as(path)
+                                  }
+                                  .mapError(e =>
+                                    ApiProblem.internalError(s"Error while creating temp file for project $shortcodeStr", e)
+                                  )
+            shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
+            _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
+            writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
+            _                <- stream
+                                  .run(ZSink.fromFile(tempFile.toFile))
+                                  .logError(writeFileErrorMsg)
+                                  .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
+            _                <- ImportService
+                                  .importZipFile(shortcode, tempFile)
+                                  .mapError {
+                                    case IoError(e)       => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
+                                    case EmptyFile        => ApiProblem.invalidBody("The uploaded file is empty")
+                                    case NoZipFile        => ApiProblem.invalidBody("The uploaded file is not a zip file")
+                                    case InvalidChecksums =>
+                                      ApiProblem.invalidBody("The uploaded file contains invalid checksums")
+                                  }
+          } yield UploadResponse()
         }
     )
     .toApp
