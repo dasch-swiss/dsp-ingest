@@ -14,8 +14,12 @@ import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Assets.existingAsset
 import swiss.dasch.test.SpecConstants.Projects.existingProject
 import zio.*
-import zio.nio.file.Path
+import zio.nio.file.{ Files, Path }
 import zio.test.*
+
+import java.time.{ Instant, ZoneId, ZoneOffset }
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 object StorageServiceLiveSpec extends ZIOSpecDefault {
 
@@ -65,5 +69,38 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
         actual      <- AssetInfoService.findByAsset(asset)
       } yield assertTrue(expected == actual)
     },
+    suite("create temp directory scoped")(
+      test("should create a temp directory") {
+        ZIO.scoped {
+          for {
+            now                <- Clock.instant
+            _                  <- TestClock.setTime(now)
+            testDirName        <- Random.nextUUID.map(_.toString)
+            tempDir            <- StorageService.createTempDirectoryScoped(testDirName)
+            exists             <- Files.isDirectory(tempDir)
+            containsName        = tempDir.filename.toString == testDirName
+            parentNameIsCorrect =
+              tempDir
+                .parent
+                .exists(
+                  _.filename.toString == DateTimeFormatter
+                    .ofPattern("yyyyMMdd_HHmmss")
+                    .withZone(ZoneId.from(ZoneOffset.UTC))
+                    .format(now)
+                )
+          } yield assertTrue(exists, containsName, parentNameIsCorrect)
+        }
+      },
+      test("Should remove directory and content after scope") {
+        for {
+          testDirName <- Random.nextUUID.map(_.toString)
+          tempDir     <-
+            ZIO.scoped(
+              StorageService.createTempDirectoryScoped(testDirName).tap(p => Files.createFile(p / "test.txt"))
+            )
+          isRemoved   <- Files.notExists(tempDir)
+        } yield assertTrue(isRemoved)
+      },
+    ),
   ).provide(AssetInfoServiceLive.layer, StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
 }

@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
 import zio.prelude.Validation
@@ -13,22 +14,28 @@ import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
 
 import java.io.IOException
+import java.time.{ ZoneId, ZoneOffset }
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]
   def getAssetDirectory(asset: Asset): UIO[Path]
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
+  def createTempDirectoryScoped(directoryName: String): ZIO[Scope, IOException, Path]
 }
 object StorageService {
-  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path] =
+  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path]                  =
     ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))
-  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                         =
+  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                                          =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory(asset))
-  def getAssetDirectory(): RIO[StorageService, Path]                                     =
+  def getAssetDirectory(): RIO[StorageService, Path]                                                      =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
-  def getTempDirectory(): RIO[StorageService, Path]                                      =
+  def getTempDirectory(): RIO[StorageService, Path]                                                       =
     ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
+  def createTempDirectoryScoped(directoryName: String): ZIO[Scope with StorageService, IOException, Path] =
+    ZIO.serviceWithZIO[StorageService](_.createTempDirectoryScoped(directoryName))
 }
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {
@@ -46,6 +53,16 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     val segment1    = assetString.substring(0, 2)
     val segment2    = assetString.substring(2, 4)
     Path(segment1.toLowerCase, segment2.toLowerCase)
+  }
+
+  override def createTempDirectoryScoped(directoryName: String): ZIO[Scope, IOException, Path] = {
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss") withZone ZoneId.from(ZoneOffset.UTC)
+    Clock.instant.flatMap { now =>
+      val directoryPath = config.tempPath / s"${formatter.format(now)}" / directoryName
+      ZIO.acquireRelease(Files.createDirectories(directoryPath).as(directoryPath))(path =>
+        ZIO.attemptBlockingIO(FileUtils.deleteDirectory(path.toFile)).logError.ignore
+      )
+    }
   }
 }
 object StorageServiceLive {

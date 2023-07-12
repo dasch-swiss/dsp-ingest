@@ -83,10 +83,11 @@ final case class ProjectServiceLive(
       findProject(shortcode).flatMap(_.map(zipProjectPath).getOrElse(ZIO.none)) <*
       ZIO.logInfo(s"Zipping project $shortcode was successful")
 
-  private def zipProjectPath(projectPath: Path) = for {
-    targetFolder <- storage.getTempDirectory().map(_ / "zipped")
-    zippedPath   <- ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
-  } yield zippedPath
+  private def zipProjectPath(projectPath: Path) =
+    storage
+      .getTempDirectory()
+      .map(_ / "zipped")
+      .flatMap(targetFolder => ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_)))
 
   override def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit] =
     storage
