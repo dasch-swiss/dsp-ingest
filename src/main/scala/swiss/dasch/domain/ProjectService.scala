@@ -28,9 +28,9 @@ object ProjectShortcode {
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
+  def deleteProject(shortcode: ProjectShortcode): IO[IOException, Long]
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
-  def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit]
 }
 
 object ProjectService {
@@ -42,8 +42,8 @@ object ProjectService {
     ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
   def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]]               =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-  def importProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[ProjectService, Throwable, Unit]     =
-    ZIO.serviceWithZIO[ProjectService](_.importProject(shortcode, zipFile))
+  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Long]                  =
+    ZIO.serviceWithZIO[ProjectService](_.deleteProject(shortcode))
 }
 
 final case class ProjectServiceLive(storage: StorageService, checksum: FileChecksum) extends ProjectService {
@@ -100,23 +100,13 @@ final case class ProjectServiceLive(storage: StorageService, checksum: FileCheck
     zippedPath   <- ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
   } yield zippedPath
 
-  override def importProject(shortcode: ProjectShortcode, zipFile: Path): IO[Throwable, Unit] =
+  override def deleteProject(shortcode: ProjectShortcode): IO[IOException, Long] =
     storage.getProjectDirectory(shortcode).flatMap { projectPath =>
-      ZIO.logInfo(s"Importing project $shortcode") *>
-        deleteExistingProjectFiles(projectPath) *>
-        Files.createDirectories(projectPath) *>
-        unzipAndValidate(zipFile, projectPath) *>
-        ZIO.logInfo(s"Importing project $shortcode was successful")
+      deleteRecursive(projectPath)
+        .whenZIO(Files.exists(projectPath))
+        .map(_.getOrElse(0L))
+        .tap(count => ZIO.logDebug(s"Deleted $count files in $projectPath"))
     }
-
-  private def unzipAndValidate(zipFile: Path, projectPath: Path) =
-    ZipUtility.unzipFile(zipFile, projectPath) // TODO: *> validateChecksumsProject(projectPath)
-
-  private def deleteExistingProjectFiles(projectPath: Path): IO[IOException, Long] =
-    deleteRecursive(projectPath)
-      .whenZIO(Files.exists(projectPath))
-      .map(_.getOrElse(0L))
-      .tap(count => ZIO.logDebug(s"Deleted $count files in $projectPath"))
 
   // The zio.nio.file.Files.deleteRecursive function has a bug in 2.0.1
   // https://github.com/zio/zio-nio/pull/588/files <- this PR fixes it

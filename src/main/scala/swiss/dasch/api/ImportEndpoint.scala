@@ -57,23 +57,26 @@ object ImportEndpoint {
           stream: ZStream[Any, Nothing, Byte],
           actual: ContentType,
         ) =>
-        for {
-          shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
-          _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
-          tempFile         <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$shortcode.zip")
-          writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
-          _                <- stream
-                                .run(ZSink.fromFile(tempFile.toFile))
-                                .logError(writeFileErrorMsg)
-                                .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
-          _                <- ImportService
-                                .importZipFile(shortcode, tempFile)
-                                .mapError {
-                                  case ImportIoError(_) => ApiProblem.internalError(s"Import of project $shortcodeStr failed")
-                                  case InputFileEmpty   => ApiProblem.invalidBody("The uploaded file is empty")
-                                  case InputFileInvalid => ApiProblem.invalidBody("The uploaded file is not a zip file")
-                                }
-        } yield UploadResponse()
+        ZIO.scoped {
+          ZIO.serviceWith[StorageConfig](_.importPath / s"import-$shortcodeStr.zip").flatMap { tempFile =>
+            (for {
+              shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
+              _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
+              writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
+              _                <- stream
+                                    .run(ZSink.fromFile(tempFile.toFile))
+                                    .logError(writeFileErrorMsg)
+                                    .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
+              _                <- ImportService
+                                    .importZipFile(shortcode, tempFile)
+                                    .mapError {
+                                      case ImportIoError(e) => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
+                                      case InputFileEmpty   => ApiProblem.invalidBody("The uploaded file is empty")
+                                      case InputFileInvalid => ApiProblem.invalidBody("The uploaded file is not a zip file")
+                                    }
+            } yield UploadResponse()).withFinalizer(_ => Files.deleteIfExists(tempFile).logError.ignore)
+          }
+        }
     )
     .toApp
 
