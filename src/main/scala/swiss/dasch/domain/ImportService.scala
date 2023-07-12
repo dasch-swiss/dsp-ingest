@@ -42,7 +42,7 @@ final case class ImportServiceLive(
                           .logError(s"Error while importing project $shortcode")
                           .mapError(IoError(_))
     } yield ()
-  }.logError
+  }
 
   private def validateZipFile(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path]           =
     for {
@@ -71,12 +71,9 @@ final case class ImportServiceLive(
     storageService.getProjectDirectory(shortcode).flatMap { projectPath =>
       ZIO.logInfo(s"Importing project $shortcode") *>
         projectService.deleteProject(shortcode) *>
-        moveDirectory(unzippedFolder, projectPath) *>
+        ZIO.attemptBlockingIO(FileUtils.moveDirectory(unzippedFolder.toFile, projectPath.toFile)) *>
         ZIO.logInfo(s"Importing project $shortcode was successful")
     }
-
-  private def moveDirectory(sourceDir: Path, targetDir: Path): IO[Throwable, Unit] =
-    ZIO.attemptBlockingIO(FileUtils.moveDirectory(sourceDir.toFile, targetDir.toFile))
 }
 object ImportServiceLive {
   val layer

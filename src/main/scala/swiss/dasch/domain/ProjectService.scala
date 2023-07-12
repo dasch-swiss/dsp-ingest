@@ -9,6 +9,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.refineV
 import eu.timepit.refined.string.MatchesRegex
 import eu.timepit.refined.types.string.NonEmptyString
+import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
 import zio.json.{ DeriveJsonCodec, DeriveJsonDecoder, DeriveJsonEncoder, JsonCodec, JsonDecoder, JsonEncoder }
@@ -28,7 +29,7 @@ object ProjectShortcode {
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
-  def deleteProject(shortcode: ProjectShortcode): IO[IOException, Long]
+  def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit]
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]
 }
@@ -42,7 +43,7 @@ object ProjectService {
     ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
   def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]]               =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Long]                  =
+  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Unit]                  =
     ZIO.serviceWithZIO[ProjectService](_.deleteProject(shortcode))
 }
 
@@ -97,26 +98,13 @@ final case class ProjectServiceLive(
     zippedPath   <- ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_))
   } yield zippedPath
 
-  override def deleteProject(shortcode: ProjectShortcode): IO[IOException, Long] =
-    storage.getProjectDirectory(shortcode).flatMap { projectPath =>
-      deleteRecursive(projectPath)
-        .whenZIO(Files.exists(projectPath))
-        .map(_.getOrElse(0L))
-        .tap(count => ZIO.logDebug(s"Deleted $count files in $projectPath"))
-    }
-
-  // The zio.nio.file.Files.deleteRecursive function has a bug in 2.0.1
-  // https://github.com/zio/zio-nio/pull/588/files <- this PR fixes it
-  // This is a workaround until the bug is fixed:
-  private def deleteRecursive(path: Path)(implicit trace: Trace): ZIO[Any, IOException, Long] =
-    newDirectoryStream(path)
-      .mapZIO { p =>
-        for {
-          deletedInSubDirectory <- deleteRecursive(p).whenZIO(isDirectory(p)).map(_.getOrElse(0L))
-          deletedFile           <- deleteIfExists(p).map(if (_) 1 else 0)
-        } yield deletedInSubDirectory + deletedFile
+  override def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit] =
+    storage
+      .getProjectDirectory(shortcode)
+      .flatMap { projectDir =>
+        ZIO.whenZIO(Files.isDirectory(projectDir))(ZIO.attemptBlockingIO(FileUtils.deleteDirectory(projectDir.toFile)))
       }
-      .run(ZSink.sum) <* delete(path)
+      .unit
 }
 
 object ProjectServiceLive {
