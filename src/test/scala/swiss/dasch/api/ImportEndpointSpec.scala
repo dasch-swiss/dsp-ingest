@@ -70,6 +70,7 @@ object ImportEndpointSpec extends ZIOSpecDefault {
       },
     )
   ).provide(
+    ImportServiceLive.layer,
     ProjectServiceLive.layer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,

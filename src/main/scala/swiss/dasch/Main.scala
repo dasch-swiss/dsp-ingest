@@ -12,6 +12,7 @@ import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfi
 import swiss.dasch.domain.{
   AssetServiceLive,
   FileChecksumLive,
+  ImportServiceLive,
   ProjectService,
   ProjectServiceLive,
   ReportService,
@@ -42,6 +43,7 @@ object Main extends ZIOAppDefault {
         FileSystemCheckLive.layer,
         FileChecksumLive.layer,
         HealthCheckServiceLive.layer,
+        ImportServiceLive.layer,
         IngestApiServer.layer,
         Metrics.layer,
         ProjectServiceLive.layer,

@@ -9,7 +9,7 @@ import eu.timepit.refined.auto.autoUnwrap
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
+import swiss.dasch.domain.*
 import zio.*
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
@@ -50,48 +50,33 @@ object ImportEndpoint {
         HttpCodec.error[InternalProblem](Status.InternalServerError),
       )
 
-  val app: App[StorageConfig with ProjectService] = importEndpoint
+  val app: App[StorageConfig with ImportService] = importEndpoint
     .implement(
       (
-          shortcode: String,
+          shortcodeStr: String,
           stream: ZStream[Any, Nothing, Byte],
           actual: ContentType,
         ) =>
         for {
-          pShortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcode)
-          _                 <- verifyContentType(actual, ContentType(MediaType.application.zip))
-          tempFile          <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$pShortcode.zip")
-          writeFileErrorMsg  = s"Error while writing file $tempFile for project $shortcode"
-          _                 <- stream
-                                 .run(ZSink.fromFile(tempFile.toFile))
-                                 .logError(writeFileErrorMsg)
-                                 .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
-          _                 <- validateInputFile(tempFile)
-          importFileErrorMsg = s"Error while importing project $shortcode"
-          _                 <- ProjectService
-                                 .importProject(pShortcode, tempFile)
-                                 .logError(importFileErrorMsg)
-                                 .mapError(e => ApiProblem.internalError(importFileErrorMsg, e))
+          shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
+          _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
+          tempFile         <- ZIO.serviceWith[StorageConfig](_.importPath / s"import-$shortcode.zip")
+          writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
+          _                <- stream
+                                .run(ZSink.fromFile(tempFile.toFile))
+                                .logError(writeFileErrorMsg)
+                                .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
+          _                <- ImportService
+                                .importZipFile(shortcode, tempFile)
+                                .mapError {
+                                  case ImportIoError(_) => ApiProblem.internalError(s"Import of project $shortcodeStr failed")
+                                  case InputFileEmpty   => ApiProblem.invalidBody("The uploaded file is empty")
+                                  case InputFileInvalid => ApiProblem.invalidBody("The uploaded file is not a zip file")
+                                }
         } yield UploadResponse()
     )
     .toApp
 
   private def verifyContentType(actual: ContentType, expected: ContentType): IO[IllegalArguments, Unit] =
     ZIO.fail(ApiProblem.invalidHeaderContentType(actual, expected)).when(actual != expected).unit
-
-  private def validateInputFile(tempFile: file.Path): ZIO[Any, ApiProblem, Unit] =
-    (for {
-      _ <- ZIO
-             .fail(ApiProblem.bodyIsEmpty)
-             .whenZIO(Files.size(tempFile).mapBoth(e => ApiProblem.internalError(e), _ == 0))
-      _ <-
-        ZIO.scoped {
-          val acquire = ZIO.attemptBlockingIO(new ZipFile(tempFile.toFile))
-
-          def release(zipFile: ZipFile) = ZIO.succeed(zipFile.close())
-
-          ZIO.acquireRelease(acquire)(release).orElseFail(ApiProblem.invalidBody("Body does not contain a zip file"))
-        }
-    } yield ()).tapError(_ => Files.deleteIfExists(tempFile).mapError(ApiProblem.internalError))
-
 }
