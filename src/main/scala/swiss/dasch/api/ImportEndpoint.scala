@@ -72,6 +72,6 @@ object ImportEndpoint {
     )
     .toApp
 
-  private def verifyContentType(actual: ContentType, expected: ContentType): IO[IllegalArguments, Unit] =
-    ZIO.fail(ApiProblem.invalidHeaderContentType(actual, expected)).when(actual != expected).unit
+  private def verifyContentType(actual: ContentType, expected: ContentType) =
+    ZIO.when(actual != expected)(ZIO.fail(ApiProblem.invalidHeaderContentType(actual, expected)))
 }
