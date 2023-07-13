@@ -26,7 +26,6 @@ trait FileChecksumService  {
   def verifyChecksumOrig(asset: Asset): Task[Boolean]
   def verifyChecksumDerivative(asset: Asset): Task[Boolean]
   def verifyChecksum(assetInfo: AssetInfo): Task[Chunk[ChecksumResult]]
-
   def createSha256Hash(path: Path): Task[Sha256Hash]
 }
 object FileChecksumService {
