@@ -4,6 +4,7 @@
  */
 
 package swiss.dasch.test
+import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.{ JwtConfig, StorageConfig }
 import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.nio.file.Files.newDirectoryStream
@@ -20,25 +21,12 @@ object SpecConfigurations {
 
   val storageConfigLayer: Layer[IOException, StorageConfig] = ZLayer.scoped {
     for {
-      tmpDir       <- Files.createTempDirectoryScoped(None, List.empty)
-      assetDir      = tmpDir / "asset"
-      tempDir       = tmpDir / "temp"
-      _            <- Files.createDirectories(assetDir)
-      _            <- Files.createDirectories(tempDir)
-      storageConfig = StorageConfig(assetDir.toFile.toString, tempDir.toFile.toString)
-      _            <- copyDirectory(SpecPaths.testFolder, storageConfig.assetPath)
-    } yield storageConfig
+      tmpDir  <- Files.createTempDirectoryScoped(None, List.empty)
+      assetDir = tmpDir / "asset"
+      tempDir  = tmpDir / "temp"
+      _       <- Files.createDirectories(assetDir)
+      _       <- Files.createDirectories(tempDir)
+      _       <- ZIO.attemptBlockingIO(FileUtils.copyDirectory(SpecPaths.testFolder.toFile, assetDir.toFile))
+    } yield StorageConfig(assetDir.toString, tempDir.toString)
   }
-
-  private def copyDirectory(source: Path, dest: Path): ZIO[Any, IOException, Long] =
-    Files.createDirectories(dest) *> Files
-      .list(source)
-      .mapZIO { file =>
-        copyDirectory(file, dest / file.filename)
-          .whenZIO(Files.isDirectory(file))
-          *> Files
-            .copy(file, dest / file.filename)
-            .whenZIO(Files.isRegularFile(file))
-      }
-      .runCount
 }

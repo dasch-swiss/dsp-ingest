@@ -35,8 +35,8 @@ object Configuration {
     )
 
   final case class StorageConfig(assetDir: String, tempDir: String) {
-    val assetPath: Path  = Path(assetDir)
-    val tempPath: Path   = Path(tempDir)
+    val assetPath: Path = Path(assetDir)
+    val tempPath: Path  = Path(tempDir)
   }
 
   val layer: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] = {

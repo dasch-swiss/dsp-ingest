@@ -24,7 +24,7 @@ object Main extends ZIOAppDefault {
     Configuration.layer >+> Logger.layer
 
   override val run: ZIO[Any, Any, Nothing] =
-    (FileSystemCheck.smokeTestOrDie()  *> IngestApiServer.startup())
+    (FileSystemCheck.smokeTestOrDie() *> IngestApiServer.startup())
       .provide(
         AssetInfoServiceLive.layer,
         AuthenticatorLive.layer,
