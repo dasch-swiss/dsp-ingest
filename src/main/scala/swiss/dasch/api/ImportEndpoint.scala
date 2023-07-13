@@ -59,17 +59,14 @@ object ImportEndpoint {
         ) =>
         ZIO.scoped {
           for {
-            tempFile         <- StorageService
-                                  .createTempDirectoryScoped(s"import-$shortcodeStr")
-                                  .flatMap { p =>
-                                    val path = p / s"import-$shortcodeStr.zip"
-                                    Files.createFile(path).as(path)
-                                  }
-                                  .mapError(e =>
-                                    ApiProblem.internalError(s"Error while creating temp file for project $shortcodeStr", e)
-                                  )
             shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
             _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
+            tempFile         <-
+              StorageService
+                .createTempDirectoryScoped(s"import-$shortcodeStr", Some("upload"))
+                .map(_ / s"import-$shortcodeStr.zip")
+                .tap(zipFile => Files.createFile(zipFile))
+                .mapError(e => ApiProblem.internalError(s"Error while creating temp file for project $shortcodeStr", e))
             writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
             _                <- stream
                                   .run(ZSink.fromFile(tempFile.toFile))

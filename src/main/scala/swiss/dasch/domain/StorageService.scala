@@ -55,10 +55,12 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     Path(segment1.toLowerCase, segment2.toLowerCase)
   }
 
-  override def createTempDirectoryScoped(directoryName: String): ZIO[Scope, IOException, Path] = {
+  override def createTempDirectoryScoped(directoryName: String, prefix: Option[String])
+      : ZIO[Scope, IOException, Path] = {
     val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss") withZone ZoneId.from(ZoneOffset.UTC)
     Clock.instant.flatMap { now =>
-      val directoryPath = config.tempPath / s"${formatter.format(now)}" / directoryName
+      val basePath      = prefix.map(config.tempPath / _).getOrElse(config.tempPath)
+      val directoryPath = basePath / s"${formatter.format(now)}" / directoryName
       ZIO.acquireRelease(Files.createDirectories(directoryPath).as(directoryPath))(path =>
         ZIO.attemptBlockingIO(FileUtils.deleteDirectory(path.toFile)).logError.ignore
       )
