@@ -9,17 +9,7 @@ import swiss.dasch.api.*
 import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
-import swiss.dasch.domain.{
-  AssetInfoServiceLive,
-  AssetServiceLive,
-  FileChecksumLive,
-  ImportServiceLive,
-  ProjectService,
-  ProjectServiceLive,
-  ReportService,
-  ReportServiceLive,
-  StorageServiceLive,
-}
+import swiss.dasch.domain.*
 import swiss.dasch.infrastructure.{ FileSystemCheck, FileSystemCheckLive, IngestApiServer, Logger }
 import swiss.dasch.version.BuildInfo
 import zio.*

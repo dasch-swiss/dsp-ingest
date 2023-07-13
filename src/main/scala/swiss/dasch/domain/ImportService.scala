@@ -44,18 +44,18 @@ final case class ImportServiceLive(
     } yield ()
   }
 
-  private def validateZipFile(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path]           =
+  private def validateZipFile(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path]         =
     for {
       _            <- checkIsNotEmptyFile(zipFile)
       _            <- checkIsZipFile(zipFile)
-      unzippedPath <- checkUnzipAndCheckProject(shortcode, zipFile)
+      unzippedPath <- unzipAndVerifyChecksums(shortcode, zipFile)
     } yield unzippedPath
-  private def checkIsNotEmptyFile(zipFile: Path): IO[ImportFailed, Unit]                                            =
+  private def checkIsNotEmptyFile(zipFile: Path): IO[ImportFailed, Unit]                                          =
     ZIO.fail(EmptyFile).whenZIO(Files.size(zipFile).mapBoth(IoError(_), _ == 0)).unit
-  private def checkIsZipFile(zipFile: Path): IO[NoZipFile.type, Unit]                                               = ZIO.scoped {
+  private def checkIsZipFile(zipFile: Path): IO[NoZipFile.type, Unit]                                             = ZIO.scoped {
     ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new ZipFile(zipFile.toFile))).orElseFail(NoZipFile).unit
   }
-  private def checkUnzipAndCheckProject(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path] =
+  private def unzipAndVerifyChecksums(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path] =
     for {
       tempDir <- Files.createTempDirectoryScoped(Some("import"), List.empty).mapError(IoError(_))
       _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(IoError(_))
