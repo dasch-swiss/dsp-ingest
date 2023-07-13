@@ -47,7 +47,12 @@ final case class ImportServiceLive(
       .createTempDirectoryScoped(s"import-$shortcode", Some("upload"))
       .map(_ / s"import-$shortcode.zip")
       .tap(Files.createFile(_))
-      .tap(zipFile => stream.run(ZSink.fromFile(zipFile.toFile)))
+      .tap(zipFile =>
+        stream
+          .run(ZSink.fromFile(zipFile.toFile))
+          .tap(size => ZIO.logDebug(s"Saved $zipFile with size $size bytes"))
+      )
+      .logError
       .mapError(IoError(_))
 
   override def importZipFile(shortcode: ProjectShortcode, zipFile: Path): IO[ImportFailed, Unit] = ZIO.scoped {
