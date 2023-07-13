@@ -57,7 +57,7 @@ final case class ImportServiceLive(
   }
   private def unzipAndVerifyChecksums(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path] =
     for {
-      tempDir <- Files.createTempDirectoryScoped(Some("import"), List.empty).mapError(IoError(_))
+      tempDir <- storageService.createTempDirectoryScoped(s"${shortcode}_import").mapError(IoError(_))
       _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(IoError(_))
       checks  <- assetInfos
                    .findAllInPath(tempDir, shortcode)
