@@ -50,7 +50,7 @@ object ProjectService {
 final case class ProjectServiceLive(
     assetInfos: AssetInfoService,
     storage: StorageService,
-    checksum: FileChecksum,
+    checksum: FileChecksumService,
   ) extends ProjectService {
 
   override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
@@ -99,6 +99,6 @@ final case class ProjectServiceLive(
 }
 
 object ProjectServiceLive {
-  val layer: ZLayer[AssetInfoService with StorageService with FileChecksum, Nothing, ProjectService] =
+  val layer: ZLayer[AssetInfoService with StorageService with FileChecksumService, Nothing, ProjectService] =
     ZLayer.fromFunction(ProjectServiceLive.apply _)
 }

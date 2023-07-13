@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.*
-import swiss.dasch.domain.{ Asset, AssetInfo, ChecksumResult, Report, ReportService }
+import swiss.dasch.domain.*
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
 import zio.http.Path.Segment.Root

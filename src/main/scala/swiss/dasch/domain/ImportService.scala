@@ -29,7 +29,7 @@ object ImportService     {
 }
 
 final case class ImportServiceLive(
-    assetService: AssetService,
+    assetService: FileChecksumService,
     assetInfos: AssetInfoService,
     projectService: ProjectService,
     storageService: StorageService,
@@ -77,6 +77,6 @@ final case class ImportServiceLive(
 }
 object ImportServiceLive {
   val layer
-      : ZLayer[AssetService with AssetInfoService with ProjectService with StorageService, Nothing, ImportService] =
+      : ZLayer[FileChecksumService with AssetInfoService with ProjectService with StorageService, Nothing, ImportService] =
     ZLayer.fromFunction(ImportServiceLive.apply _)
 }

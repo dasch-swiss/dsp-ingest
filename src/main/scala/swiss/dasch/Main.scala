@@ -29,11 +29,10 @@ object Main extends ZIOAppDefault {
     (ensureFilesystem *> IngestApiServer.startup())
       .provide(
         AssetInfoServiceLive.layer,
-        AssetServiceLive.layer,
         AuthenticatorLive.layer,
         Configuration.layer,
+        FileChecksumServiceLive.layer,
         FileSystemCheckLive.layer,
-        FileChecksumLive.layer,
         HealthCheckServiceLive.layer,
         ImportServiceLive.layer,
         IngestApiServer.layer,

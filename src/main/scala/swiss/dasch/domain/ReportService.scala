@@ -20,7 +20,8 @@ object ReportService {
     ZIO.serviceWithZIO[ReportService](_.checksumReport(projectShortcode))
 }
 
-final case class ReportServiceLive(projectService: ProjectService, assetService: AssetService) extends ReportService {
+final case class ReportServiceLive(projectService: ProjectService, assetService: FileChecksumService)
+    extends ReportService {
   override def checksumReport(projectShortcode: ProjectShortcode): Task[Report] =
     projectService
       .findAssetInfosOfProject(projectShortcode)
@@ -29,6 +30,6 @@ final case class ReportServiceLive(projectService: ProjectService, assetService:
       .map(_.toMap)
       .map(Report.make)
 }
-object ReportServiceLive {
+object ReportServiceLive  {
   val layer = ZLayer.fromFunction(ReportServiceLive.apply _)
 }

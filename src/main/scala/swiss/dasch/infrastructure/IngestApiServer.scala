@@ -6,7 +6,7 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
-import swiss.dasch.api.{ Authenticator, ExportEndpoint, ImportEndpoint, ListProjectsEndpoint, ReportEndpoint }
+import swiss.dasch.api.*
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
 import swiss.dasch.version.BuildInfo
 import zio.http.*

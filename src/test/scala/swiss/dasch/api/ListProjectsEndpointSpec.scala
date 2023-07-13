@@ -6,13 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ListProjectsEndpoint.{ ProjectResponse, ProjectsResponse }
-import swiss.dasch.domain.{
-  AssetInfoServiceLive,
-  FileChecksumLive,
-  ProjectService,
-  ProjectServiceLive,
-  StorageServiceLive,
-}
+import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConfigurations
 import zio.http.{ Request, Root, Status, URL }
 import zio.json.*
@@ -30,7 +24,7 @@ object ListProjectsEndpointSpec extends ZIOSpecDefault {
     }
   ).provide(
     AssetInfoServiceLive.layer,
-    FileChecksumLive.layer,
+    FileChecksumServiceLive.layer,
     ProjectServiceLive.layer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
