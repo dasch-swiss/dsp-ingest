@@ -38,15 +38,5 @@ object FileSystemCheckLiveSpec extends ZIOSpecDefault {
         result <- FileSystemCheck.smokeTestOrDie().exit
       } yield assertTrue(result.isFailure)
     }.provide(ZLayer.succeed(StorageConfig("does-not-exist", "does-not-exist")), FileSystemCheckLive.layer),
-    test("should create export folder in temp if they do not exist") {
-      for {
-        config             <- ZIO.service[StorageConfig]
-        _                  <- FileSystemCheck.createTempFolders()
-        exportFolderExists <- Files.isDirectory(config.exportPath)
-      } yield assertTrue(exportFolderExists)
-    }.provide(
-      ZLayer.scoped(createOnlyAssetAndTempFolder.map(StorageConfig.apply)),
-      FileSystemCheckLive.layer,
-    ),
   )
 }

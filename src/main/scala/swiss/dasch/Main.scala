@@ -23,10 +23,8 @@ object Main extends ZIOAppDefault {
   override val bootstrap: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] =
     Configuration.layer >+> Logger.layer
 
-  private val ensureFilesystem = FileSystemCheck.smokeTestOrDie() *> FileSystemCheck.createTempFolders()
-
   override val run: ZIO[Any, Any, Nothing] =
-    (ensureFilesystem *> IngestApiServer.startup())
+    (FileSystemCheck.smokeTestOrDie()  *> IngestApiServer.startup())
       .provide(
         AssetInfoServiceLive.layer,
         AuthenticatorLive.layer,

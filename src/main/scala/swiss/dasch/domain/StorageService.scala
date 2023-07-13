@@ -23,19 +23,20 @@ trait StorageService  {
   def getAssetDirectory(asset: Asset): UIO[Path]
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
-  def createTempDirectoryScoped(directoryName: String): ZIO[Scope, IOException, Path]
+  def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
 }
 object StorageService {
-  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path]                  =
+  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path] =
     ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))
-  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                                          =
+  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                         =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory(asset))
-  def getAssetDirectory(): RIO[StorageService, Path]                                                      =
+  def getAssetDirectory(): RIO[StorageService, Path]                                     =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
-  def getTempDirectory(): RIO[StorageService, Path]                                                       =
+  def getTempDirectory(): RIO[StorageService, Path]                                      =
     ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
-  def createTempDirectoryScoped(directoryName: String): ZIO[Scope with StorageService, IOException, Path] =
-    ZIO.serviceWithZIO[StorageService](_.createTempDirectoryScoped(directoryName))
+  def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None)
+      : ZIO[Scope with StorageService, IOException, Path] =
+    ZIO.serviceWithZIO[StorageService](_.createTempDirectoryScoped(directoryName, prefix))
 }
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {

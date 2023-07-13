@@ -21,12 +21,11 @@ object SpecConfigurations {
   val storageConfigLayer: Layer[IOException, StorageConfig] = ZLayer.scoped {
     for {
       tmpDir       <- Files.createTempDirectoryScoped(None, List.empty)
-      assetDir      = tmpDir / "images"
-      tempDir       = tmpDir / "tmp"
+      assetDir      = tmpDir / "asset"
+      tempDir       = tmpDir / "temp"
       _            <- Files.createDirectories(assetDir)
       _            <- Files.createDirectories(tempDir)
       storageConfig = StorageConfig(assetDir.toFile.toString, tempDir.toFile.toString)
-      _            <- Files.createDirectories(storageConfig.exportPath)
       _            <- copyDirectory(SpecPaths.testFolder, storageConfig.assetPath)
     } yield storageConfig
   }
