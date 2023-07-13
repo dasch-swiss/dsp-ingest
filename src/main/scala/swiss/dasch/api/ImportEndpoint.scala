@@ -59,28 +59,16 @@ object ImportEndpoint {
         ) =>
         ZIO.scoped {
           for {
-            shortcode        <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
-            _                <- verifyContentType(actual, ContentType(MediaType.application.zip))
-            tempFile         <-
-              StorageService
-                .createTempDirectoryScoped(s"import-$shortcodeStr", Some("upload"))
-                .map(_ / s"import-$shortcodeStr.zip")
-                .tap(zipFile => Files.createFile(zipFile))
-                .mapError(e => ApiProblem.internalError(s"Error while creating temp file for project $shortcodeStr", e))
-            writeFileErrorMsg = s"Error while writing file $tempFile for project $shortcodeStr"
-            _                <- stream
-                                  .run(ZSink.fromFile(tempFile.toFile))
-                                  .logError(writeFileErrorMsg)
-                                  .mapError(e => ApiProblem.internalError(writeFileErrorMsg, e))
-            _                <- ImportService
-                                  .importZipFile(shortcode, tempFile)
-                                  .mapError {
-                                    case IoError(e)       => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
-                                    case EmptyFile        => ApiProblem.invalidBody("The uploaded file is empty")
-                                    case NoZipFile        => ApiProblem.invalidBody("The uploaded file is not a zip file")
-                                    case InvalidChecksums =>
-                                      ApiProblem.invalidBody("The uploaded file contains invalid checksums")
-                                  }
+            shortcode <- ApiStringConverters.fromPathVarToProjectShortcode(shortcodeStr)
+            _         <- verifyContentType(actual, ContentType(MediaType.application.zip))
+            _         <- ImportService
+                           .importZipStream(shortcode, stream)
+                           .mapError {
+                             case IoError(e)       => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
+                             case EmptyFile        => ApiProblem.invalidBody("The uploaded file is empty")
+                             case NoZipFile        => ApiProblem.invalidBody("The uploaded file is not a zip file")
+                             case InvalidChecksums => ApiProblem.invalidBody("The uploaded file contains invalid checksums")
+                           }
           } yield UploadResponse()
         }
     )
