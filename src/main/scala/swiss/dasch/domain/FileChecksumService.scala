@@ -14,7 +14,7 @@ import zio.*
 import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
 
-import java.io.{ FileInputStream, IOException }
+import java.io.{ FileInputStream, FileNotFoundException, IOException }
 
 opaque type Sha256Hash = String Refined MatchesRegex["^[A-Fa-f0-9]{64}$"]
 object Sha256Hash {
@@ -26,7 +26,7 @@ trait FileChecksumService  {
   def verifyChecksumOrig(asset: Asset): Task[Boolean]
   def verifyChecksumDerivative(asset: Asset): Task[Boolean]
   def verifyChecksum(assetInfo: AssetInfo): Task[Chunk[ChecksumResult]]
-  def createSha256Hash(path: Path): Task[Sha256Hash]
+  def createSha256Hash(path: Path): IO[FileNotFoundException, Sha256Hash]
 }
 object FileChecksumService {
   def verifyChecksumOrig(asset: Asset): ZIO[FileChecksumService, Throwable, Boolean]                   =
@@ -35,7 +35,7 @@ object FileChecksumService {
     ZIO.serviceWithZIO[FileChecksumService](_.verifyChecksumDerivative(asset))
   def verifyChecksum(assetInfo: AssetInfo): ZIO[FileChecksumService, Throwable, Chunk[ChecksumResult]] =
     ZIO.serviceWithZIO[FileChecksumService](_.verifyChecksum(assetInfo))
-  def createSha256Hash(path: Path): ZIO[FileChecksumService, Throwable, Sha256Hash]                    =
+  def createSha256Hash(path: Path): ZIO[FileChecksumService, FileNotFoundException, Sha256Hash]        =
     ZIO.serviceWithZIO[FileChecksumService](_.createSha256Hash(path))
 }
 
@@ -63,8 +63,8 @@ final case class FileChecksumServiceLive(assetInfos: AssetInfoService) extends F
     } yield Chunk(origResult, derivativeResult)
   }
 
-  def createSha256Hash(path: Path): Task[Sha256Hash] =
-    ZIO.scoped(ZIO.fromAutoCloseable(ZIO.attempt(new FileInputStream(path.toFile))).flatMap(hashSha256))
+  def createSha256Hash(path: Path): IO[FileNotFoundException, Sha256Hash] =
+    ZIO.scoped(ScopedIoStreams.fileInputStream(path).flatMap(hashSha256))
 
   private def hashSha256(fis: FileInputStream): UIO[Sha256Hash] = {
     val digest    = java.security.MessageDigest.getInstance("SHA-256")
