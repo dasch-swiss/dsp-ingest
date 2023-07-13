@@ -38,7 +38,6 @@ object Configuration {
     val assetPath: Path  = Path(assetDir)
     val tempPath: Path   = Path(tempDir)
     val exportPath: Path = Path(tempDir) / "export"
-    val importPath: Path = Path(tempDir) / "import"
   }
 
   val layer: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] = {

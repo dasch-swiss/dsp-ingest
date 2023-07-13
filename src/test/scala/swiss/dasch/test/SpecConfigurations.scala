@@ -27,7 +27,6 @@ object SpecConfigurations {
       _            <- Files.createDirectories(tempDir)
       storageConfig = StorageConfig(assetDir.toFile.toString, tempDir.toFile.toString)
       _            <- Files.createDirectories(storageConfig.exportPath)
-      _            <- Files.createDirectories(storageConfig.importPath)
       _            <- copyDirectory(SpecPaths.testFolder, storageConfig.assetPath)
     } yield storageConfig
   }

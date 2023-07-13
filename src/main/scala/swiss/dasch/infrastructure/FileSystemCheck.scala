@@ -29,8 +29,7 @@ final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCh
   override def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean] =
     Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath)
 
-  override def createTempFolders(): ZIO[Any, IOException, Unit] =
-    createDirectoryIfNotExist(config.importPath) *> createDirectoryIfNotExist(config.exportPath)
+  override def createTempFolders(): ZIO[Any, IOException, Unit] = createDirectoryIfNotExist(config.exportPath)
 
   private def createDirectoryIfNotExist(dir: Path) =
     ZIO.ifZIO(Files.isDirectory(dir))(
