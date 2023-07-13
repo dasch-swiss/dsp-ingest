@@ -9,7 +9,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
-import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
+import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec, JsonDecoder }
 import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
 
@@ -24,19 +24,22 @@ trait StorageService  {
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
+  def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
 }
 object StorageService {
-  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path] =
+  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path]               =
     ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))
-  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                         =
+  def getAssetDirectory(asset: Asset): RIO[StorageService, Path]                                       =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory(asset))
-  def getAssetDirectory(): RIO[StorageService, Path]                                     =
+  def getAssetDirectory(): RIO[StorageService, Path]                                                   =
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
-  def getTempDirectory(): RIO[StorageService, Path]                                      =
+  def getTempDirectory(): RIO[StorageService, Path]                                                    =
     ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None)
       : ZIO[Scope with StorageService, IOException, Path] =
     ZIO.serviceWithZIO[StorageService](_.createTempDirectoryScoped(directoryName, prefix))
+  def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): ZIO[StorageService, Throwable, A] =
+    ZIO.serviceWithZIO[StorageService](_.loadJsonFile(file)(decoder))
 }
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {
@@ -67,6 +70,15 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       )
     }
   }
+
+  def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A] =
+    Files
+      .readAllLines(file)
+      .flatMap(lines =>
+        ZIO
+          .fromEither(lines.mkString.fromJson[A])
+          .mapError(e => new IllegalArgumentException(s"Unable to parse $file, reason: $e"))
+      )
 }
 object StorageServiceLive {
   val layer: URLayer[StorageConfig, StorageService] = ZLayer.fromFunction(StorageServiceLive.apply _)

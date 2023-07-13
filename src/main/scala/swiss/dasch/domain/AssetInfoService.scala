@@ -7,7 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec }
+import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec, JsonDecoder }
 import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
 import zio.stream.ZStream
@@ -46,20 +46,13 @@ object AssetInfoService {
 final case class AssetInfoServiceLive(storageService: StorageService) extends AssetInfoService {
   override def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo] =
     for {
-      content   <- loadFileContent(infoFile)
+      content   <- storageService.loadJsonFile[AssetInfoFileContent](infoFile)
       assetMaybe = assetIdFromFilename(Path(content.internalFilename)).map(id => Asset(id, shortcode))
       assetInfo <- assetMaybe match {
                      case Some(asset) => toAssetInfo(content, infoFile.parent.orNull, asset)
                      case None        => ZIO.fail(IllegalArgumentException(s"Unable to parse asset id from $infoFile"))
                    }
     } yield assetInfo
-
-  private def loadFileContent(infoFile: Path): Task[AssetInfoFileContent] =
-    Files
-      .readAllLines(infoFile)
-      .map(_.mkString)
-      .flatMap(json => ZIO.fromEither(json.fromJson[AssetInfoFileContent]))
-      .mapError(e => new IllegalArgumentException(s"Unable to parse $infoFile, $e"))
 
   private def assetIdFromFilename(file: Path): Option[AssetId] = {
     val filename = file.filename.toString
@@ -73,7 +66,7 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
     storageService.getAssetDirectory(asset).map(_ / s"${asset.id.toString}.info")
 
   private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] =
-    loadFileContent(infoFile).flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
+    storageService.loadJsonFile[AssetInfoFileContent](infoFile).flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
 
   private def toAssetInfo(
       raw: AssetInfoFileContent,
