@@ -51,7 +51,7 @@ case class SipiInContainer() extends SipiCommand {
 
 object SipiCommand {
   val layer: URLayer[SipiConfig, SipiCommand] = ZLayer.fromZIO {
-    ZIO.service[SipiConfig].map { config =>
+    ZIO.serviceWith[SipiConfig] { config =>
       if (config.useLocal) SipiLocalDev()
       else SipiInContainer()
     }
