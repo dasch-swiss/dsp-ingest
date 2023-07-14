@@ -9,15 +9,16 @@ import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoin
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
 import swiss.dasch.domain.SipiCommandRunnerService
-import zio.{ BuildInfo, URLayer, ZIO, ZLayer }
+import zio.{ URLayer, ZIO, ZLayer }
+import swiss.dasch.version.BuildInfo
 import zio.http.*
 import zio.http.internal.middlewares.Cors.CorsConfig
+import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
   private val serviceApps    =
-    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app) @@ Authenticator.middleware
-      ++ SipiCommandRunnerEndpoint.app
+    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app ++ ReportEndpoint.app ++ SipiCommandRunnerEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)
@@ -35,7 +36,7 @@ object IngestApiServer {
   val layer: URLayer[ServiceConfig, Server] = ZLayer
     .service[ServiceConfig]
     .flatMap { cfg =>
-      Server.defaultWith(_.binding(cfg.get.host, cfg.get.port))
+      Server.defaultWith(_.binding(cfg.get.host, cfg.get.port).enableRequestStreaming)
     }
     .orDie
 }

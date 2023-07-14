@@ -29,10 +29,11 @@ object SipiCommandRunnerEndpoint {
     .out[SipiResponse]
     .outError[InternalProblem](Status.InternalServerError)
 
-  private val command = commandPathVar.toString match
-    case "help" => SipiCommandRunnerService.help()
+  private val command = commandPathVar.toString match {
+    case "help"    => SipiCommandRunnerService.help()
     case "compare" => SipiCommandRunnerService.compare("x", "y")
-//    case _      => 
+//    case _      =>
+  }
 
   val app: App[SipiCommandRunnerService] =
     getHelpResponse

@@ -68,7 +68,7 @@ trait SipiCommandRunnerService {
 object SipiCommandRunnerService {
   def help(): ZIO[SipiCommandRunnerService, IOException, String] =
     ZIO.serviceWithZIO[SipiCommandRunnerService](_.help())
-    
+
   def compare(file1: String, file2: String): ZIO[SipiCommandRunnerService, IOException, String] =
     ZIO.serviceWithZIO[SipiCommandRunnerService](_.compare(file1, file2))
 }

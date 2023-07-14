@@ -9,28 +9,37 @@ import swiss.dasch.api.*
 import swiss.dasch.api.monitoring.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
-import swiss.dasch.domain.{ AssetService, AssetServiceLive, SipiCommandRunnerServiceLive, SipiCommand }
-import swiss.dasch.infrastructure.{ IngestApiServer, Logger }
+import swiss.dasch.domain.*
+import swiss.dasch.infrastructure.{ FileSystemCheck, FileSystemCheckLive, IngestApiServer, Logger }
 import swiss.dasch.version.BuildInfo
 import zio.*
 import zio.config.*
 import zio.http.*
+
+import java.io.IOException
 
 object Main extends ZIOAppDefault {
 
   override val bootstrap: Layer[ReadError[String], ServiceConfig with JwtConfig with StorageConfig] =
     Configuration.layer >+> Logger.layer
 
-  override val run: ZIO[Any, Any, Nothing] = IngestApiServer
-    .startup()
-    .provide(
-      AssetServiceLive.layer,
-      AuthenticatorLive.layer,
-      Configuration.layer,
-      HealthCheckServiceLive.layer,
-      IngestApiServer.layer,
-      SipiCommandRunnerServiceLive.layer,
-      Metrics.layer,
-      SipiCommand.layer,
-    )
+  override val run: ZIO[Any, Any, Nothing] =
+    (FileSystemCheck.smokeTestOrDie() *> IngestApiServer.startup())
+      .provide(
+        AssetInfoServiceLive.layer,
+        AuthenticatorLive.layer,
+        Configuration.layer,
+        FileChecksumServiceLive.layer,
+        FileSystemCheckLive.layer,
+        HealthCheckServiceLive.layer,
+        ImportServiceLive.layer,
+        IngestApiServer.layer,
+        Metrics.layer,
+        ProjectServiceLive.layer,
+        ReportServiceLive.layer,
+        SipiCommand.layer,
+        SipiCommandRunnerServiceLive.layer,
+        StorageServiceLive.layer,
+//        ZLayer.Debug.mermaid ,
+      )
 }
