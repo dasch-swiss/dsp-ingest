@@ -8,7 +8,7 @@ import zio.nio.file.*
 import zio.test.*
 
 object SipiCommandLineSpec extends ZIOSpecDefault {
-  private val localDevSuite = suite("SipiCommandLocalDev")(
+  private val localDevSuite = suite("SipiCommandLineLive set up for local development")(
     test("should assemble help command") {
       for {
         assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
@@ -28,10 +28,10 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = true)),
     SpecConfigurations.storageConfigLayer,
-    SipiCommandLive.layer,
+    SipiCommandLineLive.layer,
   )
 
-  private val liveSuite = suite("SipiCommandLive")(
+  private val liveSuite = suite("SipiCommandLineLive set up with local sipi executable")(
     test("should assemble help command") {
       for {
         cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.help())
@@ -47,7 +47,7 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = false)),
     SpecConfigurations.storageConfigLayer,
-    SipiCommandLive.layer,
+    SipiCommandLineLive.layer,
   )
 
   val spec = suite("SipiCommand")(

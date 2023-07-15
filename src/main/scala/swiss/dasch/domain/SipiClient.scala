@@ -16,15 +16,14 @@ import zio.*
   *
   * See https://sipi.io/running/#command-line-options
   */
-private trait SipiCommandLine {
+private trait SipiCommandLine      {
   def help(): UIO[String]                                    = ZIO.succeed("--help")
   def compare(file1: Path, file2: Path): IO[IOError, String] = for {
     abs1 <- file1.toAbsolutePath
     abs2 <- file2.toAbsolutePath
   } yield s"--compare $abs1 $abs2"
 }
-
-private object SipiCommandLive {
+private object SipiCommandLineLive {
   private val sipiExecutable                          = "/sipi/sipi"
   def help(): ZIO[SipiCommandLine, Throwable, String] = ZIO.serviceWithZIO[SipiCommandLine](_.help())
 
@@ -39,16 +38,13 @@ private object SipiCommandLive {
                                s"daschswiss/knora-sipi:latest"
                            }
                            else { sipiExecutable }
-    } yield SipiCommandLive(prefix)
+    } yield SipiCommandLineLive(prefix)
   }
 }
 
-final private case class SipiCommandLive(prefix: String) extends SipiCommandLine {
-
-  private def addPrefix[E](cmd: IO[E, String]): IO[E, String] = cmd.map(cmdStr => s"$prefix $cmdStr")
-
-  override def help(): UIO[String] = addPrefix(super.help())
-
+final private case class SipiCommandLineLive(prefix: String) extends SipiCommandLine {
+  private def addPrefix[E](cmd: IO[E, String]): IO[E, String]         = cmd.map(cmdStr => s"$prefix $cmdStr")
+  override def help(): UIO[String]                                    = addPrefix(super.help())
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
 }
 
@@ -64,25 +60,29 @@ object SipiClient {
     ZIO.serviceWithZIO[SipiClient](_.compare(file1, file2))
 }
 
-final case class SipiClientLive(sipiOptions: SipiCommandLine) extends SipiClient    {
-  override def help(): Task[SipiOutput]                                     = execute(sipiOptions.help())
-  private def execute(commandTask: Task[String]): IO[Throwable, SipiOutput] = for {
-    command <- commandTask
-    logger   = new InMemoryProcessLogger
-    result  <- ZIO.logInfo(s"Calling \n$command") *> ZIO.attemptBlocking(Process(command).!!(logger))
-  } yield SipiOutput(result, logger.getOutput)
+final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
+  override def help(): Task[SipiOutput]                                         = execute(cmd.help())
+  private def execute(commandLineTask: Task[String]): IO[Throwable, SipiOutput] =
+    commandLineTask
+      .tap(cmd => ZIO.logInfo(s"Calling \n$cmd"))
+      .flatMap { cmd =>
+        val logger = new InMemoryProcessLogger
+        ZIO.attemptBlocking(Process(cmd) ! logger).as(logger)
+      }
+      .map(_.getOutput)
 
-  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(sipiOptions.compare(file1, file2))
+  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(cmd.compare(file1, file2))
 }
-final private class InMemoryProcessLogger                     extends ProcessLogger {
-  private val sb                       = new StringBuilder
-  override def out(s: => String): Unit = sb.append(s)
-  override def err(s: => String): Unit = sb.append(s)
+final private class InMemoryProcessLogger             extends ProcessLogger {
+  private val sbOut                    = new StringBuilder
+  private val sbErr                    = new StringBuilder
+  override def out(s: => String): Unit = sbOut.append(s)
+  override def err(s: => String): Unit = sbErr.append(s)
   override def buffer[T](f: => T): T   = f
-  def getOutput: String                = sb.toString()
+  def getOutput: SipiOutput            = SipiOutput(sbOut.toString(), sbErr.toString())
 }
 
 object SipiClientLive {
   val layer: ZLayer[SipiConfig with StorageConfig, Nothing, SipiClient] =
-    SipiCommandLive.layer >>> ZLayer.fromFunction(SipiClientLive.apply _)
+    SipiCommandLineLive.layer >>> ZLayer.fromFunction(SipiClientLive.apply _)
 }
