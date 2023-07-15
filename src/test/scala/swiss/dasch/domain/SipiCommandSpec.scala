@@ -1,7 +1,7 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration
-import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import swiss.dasch.test.SpecConfigurations
 import zio.*
 import zio.nio.file.*
@@ -25,22 +25,30 @@ object SipiCommandSpec extends ZIOSpecDefault {
         cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --compare /tmp/example /tmp/example2"
       )
     },
-  ).provide(SpecConfigurations.storageConfigLayer, ZLayer.fromFunction(SipiCommandLocalDev.apply _))
+  ).provide(
+    ZLayer.succeed(SipiConfig(useLocalDev = true)),
+    SpecConfigurations.storageConfigLayer,
+    SipiCommandLive.layer,
+  )
 
   private val liveSuite = suite("SipiCommandLive")(
     test("should assemble help command") {
       for {
         cmd <- ZIO.serviceWithZIO[SipiCommand](_.help())
-      } yield assertTrue(cmd == s"--help")
+      } yield assertTrue(cmd == s"/sipi/sipi --help")
     },
     test("should assemble compare command") {
       for {
         cmd <- ZIO.serviceWithZIO[SipiCommand](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
       } yield assertTrue(
-        cmd == s"--compare /tmp/example /tmp/example2"
+        cmd == s"/sipi/sipi --compare /tmp/example /tmp/example2"
       )
     },
-  ).provide(ZLayer.fromFunction(SipiCommandLive.apply _))
+  ).provide(
+    ZLayer.succeed(SipiConfig(useLocalDev = false)),
+    SpecConfigurations.storageConfigLayer,
+    SipiCommandLive.layer,
+  )
 
   val spec = suite("SipiCommand")(
     localDevSuite,
