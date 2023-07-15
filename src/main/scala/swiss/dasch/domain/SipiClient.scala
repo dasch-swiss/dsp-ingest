@@ -66,7 +66,7 @@ final case class SipiClientLive(sipiCommand: SipiCommand) extends SipiClient {
   override def help(): Task[String]                                     = execute(sipiCommand.help())
   private def execute(commandTask: Task[String]): IO[Throwable, String] = for {
     command <- commandTask
-    result  <- ZIO.logInfo(s"Calling $command'.") *> ZIO.attemptBlocking(Process(command).!!)
+    result  <- ZIO.logInfo(s"Calling \n$command") *> ZIO.attemptBlocking(Process(command).!!)
   } yield result
 
   override def compare(file1: Path, file2: Path): Task[String] = execute(sipiCommand.compare(file1, file2))
