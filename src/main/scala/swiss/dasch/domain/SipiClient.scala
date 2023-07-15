@@ -12,17 +12,16 @@ import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import zio.nio.file.Path
 import zio.*
 
-/** Provides the list commands available to rub by [[SipiClient]].
+/** Defines the commands that can be executed with Sipi.
   */
-trait SipiCommand  {
-  val sipiExecutable: String                                 = "/sipi/sipi"
+private trait SipiCommand  {
   def help(): UIO[String]                                    = ZIO.succeed("--help")
   def compare(file1: Path, file2: Path): IO[IOError, String] = for {
     abs1 <- file1.toAbsolutePath
     abs2 <- file2.toAbsolutePath
   } yield s"--compare $abs1 $abs2"
 }
-object SipiCommand {
+private object SipiCommand {
   def help(): ZIO[SipiCommand, Throwable, String] = ZIO.serviceWithZIO[SipiCommand](_.help())
 
   val layer: URLayer[SipiConfig with StorageConfig, SipiCommand] = ZLayer.fromZIO {
@@ -35,11 +34,11 @@ object SipiCommand {
   }
 }
 
-final case class SipiCommandLocalDev(storageConfig: StorageConfig) extends SipiCommand {
+final private case class SipiCommandLocalDev(storageConfig: StorageConfig) extends SipiCommand {
   private val absoluteAssetPath                                       = storageConfig.assetPath.toFile.toPath.toAbsolutePath
   private val dockerPrefix: String                                    =
     s"docker run " +
-      s"--entrypoint $sipiExecutable " +
+      s"--entrypoint /sipi/sipi " +
       s"-v $absoluteAssetPath:$absoluteAssetPath " +
       s"daschswiss/knora-sipi:latest "
   private def addPrefix[E](cmd: IO[E, String]): IO[E, String]         = cmd.map(dockerPrefix + _)
@@ -47,7 +46,7 @@ final case class SipiCommandLocalDev(storageConfig: StorageConfig) extends SipiC
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
 }
 
-final case class SipiCommandLive() extends SipiCommand
+final private case class SipiCommandLive() extends SipiCommand
 
 trait SipiClient {
   def help(): Task[String]
@@ -72,7 +71,8 @@ final case class SipiClientLive(sipiCommand: SipiCommand) extends SipiClient {
 }
 
 object SipiClientLive {
-  val layer: URLayer[SipiCommand, SipiClient] = ZLayer.fromFunction(SipiClientLive.apply _)
+  val layer: ZLayer[SipiConfig with StorageConfig, Nothing, SipiClient] =
+    SipiCommand.layer >>> ZLayer.fromFunction(SipiClientLive.apply _)
 }
 
 // /sipi/sipi --format png /opt/images/pp.jpg /opt/images/hh.png
