@@ -61,8 +61,8 @@ object SipiClient {
 }
 
 final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
-  override def help(): Task[SipiOutput]                                         = execute(cmd.help())
-  private def execute(commandLineTask: Task[String]): IO[Throwable, SipiOutput] =
+  override def help(): Task[SipiOutput]                                = execute(cmd.help())
+  private def execute(commandLineTask: Task[String]): Task[SipiOutput] =
     commandLineTask
       .flatMap { cmd =>
         val logger = new InMemoryProcessLogger
