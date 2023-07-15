@@ -8,7 +8,7 @@ package swiss.dasch.infrastructure
 import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
-import swiss.dasch.domain.SipiCommandRunnerService
+import swiss.dasch.domain.SipiClient
 import zio.{ URLayer, ZIO, ZLayer }
 import swiss.dasch.version.BuildInfo
 import zio.http.*
@@ -18,7 +18,7 @@ import zio.{ URLayer, ZIO, ZLayer }
 object IngestApiServer {
 
   private val serviceApps    =
-    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app ++ ReportEndpoint.app ++ SipiCommandRunnerEndpoint.app) @@ Authenticator.middleware
+    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app ++ ReportEndpoint.app ++ SipiTestEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)

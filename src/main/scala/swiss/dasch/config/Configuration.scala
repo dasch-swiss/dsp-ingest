@@ -35,7 +35,7 @@ object Configuration {
       logFormat: String,
     )
 
-  final case class SipiConfig(useLocal: Boolean)
+  final case class SipiConfig(useLocalDev: Boolean)
 
   final case class StorageConfig(assetDir: String, tempDir: String) {
     val assetPath: Path = Path(assetDir)
@@ -47,8 +47,9 @@ object Configuration {
       ZIO.attempt(ConfigFactory.defaultApplication().resolve()),
       descriptor[ApplicationConf].mapKey(toKebabCase),
     )
-    applicationConf.project(_.service) ++ applicationConf.project(_.storage) ++ applicationConf.project(
-      _.jwt
-    ) ++ applicationConf.project(_.sipi)
+    applicationConf.project(_.service) ++
+      applicationConf.project(_.storage) ++
+      applicationConf.project(_.jwt) ++
+      applicationConf.project(_.sipi)
   }
 }
