@@ -4,14 +4,12 @@ import swiss.dasch.api.ApiPathCodecSegments.{ commandPathVar, help, sipi }
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import swiss.dasch.domain.*
-import zio.{ Scope, ZIO, ZIOAppArgs, ZIOAppDefault }
 import zio.http.*
+import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint.{ Endpoint, Routes }
 import zio.json.{ DeriveJsonEncoder, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 import zio.*
-import zio.http.HttpApp
-import zio.http.endpoint.EndpointMiddleware.None
 
 /** Endpoint that enables execute commands on SIPI container
   */

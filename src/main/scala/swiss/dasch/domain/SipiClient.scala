@@ -5,12 +5,12 @@
 
 package swiss.dasch.domain
 
-import java.io.{ File, IOError, IOException }
-import scala.sys.process.{ Process, ProcessLogger }
-import zio.{ Task, URLayer, ZIO, ZIOAppDefault, ZLayer }
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
-import zio.nio.file.Path
 import zio.*
+import zio.nio.file.Path
+
+import java.io.{ File, IOError, IOException }
+import scala.sys.process.{ Process, ProcessLogger, stringToProcess }
 
 /** Defines the commands that can be executed with Sipi.
   *
@@ -64,12 +64,11 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
   override def help(): Task[SipiOutput]                                         = execute(cmd.help())
   private def execute(commandLineTask: Task[String]): IO[Throwable, SipiOutput] =
     commandLineTask
-      .tap(cmd => ZIO.logInfo(s"Calling \n$cmd"))
       .flatMap { cmd =>
         val logger = new InMemoryProcessLogger
-        ZIO.attemptBlocking(Process(cmd) ! logger).as(logger)
+        ZIO.logInfo(s"Calling \n$cmd") *>
+          ZIO.attemptBlocking(cmd ! logger).as(logger.getOutput)
       }
-      .map(_.getOutput)
 
   override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(cmd.compare(file1, file2))
 }
