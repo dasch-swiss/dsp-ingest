@@ -3,7 +3,7 @@ package swiss.dasch.api
 import swiss.dasch.api.ApiPathCodecSegments.{ commandPathVar, help, sipi }
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
-import swiss.dasch.domain.{ SipiClient, SipiClientLive, SipiCommand }
+import swiss.dasch.domain.{ SipiClient, SipiClientLive, SipiCommand, SipiOutput }
 import zio.{ Scope, ZIO, ZIOAppArgs, ZIOAppDefault }
 import zio.http.*
 import zio.http.endpoint.{ Endpoint, Routes }
@@ -16,9 +16,9 @@ import zio.http.endpoint.EndpointMiddleware.None
 /** Endpoint that enables execute commands on SIPI container
   */
 object SipiTestEndpoint {
-  final case class SipiResponse(response: String)
+  final case class SipiResponse(stdOut: String, stdErr: String)
   object SipiResponse {
-    def make(response: String): SipiResponse            = SipiResponse(response)
+    def make(sipiOut: SipiOutput): SipiResponse         = SipiResponse(sipiOut.stdOut, sipiOut.stdErr)
     implicit val schema: Schema[SipiResponse]           = DeriveSchema.gen[SipiResponse]
     implicit val jsonEncoder: JsonEncoder[SipiResponse] = DeriveJsonEncoder.gen[SipiResponse]
   }
@@ -44,7 +44,7 @@ object SipiTestEndpoint {
         file1      = assetPath / "0001" / "fg" / "il" / "FGiLaT4zzuV-CqwbEDFAFeS.jp2"
         file2      = assetPath / "0001" / "fg" / "il" / "FGiLaT4zzuV-CqwbEDFAFeS.jp2.orig"
         response  <-
-          SipiClient.compare(file1, file2).mapBoth(ApiProblem.internalError, res => SipiResponse.make(res)).logError
+          SipiClient.compare(file1, file2).mapBoth(ApiProblem.internalError, out => SipiResponse.make(out)).logError
       } yield response
     )
 

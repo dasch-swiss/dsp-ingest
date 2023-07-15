@@ -6,7 +6,7 @@
 package swiss.dasch.domain
 
 import java.io.{ File, IOError, IOException }
-import scala.sys.process.Process
+import scala.sys.process.{ Process, ProcessLogger }
 import zio.{ Task, URLayer, ZIO, ZIOAppDefault, ZLayer }
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import zio.nio.file.Path
@@ -51,25 +51,34 @@ final private case class SipiCommandLive(prefix: String) extends SipiCommand {
 }
 
 trait SipiClient {
-  def help(): Task[String]
-  def compare(file1: Path, file2: Path): Task[String]
+  def help(): Task[SipiOutput]
+  def compare(file1: Path, file2: Path): Task[SipiOutput]
 }
 
+final case class SipiOutput(stdOut: String, stdErr: String)
 object SipiClient {
-  def help(): ZIO[SipiClient, Throwable, String]                            =
+  def help(): ZIO[SipiClient, Throwable, SipiOutput]                            =
     ZIO.serviceWithZIO[SipiClient](_.help())
-  def compare(file1: Path, file2: Path): ZIO[SipiClient, Throwable, String] =
+  def compare(file1: Path, file2: Path): ZIO[SipiClient, Throwable, SipiOutput] =
     ZIO.serviceWithZIO[SipiClient](_.compare(file1, file2))
 }
 
-final case class SipiClientLive(sipiCommand: SipiCommand) extends SipiClient {
-  override def help(): Task[String]                                     = execute(sipiCommand.help())
-  private def execute(commandTask: Task[String]): IO[Throwable, String] = for {
+final case class SipiClientLive(sipiCommand: SipiCommand) extends SipiClient    {
+  override def help(): Task[SipiOutput]                                     = execute(sipiCommand.help())
+  private def execute(commandTask: Task[String]): IO[Throwable, SipiOutput] = for {
     command <- commandTask
-    result  <- ZIO.logInfo(s"Calling \n$command") *> ZIO.attemptBlocking(Process(command).!!)
-  } yield result
+    logger   = new InMemoryProcessLogger
+    result  <- ZIO.logInfo(s"Calling \n$command") *> ZIO.attemptBlocking(Process(command).!!(logger))
+  } yield SipiOutput(result, logger.getOutput)
 
-  override def compare(file1: Path, file2: Path): Task[String] = execute(sipiCommand.compare(file1, file2))
+  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(sipiCommand.compare(file1, file2))
+}
+final private class InMemoryProcessLogger                 extends ProcessLogger {
+  private val sb                       = new StringBuilder
+  override def out(s: => String): Unit = sb.append(s)
+  override def err(s: => String): Unit = sb.append(s)
+  override def buffer[T](f: => T): T   = f
+  def getOutput: String                = sb.toString()
 }
 
 object SipiClientLive {
