@@ -13,8 +13,10 @@ import zio.nio.file.Path
 import zio.*
 
 /** Defines the commands that can be executed with Sipi.
+  *
+  * See https://sipi.io/running/#command-line-options
   */
-private trait SipiCommand {
+private trait SipiCommandLine {
   def help(): UIO[String]                                    = ZIO.succeed("--help")
   def compare(file1: Path, file2: Path): IO[IOError, String] = for {
     abs1 <- file1.toAbsolutePath
@@ -23,10 +25,10 @@ private trait SipiCommand {
 }
 
 private object SipiCommandLive {
-  private val sipiExecutable                      = "/sipi/sipi"
-  def help(): ZIO[SipiCommand, Throwable, String] = ZIO.serviceWithZIO[SipiCommand](_.help())
+  private val sipiExecutable                          = "/sipi/sipi"
+  def help(): ZIO[SipiCommandLine, Throwable, String] = ZIO.serviceWithZIO[SipiCommandLine](_.help())
 
-  val layer: URLayer[SipiConfig with StorageConfig, SipiCommand] = ZLayer.fromZIO {
+  val layer: URLayer[SipiConfig with StorageConfig, SipiCommandLine] = ZLayer.fromZIO {
     for {
       config            <- ZIO.service[SipiConfig]
       absoluteAssetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath).orDie
@@ -41,7 +43,7 @@ private object SipiCommandLive {
   }
 }
 
-final private case class SipiCommandLive(prefix: String) extends SipiCommand {
+final private case class SipiCommandLive(prefix: String) extends SipiCommandLine {
 
   private def addPrefix[E](cmd: IO[E, String]): IO[E, String] = cmd.map(cmdStr => s"$prefix $cmdStr")
 
@@ -50,12 +52,11 @@ final private case class SipiCommandLive(prefix: String) extends SipiCommand {
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
 }
 
-trait SipiClient {
+final case class SipiOutput(stdOut: String, stdErr: String)
+trait SipiClient  {
   def help(): Task[SipiOutput]
   def compare(file1: Path, file2: Path): Task[SipiOutput]
 }
-
-final case class SipiOutput(stdOut: String, stdErr: String)
 object SipiClient {
   def help(): ZIO[SipiClient, Throwable, SipiOutput]                            =
     ZIO.serviceWithZIO[SipiClient](_.help())
@@ -63,17 +64,17 @@ object SipiClient {
     ZIO.serviceWithZIO[SipiClient](_.compare(file1, file2))
 }
 
-final case class SipiClientLive(sipiCommand: SipiCommand) extends SipiClient    {
-  override def help(): Task[SipiOutput]                                     = execute(sipiCommand.help())
+final case class SipiClientLive(sipiOptions: SipiCommandLine) extends SipiClient    {
+  override def help(): Task[SipiOutput]                                     = execute(sipiOptions.help())
   private def execute(commandTask: Task[String]): IO[Throwable, SipiOutput] = for {
     command <- commandTask
     logger   = new InMemoryProcessLogger
     result  <- ZIO.logInfo(s"Calling \n$command") *> ZIO.attemptBlocking(Process(command).!!(logger))
   } yield SipiOutput(result, logger.getOutput)
 
-  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(sipiCommand.compare(file1, file2))
+  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(sipiOptions.compare(file1, file2))
 }
-final private class InMemoryProcessLogger                 extends ProcessLogger {
+final private class InMemoryProcessLogger                     extends ProcessLogger {
   private val sb                       = new StringBuilder
   override def out(s: => String): Unit = sb.append(s)
   override def err(s: => String): Unit = sb.append(s)
@@ -85,7 +86,3 @@ object SipiClientLive {
   val layer: ZLayer[SipiConfig with StorageConfig, Nothing, SipiClient] =
     SipiCommandLive.layer >>> ZLayer.fromFunction(SipiClientLive.apply _)
 }
-
-// /sipi/sipi --format png /opt/images/pp.jpg /opt/images/hh.png
-
-// /sipi/sipi -C pp.jpg pp.jpg

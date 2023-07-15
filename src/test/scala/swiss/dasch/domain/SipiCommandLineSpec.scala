@@ -7,12 +7,12 @@ import zio.*
 import zio.nio.file.*
 import zio.test.*
 
-object SipiCommandSpec extends ZIOSpecDefault {
+object SipiCommandLineSpec extends ZIOSpecDefault {
   private val localDevSuite = suite("SipiCommandLocalDev")(
     test("should assemble help command") {
       for {
         assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
-        cmd       <- ZIO.serviceWithZIO[SipiCommand](_.help())
+        cmd       <- ZIO.serviceWithZIO[SipiCommandLine](_.help())
       } yield assertTrue(
         cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --help"
       )
@@ -20,7 +20,7 @@ object SipiCommandSpec extends ZIOSpecDefault {
     test("should assemble compare command") {
       for {
         assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
-        cmd       <- ZIO.serviceWithZIO[SipiCommand](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
+        cmd       <- ZIO.serviceWithZIO[SipiCommandLine](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
       } yield assertTrue(
         cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --compare /tmp/example /tmp/example2"
       )
@@ -34,12 +34,12 @@ object SipiCommandSpec extends ZIOSpecDefault {
   private val liveSuite = suite("SipiCommandLive")(
     test("should assemble help command") {
       for {
-        cmd <- ZIO.serviceWithZIO[SipiCommand](_.help())
+        cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.help())
       } yield assertTrue(cmd == s"/sipi/sipi --help")
     },
     test("should assemble compare command") {
       for {
-        cmd <- ZIO.serviceWithZIO[SipiCommand](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
+        cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
       } yield assertTrue(
         cmd == s"/sipi/sipi --compare /tmp/example /tmp/example2"
       )

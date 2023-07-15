@@ -3,7 +3,7 @@ package swiss.dasch.api
 import swiss.dasch.api.ApiPathCodecSegments.{ commandPathVar, help, sipi }
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
-import swiss.dasch.domain.{ SipiClient, SipiClientLive, SipiCommand, SipiOutput }
+import swiss.dasch.domain.*
 import zio.{ Scope, ZIO, ZIOAppArgs, ZIOAppDefault }
 import zio.http.*
 import zio.http.endpoint.{ Endpoint, Routes }
