@@ -19,13 +19,11 @@ object MaintenanceActions {
       : ZStream[SipiClient with ProjectService, Throwable, (AssetId, Path, Path, SipiOutput)] =
     findJpxFiles(projectPath)
       .flatMap(findAssetsWithoutOriginal)
-      .mapZIOPar(20) {
-        case (assetId, jpxPath) =>
-          val originalPath = getOriginalPath(assetId, jpxPath)
-          ZIO.logInfo(s"Creating $originalPath for $jpxPath") *>
-            SipiClient
-              .transcodeImageFile(fileIn = jpxPath, fileOut = originalPath, outputFormat = targetFormat)
-              .map(sipiOut => (assetId, jpxPath, originalPath, sipiOut))
+      .mapZIOPar(20) { c =>
+        ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
+          SipiClient
+            .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = targetFormat)
+            .map(sipiOut => (c.assetId, c.jpxPath, c.originalPath, sipiOut))
       }
 
   private def findJpxFiles(projectPath: Path): ZStream[Any, Throwable, Path] =
@@ -35,22 +33,28 @@ object MaintenanceActions {
         Files.isRegularFile(p) && Files.isHidden(p).negate && ZIO.succeed(p.filename.toString.endsWith(".jpx"))
       )
 
-  private def findAssetsWithoutOriginal(jpxPath: Path): ZStream[Any, Throwable, (AssetId, Path)] =
+  final private case class CreateOriginalFor(
+      assetId: AssetId,
+      jpxPath: Path,
+      originalPath: Path,
+    )
+
+  private def findAssetsWithoutOriginal(jpxPath: Path): ZStream[Any, Throwable, CreateOriginalFor] =
     AssetId.makeFromPath(jpxPath) match {
       case Some(assetId) => filterWithoutOriginal(assetId, jpxPath)
       case None          => ZStream.logInfo(s"Not an assetId: $jpxPath") *> ZStream.empty
     }
 
-  private def filterWithoutOriginal(assetId: AssetId, jpxPath: Path): ZStream[Any, Throwable, (AssetId, Path)] = {
-    val originalPath: Path = getOriginalPath(assetId, jpxPath)
+  private def filterWithoutOriginal(assetId: AssetId, jpxPath: Path): ZStream[Any, Throwable, CreateOriginalFor] = {
+    val originalPath: Path = jpxPath.parent.map(_ / s"$assetId.${targetFormat.extension}.orig").orNull
     ZStream
       .fromZIO(Files.exists(originalPath))
       .flatMap {
         case true  => ZStream.logInfo(s"Original for $jpxPath present: $originalPath") *> ZStream.empty
-        case false => ZStream.logInfo(s"Original for $jpxPath not present") *> ZStream.succeed((assetId, jpxPath))
+        case false =>
+          ZStream.logInfo(s"Original for $jpxPath not present") *> ZStream.succeed(
+            CreateOriginalFor(assetId, jpxPath, originalPath)
+          )
       }
   }
-
-  private def getOriginalPath(assetId: AssetId, jpxPath: Path) =
-    jpxPath.parent.map(_ / s"$assetId.${targetFormat.extension}.orig").orNull
 }
