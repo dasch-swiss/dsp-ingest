@@ -42,7 +42,7 @@ object MaintenanceEndpoint {
             )
         _           <- ZIO.logInfo(s"Creating originals for $projectPath")
         _           <- MaintenanceActions
-                         .createOriginals(projectPath)
+                         .createTifOriginals(projectPath)
                          .as(1)
                          .run(ZSink.sum)
                          .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
