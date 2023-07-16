@@ -14,29 +14,19 @@ import java.io.IOException
 object MaintenanceActions {
 
   private val targetFormt = Tif
-  def createOriginals(shortcode: String)
+  def createOriginals(projectPath: Path)
       : ZStream[SipiClient with ProjectService, Throwable, (AssetId, Path, Path, SipiOutput)] =
-    ZStream
-      .fromZIO(
-        ZIO
-          .succeed(ProjectShortcode.make(shortcode).toOption)
-          .some
-          .flatMap(ProjectService.findProject(_).some.tap(code => ZIO.logInfo("Found project" + code.toString)))
-          .mapError(e => new IOException(s"Could not find project for shortcode $shortcode $e"))
-      )
-      .flatMap(projectPath =>
-        findJpxFiles(projectPath)
-          .flatMap(filterWithAssetId)
-          .flatMap(filterWithoutOriginal)
-          .mapZIO {
-            case (assetId, jpxPath) =>
-              val originalPath = getOriginalPath(assetId, jpxPath)
-              ZIO.logInfo(s"Creating $originalPath for $jpxPath") *>
-                SipiClient
-                  .transcodeImageFile(fileIn = jpxPath, fileOut = originalPath, outputFormat = targetFormt)
-                  .map(sipiOut => (assetId, jpxPath, originalPath, sipiOut))
-          }
-      )
+    findJpxFiles(projectPath)
+      .flatMap(filterWithAssetId)
+      .flatMap(filterWithoutOriginal)
+      .mapZIO {
+        case (assetId, jpxPath) =>
+          val originalPath = getOriginalPath(assetId, jpxPath)
+          ZIO.logInfo(s"Creating $originalPath for $jpxPath") *>
+            SipiClient
+              .transcodeImageFile(fileIn = jpxPath, fileOut = originalPath, outputFormat = targetFormt)
+              .map(sipiOut => (assetId, jpxPath, originalPath, sipiOut))
+      }
 
   private def getOriginalPath(assetId: AssetId, jpxPath: Path) =
     jpxPath.parent.map(_ / s"$assetId.${targetFormt.extension}.orig").orNull

@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.MaintenanceActions
+import swiss.dasch.domain.{ MaintenanceActions, ProjectService }
 import zio.*
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
@@ -15,22 +15,33 @@ import zio.http.codec.*
 import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint.*
 import zio.http.*
+import zio.stream.ZSink
 
 object MaintenanceEndpoint {
 
-  val endpoint = Endpoint
+  private val endpoint = Endpoint
     .post("maintenance" / "create-originals" / string("shortcode"))
-    .out[String]
+    .out[String](Status.Accepted)
     .outErrors(
       HttpCodec.error[ProjectNotFound](Status.NotFound),
       HttpCodec.error[IllegalArguments](Status.BadRequest),
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
 
-  val route =
-    endpoint.implement(shortcode =>
-      MaintenanceActions.createOriginals(shortcode).runHead.mapBoth(ApiProblem.internalError, _.toString)
+  val app = endpoint
+    .implement(shortcodeStr =>
+      for {
+        projectPath <-
+          ApiStringConverters
+            .fromPathVarToProjectShortcode(shortcodeStr)
+            .flatMap(code =>
+              ProjectService.findProject(code).some.mapError {
+                case Some(e) => ApiProblem.internalError(e)
+                case _       => ApiProblem.projectNotFound(code)
+              }
+            )
+        _           <- MaintenanceActions.createOriginals(projectPath).run(ZSink.drain).forkDaemon
+      } yield "work in progress"
     )
-
-  val app = route.toApp
+    .toApp
 }
