@@ -40,7 +40,13 @@ object MaintenanceEndpoint {
                 case _       => ApiProblem.projectNotFound(code)
               }
             )
-        _           <- MaintenanceActions.createOriginals(projectPath).run(ZSink.drain).forkDaemon
+        _           <- ZIO.logInfo(s"Creating originals for $projectPath")
+        _           <- MaintenanceActions
+                         .createOriginals(projectPath)
+                         .as(1)
+                         .run(ZSink.sum)
+                         .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
+                         .forkDaemon
       } yield "work in progress"
     )
     .toApp

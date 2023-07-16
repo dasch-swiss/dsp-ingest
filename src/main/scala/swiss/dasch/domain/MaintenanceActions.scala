@@ -5,6 +5,7 @@
 
 package swiss.dasch.domain
 
+import swiss.dasch.domain.StorageService.maxParallelism
 import zio.*
 import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
@@ -19,7 +20,7 @@ object MaintenanceActions {
     findJpxFiles(projectPath)
       .flatMap(filterWithAssetId)
       .flatMap(filterWithoutOriginal)
-      .mapZIO {
+      .mapZIOPar(20) {
         case (assetId, jpxPath) =>
           val originalPath = getOriginalPath(assetId, jpxPath)
           ZIO.logInfo(s"Creating $originalPath for $jpxPath") *>
