@@ -22,6 +22,15 @@ private trait SipiCommandLine      {
     abs1 <- file1.toAbsolutePath
     abs2 <- file2.toAbsolutePath
   } yield s"--compare $abs1 $abs2"
+
+  def format(
+      outputFormat: String,
+      fileIn: Path,
+      fileOut: Path,
+    ): IO[IOError, String] = for {
+    abs1 <- fileIn.toAbsolutePath
+    abs2 <- fileOut.toAbsolutePath
+  } yield s"--format $outputFormat --fileIn $abs1 $abs2"
 }
 private object SipiCommandLineLive {
   private val sipiExecutable                          = "/sipi/sipi"
@@ -46,18 +55,55 @@ final private case class SipiCommandLineLive(prefix: String) extends SipiCommand
   private def addPrefix[E](cmd: IO[E, String]): IO[E, String]         = cmd.map(cmdStr => s"$prefix $cmdStr")
   override def help(): UIO[String]                                    = addPrefix(super.help())
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
+  def format(
+      outputFormat: String,
+      fileIn: Path,
+      fileOut: Path,
+    ): IO[IOError, String] = addPrefix(super.format(outputFormat, fileIn, fileOut))
+}
+
+/** Defines the output format of the image. Used with the `--format` option.
+  *
+  * https://sipi.io/running/#command-line-options
+  */
+sealed trait SipiImageFormat {
+  def toCliString: String
+}
+case object Jpx extends SipiImageFormat {
+  override def toCliString: String = "jpx"
+}
+case object Jpg extends SipiImageFormat {
+  override def toCliString: String = "jpg"
+}
+case object Tif extends SipiImageFormat {
+  override def toCliString: String = "tif"
+}
+case object Png extends SipiImageFormat {
+  override def toCliString: String = "png"
 }
 
 final case class SipiOutput(stdOut: String, stdErr: String)
 trait SipiClient  {
   def help(): Task[SipiOutput]
   def compare(file1: Path, file2: Path): Task[SipiOutput]
+
+  def transcodeImageFile(
+      fileIn: Path,
+      fileOut: Path,
+      outputFormat: SipiImageFormat,
+    ): Task[SipiOutput]
 }
 object SipiClient {
   def help(): ZIO[SipiClient, Throwable, SipiOutput]                            =
     ZIO.serviceWithZIO[SipiClient](_.help())
   def compare(file1: Path, file2: Path): ZIO[SipiClient, Throwable, SipiOutput] =
     ZIO.serviceWithZIO[SipiClient](_.compare(file1, file2))
+  def format(
+      fileIn: Path,
+      fileOut: Path,
+      outputFormat: SipiImageFormat,
+    ): ZIO[SipiClient, Throwable, SipiOutput] =
+    ZIO.serviceWithZIO[SipiClient](_.transcodeImageFile(fileIn, fileOut, outputFormat.toCliString))
 }
 
 final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
@@ -71,6 +117,12 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
       }
 
   override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(cmd.compare(file1, file2))
+  override def transcodeImageFile(
+      fileIn: Path,
+      fileOut: Path,
+      outputFormat: SipiImageFormat,
+    ): Task[SipiOutput] =
+    execute(cmd.format(outputFormat, fileIn, fileOut))
 }
 final private class InMemoryProcessLogger             extends ProcessLogger {
   private val sbOut                    = new StringBuilder
