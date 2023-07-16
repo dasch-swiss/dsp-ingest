@@ -19,7 +19,7 @@ object MaintenanceActions {
       : ZStream[SipiClient with ProjectService, Throwable, (AssetId, Path, Path, SipiOutput)] =
     findJpxFiles(projectPath)
       .flatMap(findAssetsWithoutOriginal)
-      .mapZIOPar(20) { c =>
+      .mapZIOPar(8) { c =>
         ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
           SipiClient
             .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = targetFormat)
