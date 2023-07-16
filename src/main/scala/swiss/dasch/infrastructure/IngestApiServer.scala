@@ -17,7 +17,12 @@ import zio.{ URLayer, ZIO, ZLayer }
 object IngestApiServer {
 
   private val serviceApps    =
-    (ExportEndpoint.app ++ ImportEndpoint.app ++ ListProjectsEndpoint.app ++ ReportEndpoint.app ++ SipiTestEndpoint.app) @@ Authenticator.middleware
+    (ExportEndpoint.app ++
+      ImportEndpoint.app ++
+      ListProjectsEndpoint.app ++
+      ReportEndpoint.app ++
+      SipiTestEndpoint.app ++
+      MaintenanceEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)
