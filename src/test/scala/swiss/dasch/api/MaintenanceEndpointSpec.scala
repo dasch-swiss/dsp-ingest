@@ -48,8 +48,8 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
           // we need to wait (i.e. `awaitTrue') for the file to be created.
           assetDir => awaitTrue(Files.exists(assetDir / s"${asset.id}.${format.extension}.orig"))
         }
-        val assetJpx                    = Asset("1ACilM7l8UQ-EGONbx28BUW".toAssetId, existingProject)
-        val assetJp2                    = Asset("3YUIsbpwNji-Dl3gNO0O2sl".toAssetId, existingProject)
+        val assetJpx                    = Asset("aaaa-a-jpx-without-orig".toAssetId, existingProject)
+        val assetJp2                    = Asset("bbbb-a-jp2-without-orig".toAssetId, existingProject)
         val request                     = createOriginalsRequest(existingProject)
         for {
           response         <- MaintenanceEndpoint.app.runZIO(request).logError
