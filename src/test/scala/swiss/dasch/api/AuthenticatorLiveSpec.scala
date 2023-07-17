@@ -11,7 +11,7 @@ import swiss.dasch.config.Configuration.JwtConfig
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConfigurations.jwtConfigLayer
 import zio.*
-import zio.test.{TestAspect, ZIOSpecDefault, assertTrue}
+import zio.test.{ TestAspect, ZIOSpecDefault, assertTrue }
 
 import java.time.temporal.ChronoUnit
 

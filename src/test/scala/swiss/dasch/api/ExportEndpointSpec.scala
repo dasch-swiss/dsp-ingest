@@ -9,8 +9,8 @@ import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.Projects.*
 import zio.http.*
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
-import zio.{Scope, ZIO}
+import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertTrue }
+import zio.{ Scope, ZIO }
 
 object ExportEndpointSpec extends ZIOSpecDefault {
 

@@ -5,7 +5,7 @@
 
 package swiss.dasch.api.monitoring
 
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
+import zio.json.{ DeriveJsonEncoder, JsonEncoder }
 
 sealed trait Status { self =>
   private def jsonString: String = {

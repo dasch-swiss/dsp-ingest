@@ -5,13 +5,13 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ApiPathCodecSegments.{projects, shortcodePathVar}
+import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.domain.ProjectService
-import zio.http.Header.{ContentDisposition, ContentType}
+import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.codec.*
 import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.Endpoint
-import zio.http.{Header, *}
+import zio.http.{ Header, * }
 import zio.schema.Schema
 import zio.stream.ZStream
 

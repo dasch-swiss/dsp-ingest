@@ -7,8 +7,8 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.ProjectShortcode
 import zio.http.Header.ContentType
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
-import zio.schema.{DeriveSchema, Schema}
+import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.schema.{ DeriveSchema, Schema }
 
 sealed trait ApiProblem
 

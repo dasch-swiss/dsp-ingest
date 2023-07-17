@@ -16,7 +16,7 @@ import zio.nio.file.Files
 import zio.test.*
 
 import java.time.format.DateTimeFormatter
-import java.time.{ZoneId, ZoneOffset}
+import java.time.{ ZoneId, ZoneOffset }
 
 object StorageServiceLiveSpec extends ZIOSpecDefault {
 

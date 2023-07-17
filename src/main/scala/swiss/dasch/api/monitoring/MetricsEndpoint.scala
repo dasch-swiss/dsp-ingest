@@ -8,7 +8,7 @@ package swiss.dasch.api.monitoring
 import zio.*
 import zio.http.*
 import zio.metrics.connectors.prometheus.PrometheusPublisher
-import zio.metrics.connectors.{MetricsConfig, prometheus}
+import zio.metrics.connectors.{ MetricsConfig, prometheus }
 import zio.metrics.jvm.DefaultJvmMetrics
 
 object MetricsEndpoint {

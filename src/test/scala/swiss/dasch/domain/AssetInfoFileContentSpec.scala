@@ -9,7 +9,7 @@ import swiss.dasch.test.SpecPaths.pathFromResource
 import zio.Scope
 import zio.json.*
 import zio.nio.file.Files
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
+import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertTrue }
 
 object AssetInfoFileContentSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =

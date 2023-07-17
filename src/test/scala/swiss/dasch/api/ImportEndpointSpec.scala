@@ -8,11 +8,11 @@ package swiss.dasch.api
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConstants.Projects.*
-import swiss.dasch.test.{SpecConfigurations, SpecConstants, SpecPaths}
+import swiss.dasch.test.{ SpecConfigurations, SpecConstants, SpecPaths }
 import zio.http.*
 import zio.nio.file.Files
-import zio.test.{ZIOSpecDefault, assertTrue}
-import zio.{UIO, ZIO}
+import zio.test.{ ZIOSpecDefault, assertTrue }
+import zio.{ UIO, ZIO }
 
 object ImportEndpointSpec extends ZIOSpecDefault {
 

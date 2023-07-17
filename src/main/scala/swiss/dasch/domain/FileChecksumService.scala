@@ -11,7 +11,7 @@ import eu.timepit.refined.string.MatchesRegex
 import zio.*
 import zio.nio.file.Path
 
-import java.io.{FileInputStream, FileNotFoundException}
+import java.io.{ FileInputStream, FileNotFoundException }
 
 opaque type Sha256Hash = String Refined MatchesRegex["^[A-Fa-f0-9]{64}$"]
 object Sha256Hash {

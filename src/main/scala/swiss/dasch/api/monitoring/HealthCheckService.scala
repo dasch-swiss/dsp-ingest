@@ -6,7 +6,7 @@
 package swiss.dasch.api.monitoring
 
 import swiss.dasch.infrastructure.FileSystemCheck
-import zio.{UIO, URIO, URLayer, ZIO, ZLayer}
+import zio.{ UIO, URIO, URLayer, ZIO, ZLayer }
 
 trait HealthCheckService  {
   def check: UIO[Health]

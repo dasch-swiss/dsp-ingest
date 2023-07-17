@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ApiPathCodecSegments.{projects, shortcodePathVar}
+import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.domain.*
 import zio.*
@@ -13,9 +13,9 @@ import zio.http.Header.ContentType
 import zio.http.codec.*
 import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.Endpoint
-import zio.http.{Header, *}
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
-import zio.schema.{DeriveSchema, Schema}
+import zio.http.{ Header, * }
+import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.ZStream
 
 object ImportEndpoint {
