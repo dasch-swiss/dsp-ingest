@@ -31,22 +31,22 @@ object MaintenanceEndpoint {
   val app: App[SipiClient with ProjectService] = endpoint.implement(shortcodeStr => handle(shortcodeStr)).toApp
 
   private def handle(shortcodeStr: String): ZIO[SipiClient with ProjectService, ApiProblem, String] =
-    for {
-      projectPath <-
-        ApiStringConverters
-          .fromPathVarToProjectShortcode(shortcodeStr)
-          .flatMap(code =>
-            ProjectService.findProject(code).some.mapError {
-              case Some(e) => ApiProblem.internalError(e)
-              case _       => ApiProblem.projectNotFound(code)
-            }
-          )
-      _           <- ZIO.logInfo(s"Creating originals for $projectPath")
-      _           <- MaintenanceActions
-                       .createTifOriginals(projectPath)
-                       .as(1)
-                       .run(ZSink.sum)
-                       .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
-                       .forkDaemon
-    } yield "work in progress"
+    ApiStringConverters
+      .fromPathVarToProjectShortcode(shortcodeStr)
+      .flatMap(code =>
+        ProjectService.findProject(code).some.mapError {
+          case Some(e) => ApiProblem.internalError(e)
+          case _       => ApiProblem.projectNotFound(code)
+        }
+      )
+      .flatMap { projectPath =>
+        ZIO.logInfo(s"Creating originals for $projectPath") *>
+          MaintenanceActions
+            .createTifOriginals(projectPath)
+            .as(1)
+            .run(ZSink.sum)
+            .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
+            .forkDaemon
+      }
+      .as("work in progress")
 }
