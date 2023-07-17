@@ -18,6 +18,9 @@ import eu.timepit.refined.auto.autoUnwrap
 
 object MaintenanceEndpointSpec extends ZIOSpecDefault {
 
+  private def awaitTrue[R, E](awaitThis: ZIO[R, E, Boolean], timeout: Duration = 1.seconds): ZIO[R, E, Boolean] =
+    awaitThis.repeatUntil(identity).timeout(timeout).map(_.getOrElse(false))
+
   private val createOriginalsSuite = {
     def createOriginalsRequest(shortcode: ProjectShortcode | String) =
       Request.post(Body.empty, URL(Root / "maintenance" / "create-originals" / shortcode.toString))
@@ -44,14 +47,9 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
         val asset   = Asset("1ACilM7l8UQ-EGONbx28BUW".toAssetId, existingProject)
         val request = createOriginalsRequest(asset.belongsToProject)
         for {
-          assetDir      <- StorageService.getAssetDirectory(asset)
           response      <- MaintenanceEndpoint.app.runZIO(request).logError
-          newOrigExists <-
-            Files
-              .exists(assetDir / s"${asset.id}.tif.orig")
-              .repeatUntil(identity)
-              .timeout(1.seconds)
-              .map(_.getOrElse(false))
+          assetDir      <- StorageService.getAssetDirectory(asset)
+          newOrigExists <- awaitTrue(Files.exists(assetDir / s"${asset.id}.tif.orig"))
         } yield assertTrue(response.status == Status.Accepted, newOrigExists)
       },
     ) @@ TestAspect.withLiveClock
