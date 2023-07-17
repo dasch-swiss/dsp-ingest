@@ -7,12 +7,8 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.{ MaintenanceActions, ProjectService, SipiClient }
 import zio.*
-import zio.http.Header.{ ContentDisposition, ContentType }
-import zio.http.HttpError.*
-import zio.http.Path.Segment.Root
 import zio.http.codec.HttpCodec.*
 import zio.http.codec.*
-import zio.http.endpoint.EndpointMiddleware.None
 import zio.http.endpoint.*
 import zio.http.*
 import zio.stream.ZSink

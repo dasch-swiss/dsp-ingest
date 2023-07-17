@@ -9,8 +9,8 @@ import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import zio.*
 import zio.nio.file.Path
 
-import java.io.{ File, IOError, IOException }
-import scala.sys.process.{ Process, ProcessLogger, stringToProcess }
+import java.io.IOError
+import scala.sys.process.{ ProcessLogger, stringToProcess }
 
 /** Defines the commands that can be executed with Sipi.
   *

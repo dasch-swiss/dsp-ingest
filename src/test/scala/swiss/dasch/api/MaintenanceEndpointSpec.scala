@@ -14,7 +14,6 @@ import zio.nio.file
 import zio.nio.file.Files
 import zio.test.*
 import zio.*
-import eu.timepit.refined.auto.autoUnwrap
 
 object MaintenanceEndpointSpec extends ZIOSpecDefault {
 

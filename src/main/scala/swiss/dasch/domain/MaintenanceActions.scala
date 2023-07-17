@@ -5,12 +5,9 @@
 
 package swiss.dasch.domain
 
-import swiss.dasch.domain.StorageService.maxParallelism
 import zio.*
 import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
-
-import java.io.IOException
 
 object MaintenanceActions {
 
