@@ -6,13 +6,13 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.*
-import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
-import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig }
+import swiss.dasch.api.monitoring.{HealthEndpoint, InfoEndpoint, MetricsEndpoint}
+import swiss.dasch.config.Configuration.{JwtConfig, ServiceConfig}
 import swiss.dasch.domain.SipiClient
 import swiss.dasch.version.BuildInfo
 import zio.http.*
 import zio.http.internal.middlewares.Cors.CorsConfig
-import zio.{ URLayer, ZIO, ZLayer }
+import zio.{URLayer, ZIO, ZLayer}
 
 object IngestApiServer {
 
