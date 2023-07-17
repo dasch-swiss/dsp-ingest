@@ -7,12 +7,12 @@ package swiss.dasch.api
 
 import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConstants.Projects.nonExistentProject
-import swiss.dasch.test.{ SpecConfigurations, SpecConstants }
-import zio.{ Task, ZIO, ZLayer }
+import swiss.dasch.test.{SpecConfigurations, SpecConstants}
 import zio.http.*
 import zio.nio.file
 import zio.nio.file.Files
 import zio.test.*
+import zio.{Task, ZIO, ZLayer}
 
 object MaintenanceEndpointSpec extends ZIOSpecDefault {
 
