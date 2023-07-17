@@ -67,14 +67,9 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
 }
 
 final case class SipiClientMock() extends SipiClient {
-  override def help(): Task[SipiOutput] = ???
-
-  override def compare(file1: file.Path, file2: file.Path): Task[SipiOutput] = ???
-
   override def transcodeImageFile(
       fileIn: file.Path,
       fileOut: file.Path,
       outputFormat: SipiImageFormat,
-    ): Task[SipiOutput] =
-    Files.createFile(fileOut).as(SipiOutput("", ""))
+    ): Task[SipiOutput] = Files.createFile(fileOut).as(SipiOutput("", ""))
 }

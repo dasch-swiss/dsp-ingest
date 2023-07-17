@@ -21,7 +21,6 @@ object IngestApiServer {
       ImportEndpoint.app ++
       ListProjectsEndpoint.app ++
       ReportEndpoint.app ++
-      SipiTestEndpoint.app ++
       MaintenanceEndpoint.app) @@ Authenticator.middleware
   private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
   private val app            = ((managementApps ++ serviceApps)

@@ -85,9 +85,6 @@ case object Png extends SipiImageFormat {
 
 final case class SipiOutput(stdOut: String, stdErr: String)
 trait SipiClient  {
-  def help(): Task[SipiOutput]
-  def compare(file1: Path, file2: Path): Task[SipiOutput]
-
   def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
@@ -95,10 +92,6 @@ trait SipiClient  {
     ): Task[SipiOutput]
 }
 object SipiClient {
-  def help(): ZIO[SipiClient, Throwable, SipiOutput]                            =
-    ZIO.serviceWithZIO[SipiClient](_.help())
-  def compare(file1: Path, file2: Path): ZIO[SipiClient, Throwable, SipiOutput] =
-    ZIO.serviceWithZIO[SipiClient](_.compare(file1, file2))
   def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
@@ -108,7 +101,6 @@ object SipiClient {
 }
 
 final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
-  override def help(): Task[SipiOutput]                                = execute(cmd.help())
   private def execute(commandLineTask: Task[String]): Task[SipiOutput] =
     commandLineTask.flatMap { cmd =>
       val logger = new InMemoryProcessLogger
@@ -116,7 +108,6 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
         ZIO.attemptBlocking(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logInfo(out.toString))
     }.logError
 
-  override def compare(file1: Path, file2: Path): Task[SipiOutput] = execute(cmd.compare(file1, file2))
   override def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
