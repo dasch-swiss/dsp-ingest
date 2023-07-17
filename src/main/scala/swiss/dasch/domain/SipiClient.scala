@@ -104,7 +104,7 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
   private def execute(commandLineTask: Task[String]): Task[SipiOutput] =
     commandLineTask.flatMap { cmd =>
       val logger = new InMemoryProcessLogger
-      ZIO.logInfo(s"Calling \n$cmd") *>
+      ZIO.logDebug(s"Calling \n$cmd") *>
         ZIO.attemptBlocking(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logInfo(out.toString))
     }.logError
 

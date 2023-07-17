@@ -42,7 +42,7 @@ object MaintenanceActions {
   private def findAssetsWithoutOriginal(jpxPath: Path): ZStream[Any, Throwable, CreateOriginalFor] =
     AssetId.makeFromPath(jpxPath) match {
       case Some(assetId) => filterWithoutOriginal(assetId, jpxPath)
-      case None          => ZStream.logInfo(s"Not an assetId: $jpxPath") *> ZStream.empty
+      case None          => ZStream.logWarning(s"Not an assetId: $jpxPath") *> ZStream.empty
     }
 
   private def filterWithoutOriginal(assetId: AssetId, jpxPath: Path): ZStream[Any, Throwable, CreateOriginalFor] = {
@@ -50,11 +50,12 @@ object MaintenanceActions {
     ZStream
       .fromZIO(Files.exists(originalPath))
       .flatMap {
-        case true  => ZStream.logInfo(s"Original for $jpxPath present: $originalPath") *> ZStream.empty
+        case true  =>
+          ZStream.logInfo(s"Original for $jpxPath present, skipping $originalPath") *>
+            ZStream.empty
         case false =>
-          ZStream.logInfo(s"Original for $jpxPath not present") *> ZStream.succeed(
-            CreateOriginalFor(assetId, jpxPath, originalPath)
-          )
+          ZStream.logDebug(s"Original for $jpxPath not present") *>
+            ZStream.succeed(CreateOriginalFor(assetId, jpxPath, originalPath))
       }
   }
 }
