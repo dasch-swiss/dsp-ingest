@@ -5,7 +5,7 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.{ MaintenanceActions, ProjectService }
+import swiss.dasch.domain.{ MaintenanceActions, ProjectService, SipiClient }
 import zio.*
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.HttpError.*
@@ -28,26 +28,25 @@ object MaintenanceEndpoint {
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
 
-  val app = endpoint
-    .implement(shortcodeStr =>
-      for {
-        projectPath <-
-          ApiStringConverters
-            .fromPathVarToProjectShortcode(shortcodeStr)
-            .flatMap(code =>
-              ProjectService.findProject(code).some.mapError {
-                case Some(e) => ApiProblem.internalError(e)
-                case _       => ApiProblem.projectNotFound(code)
-              }
-            )
-        _           <- ZIO.logInfo(s"Creating originals for $projectPath")
-        _           <- MaintenanceActions
-                         .createTifOriginals(projectPath)
-                         .as(1)
-                         .run(ZSink.sum)
-                         .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
-                         .forkDaemon
-      } yield "work in progress"
-    )
-    .toApp
+  val app: App[SipiClient with ProjectService] = endpoint.implement(shortcodeStr => handle(shortcodeStr)).toApp
+
+  private def handle(shortcodeStr: String): ZIO[SipiClient with ProjectService, ApiProblem, String] =
+    for {
+      projectPath <-
+        ApiStringConverters
+          .fromPathVarToProjectShortcode(shortcodeStr)
+          .flatMap(code =>
+            ProjectService.findProject(code).some.mapError {
+              case Some(e) => ApiProblem.internalError(e)
+              case _       => ApiProblem.projectNotFound(code)
+            }
+          )
+      _           <- ZIO.logInfo(s"Creating originals for $projectPath")
+      _           <- MaintenanceActions
+                       .createTifOriginals(projectPath)
+                       .as(1)
+                       .run(ZSink.sum)
+                       .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
+                       .forkDaemon
+    } yield "work in progress"
 }
