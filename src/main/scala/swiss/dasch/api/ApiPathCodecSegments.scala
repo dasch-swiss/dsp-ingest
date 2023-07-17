@@ -11,14 +11,8 @@ import zio.http.codec.PathCodec
 object ApiPathCodecSegments {
   // project paths
   val projects: PathCodec[Unit] = "projects"
-  // sipi paths
-  val sipi: PathCodec[Unit]     = "sipi"
-  val help: PathCodec[Unit]     = "help"
 
   // project path variables
   val shortcodePathVarStr                 = "shortcode"
   val shortcodePathVar: PathCodec[String] = string(shortcodePathVarStr)
-
-  // sipi path variables
-  val commandPathVar: PathCodec[String] = string("command")
 }
