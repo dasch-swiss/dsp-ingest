@@ -42,14 +42,20 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
           response <- MaintenanceEndpoint.app.runZIO(request).logError
         } yield assertTrue(response.status == Status.Accepted)
       },
-      test("should return 204 for a project shortcode and create original") {
-        val asset   = Asset("1ACilM7l8UQ-EGONbx28BUW".toAssetId, existingProject)
-        val request = createOriginalsRequest(asset.belongsToProject)
+      test("should return 204 for a project shortcode and create originals for jp2 and jpx assets") {
+        def doesOrigExist(asset: Asset) = StorageService.getAssetDirectory(asset).flatMap {
+          // Since the create original maintenance action is forked into the background
+          // we need to wait (i.e. `awaitTrue') for the file to be created.
+          assetDir => awaitTrue(Files.exists(assetDir / s"${asset.id}.tif.orig"))
+        }
+        val assetJpx                    = Asset("1ACilM7l8UQ-EGONbx28BUW".toAssetId, existingProject)
+        val assetJp2                    = Asset("3YUIsbpwNji-Dl3gNO0O2sl".toAssetId, existingProject)
+        val request                     = createOriginalsRequest(existingProject)
         for {
-          response      <- MaintenanceEndpoint.app.runZIO(request).logError
-          assetDir      <- StorageService.getAssetDirectory(asset)
-          newOrigExists <- awaitTrue(Files.exists(assetDir / s"${asset.id}.tif.orig"))
-        } yield assertTrue(response.status == Status.Accepted, newOrigExists)
+          response         <- MaintenanceEndpoint.app.runZIO(request).logError
+          newOrigExistsJpx <- doesOrigExist(assetJpx)
+          newOrigExistsJp2 <- doesOrigExist(assetJp2)
+        } yield assertTrue(response.status == Status.Accepted, newOrigExistsJpx, newOrigExistsJp2)
       },
     ) @@ TestAspect.withLiveClock
   }

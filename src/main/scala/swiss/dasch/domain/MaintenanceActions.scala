@@ -14,7 +14,7 @@ object MaintenanceActions {
   private val targetFormat = Tif
   def createTifOriginals(projectPath: Path)
       : ZStream[SipiClient with ProjectService, Throwable, (AssetId, Path, Path, SipiOutput)] =
-    findJpxFiles(projectPath)
+    findJpeg2000Files(projectPath)
       .flatMap(findAssetsWithoutOriginal)
       .mapZIOPar(8) { c =>
         ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
@@ -23,12 +23,15 @@ object MaintenanceActions {
             .map(sipiOut => (c.assetId, c.jpxPath, c.originalPath, sipiOut))
       }
 
-  private def findJpxFiles(projectPath: Path): ZStream[Any, Throwable, Path] =
+  private def findJpeg2000Files(projectPath: Path): ZStream[Any, Throwable, Path] =
     Files
       .walk(projectPath)
-      .filterZIO(p =>
-        Files.isRegularFile(p) && Files.isHidden(p).negate && ZIO.succeed(p.filename.toString.endsWith(".jpx"))
-      )
+      .filterZIO(p => Files.isRegularFile(p) && Files.isHidden(p).negate && isJpeg2000File(p))
+
+  private def isJpeg2000File(p: Path) = {
+    val filename = p.filename.toString
+    ZIO.succeed(filename.endsWith(".jpx") || filename.endsWith(".jp2"))
+  }
 
   final private case class CreateOriginalFor(
       assetId: AssetId,
