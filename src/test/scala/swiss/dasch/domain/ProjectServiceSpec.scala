@@ -5,15 +5,13 @@
 
 package swiss.dasch.domain
 
-import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Projects.*
-import swiss.dasch.test.SpecPaths.pathFromResource
-import swiss.dasch.test.{ SpecConfigurations, SpecPaths }
-import zio.nio.file.{ Files, Path }
-import zio.test.{ Spec, TestEnvironment, ZIOSpecDefault, assertCompletes, assertTrue }
-import zio.{ Chunk, Scope, ZIO, ZLayer }
+import zio.nio.file.Path
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
+import zio.{Chunk, Scope, ZIO, ZLayer}
 
 object ProjectServiceSpec extends ZIOSpecDefault {
 

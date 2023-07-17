@@ -7,10 +7,9 @@ package swiss.dasch.domain
 
 import zio.*
 import zio.nio.file.*
-import zio.stream.ZStream
 
 import java.io.*
-import java.util.zip.{ ZipEntry, ZipInputStream, ZipOutputStream }
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 
 object ZipUtility {
 

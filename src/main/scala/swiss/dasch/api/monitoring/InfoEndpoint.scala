@@ -5,13 +5,12 @@
 
 package swiss.dasch.api.monitoring
 
-import swiss.dasch.api.ImportEndpoint.UploadResponse
 import swiss.dasch.version.BuildInfo
 import zio.*
 import zio.http.*
 import zio.http.endpoint.*
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
-import zio.schema.{ DeriveSchema, Schema }
+import zio.json.{DeriveJsonEncoder, JsonEncoder}
+import zio.schema.{DeriveSchema, Schema}
 
 object InfoEndpoint {
   case class InfoEndpointResponse(

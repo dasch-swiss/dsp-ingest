@@ -7,7 +7,7 @@ package swiss.dasch.api.monitoring
 
 import swiss.dasch.api.monitoring.InfoEndpoint.InfoEndpointResponse
 import swiss.dasch.version.BuildInfo
-import zio.http.{ Request, Root, Status, URL }
+import zio.http.{Request, Root, Status, URL}
 import zio.json.EncoderOps
 import zio.test.*
 

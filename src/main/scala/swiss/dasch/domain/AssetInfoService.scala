@@ -7,8 +7,8 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{ DecoderOps, DeriveJsonCodec, JsonCodec, JsonDecoder }
-import zio.nio.file.{ Files, Path }
+import zio.json.{DeriveJsonCodec, JsonCodec, JsonDecoder}
+import zio.nio.file.{Files, Path}
 import zio.prelude.Validation
 import zio.stream.ZStream
 

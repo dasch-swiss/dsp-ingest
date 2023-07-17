@@ -9,7 +9,7 @@ import pdi.jwt.*
 import pdi.jwt.exceptions.JwtException
 import swiss.dasch.config.Configuration.JwtConfig
 import zio.*
-import zio.http.{ HttpAppMiddleware, RequestHandlerMiddleware }
+import zio.http.{HttpAppMiddleware, RequestHandlerMiddleware}
 import zio.prelude.Validation
 
 trait Authenticator  {
