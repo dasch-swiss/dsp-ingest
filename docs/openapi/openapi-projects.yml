@@ -37,7 +37,7 @@ paths:
                 items:
                   type: object
                   properties:
-                    shortcode:
+                    id:
                       type: string
                       description: The shortcode of the project.
                       example: 000F
