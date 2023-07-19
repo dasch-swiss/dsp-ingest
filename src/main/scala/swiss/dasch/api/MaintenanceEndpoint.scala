@@ -5,13 +5,12 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.{ MaintenanceActions, ProjectService, SipiClient }
+import swiss.dasch.domain.{FileChecksumService, MaintenanceActions, ProjectService, SipiClient}
 import zio.*
 import zio.http.codec.HttpCodec.*
 import zio.http.codec.*
 import zio.http.endpoint.*
 import zio.http.*
-import zio.stream.ZSink
 
 object MaintenanceEndpoint {
 
@@ -24,9 +23,9 @@ object MaintenanceEndpoint {
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
 
-  val app: App[SipiClient with ProjectService] = endpoint.implement(shortcodeStr => handle(shortcodeStr)).toApp
+  val app: App[SipiClient with ProjectService with FileChecksumService] = endpoint.implement(shortcodeStr => handle(shortcodeStr)).toApp
 
-  private def handle(shortcodeStr: String): ZIO[SipiClient with ProjectService, ApiProblem, String] =
+  private def handle(shortcodeStr: String): ZIO[SipiClient with ProjectService with FileChecksumService, ApiProblem, String] =
     ApiStringConverters
       .fromPathVarToProjectShortcode(shortcodeStr)
       .flatMap(code =>
@@ -38,10 +37,9 @@ object MaintenanceEndpoint {
       .flatMap { projectPath =>
         ZIO.logInfo(s"Creating originals for $projectPath") *>
           MaintenanceActions
-            .createTifOriginals(projectPath)
-            .as(1)
-            .run(ZSink.sum)
+            .createOriginals(projectPath)
             .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
+            .logError
             .forkDaemon
       }
       .as("work in progress")

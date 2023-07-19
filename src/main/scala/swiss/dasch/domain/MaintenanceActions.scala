@@ -5,23 +5,25 @@
 
 package swiss.dasch.domain
 
+import zio.json.EncoderOps
+import swiss.dasch.domain
 import zio.*
 import zio.nio.file.{ Files, Path }
-import zio.stream.ZStream
+import zio.stream.{ ZSink, ZStream }
+
+import java.io.IOException
 
 object MaintenanceActions {
 
-  private val targetFormat = Tif
-  def createTifOriginals(projectPath: Path)
-      : ZStream[SipiClient with ProjectService, Throwable, (AssetId, Path, Path, SipiOutput)] =
-    findJpeg2000Files(projectPath)
-      .flatMap(findAssetsWithoutOriginal)
-      .mapZIOPar(8) { c =>
-        ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
-          SipiClient
-            .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = targetFormat)
-            .map(sipiOut => (c.assetId, c.jpxPath, c.originalPath, sipiOut))
-      }
+  private val targetFormat               = Tif
+  def createOriginals(projectPath: Path) = for {
+    mapping <- loadCsv()
+    count   <- findJpeg2000Files(projectPath)
+                 .flatMap(findAssetsWithoutOriginal)
+                 .mapZIOPar(8)(createOriginal(_).flatMap(c => updateAssetInfo(c)))
+                 .as(1)
+                 .run(ZSink.sum)
+  } yield count
 
   private def findJpeg2000Files(projectPath: Path): ZStream[Any, Throwable, Path] =
     Files
@@ -58,4 +60,58 @@ object MaintenanceActions {
             ZStream.succeed(CreateOriginalFor(assetId, jpxPath, originalPath))
       }
   }
+
+  private def createOriginal(c: CreateOriginalFor) =
+    ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
+      SipiClient
+        .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = targetFormat)
+        .map(sipiOut => (c.assetId, c.jpxPath, c.originalPath, sipiOut))
+        .tap(it => ZIO.logDebug(it.toString()))
+        .as(c)
+
+  private def updateAssetInfo(c: CreateOriginalFor) = {
+
+    val infoFilePath = c.jpxPath.parent.orNull / s"${c.assetId}.info"
+    for {
+      _    <- ZIO.logInfo(s"Updating ${c.assetId} info file $infoFilePath")
+      info <- createNewAssetInfoFileContent(c)
+      _    <- Files.deleteIfExists(infoFilePath) *> Files.createFile(infoFilePath)
+      _    <- Files.writeBytes(infoFilePath, Chunk.fromArray(info.toJsonPretty.getBytes))
+    } yield ()
+  }
+
+  private def createNewAssetInfoFileContent(c: CreateOriginalFor)
+      : ZIO[FileChecksumService, Throwable, AssetInfoFileContent] =
+    for {
+      checksumOriginal   <- FileChecksumService.createSha256Hash(c.originalPath)
+      checksumDerivative <- FileChecksumService.createSha256Hash(c.jpxPath)
+      originalFilename   <- lookupOriginalFilename(c)
+    } yield AssetInfoFileContent(
+      internalFilename = c.jpxPath.filename.toString,
+      originalInternalFilename = c.originalPath.filename.toString,
+      originalFilename = originalFilename,
+      checksumOriginal = checksumOriginal.toString,
+      checksumDerivative = checksumDerivative.toString,
+    )
+
+  private def lookupOriginalFilename(c: CreateOriginalFor): Task[String] =
+    for {
+      mapping <- loadCsv()
+    } yield mapping.getOrElse(
+      c.jpxPath.filename.toString,
+      s"${c.assetId}.${targetFormat.extension}",
+    )
+
+  private def loadCsv(): ZIO[Any, IOException, Map[String, String]] =
+    Files
+      .readAllLines(
+        Path(
+          "/Users/christian/git/dasch/dsp-ingest/src/main/resources/maintenance/create-originals/0801-dev-original-internal-filename-mapping.csv"
+        )
+      )
+      .map(
+        _.map(_.split(","))
+          .map(it => (it(0).replace("\"", ""), it(1).replace("\"", "")))
+          .toMap
+      )
 }

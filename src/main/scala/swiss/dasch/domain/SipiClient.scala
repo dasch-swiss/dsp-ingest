@@ -82,6 +82,15 @@ case object Tif extends SipiImageFormat {
 case object Png extends SipiImageFormat {
   override def toCliString: String = "png"
 }
+object SipiImageFormat       {
+  def fromString(s: String): Option[SipiImageFormat] = s.toLowerCase() match {
+    case "jpx" => Some(Jpx)
+    case "jpg" => Some(Jpg)
+    case "tif" => Some(Tif)
+    case "png" => Some(Png)
+    case _     => None
+  }
+}
 
 final case class SipiOutput(stdOut: String, stdErr: String)
 trait SipiClient  {
