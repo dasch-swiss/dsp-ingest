@@ -51,20 +51,7 @@ object MaintenanceActions {
       jpxPath: Path,
       mapping: Map[String, String],
     ): ZStream[Any, Throwable, CreateOriginalFor] = {
-    val fallBackFormat             = Tif
-    val originalFilenameMaybe      = mapping.get(jpxPath.filename.toString)
-    val originalFileExtensionMaybe = originalFilenameMaybe.map(FilenameUtils.getExtension).filter(_ != null)
-    val targetFormat               = originalFileExtensionMaybe.flatMap(SipiImageFormat.fromExtension).getOrElse(fallBackFormat)
-    val originalFilename           = originalFilenameMaybe
-      .map(fileName =>
-        if (fileName.endsWith(s".${targetFormat.extension}")) fileName
-        else
-          fileName.replace(s".${originalFileExtensionMaybe.getOrElse(targetFormat.extension)}", targetFormat.extension)
-      )
-      .getOrElse(s"$assetId.${targetFormat.extension}")
-
-    val createThis =
-      CreateOriginalFor(assetId, jpxPath, targetFormat, originalFilename)
+    val createThis = makeCreateOriginalFor(assetId, jpxPath, mapping)
     ZStream
       .fromZIO(Files.exists(createThis.originalPath))
       .flatMap {
@@ -73,6 +60,25 @@ object MaintenanceActions {
         case false =>
           ZStream.logDebug(s"Original for $jpxPath not present") *> ZStream.succeed(createThis)
       }
+  }
+
+  private def makeCreateOriginalFor(
+      assetId: AssetId,
+      jpxPath: Path,
+      mapping: Map[String, String],
+    ) = {
+    val fallBackFormat             = Tif
+    val originalFilenameMaybe      = mapping.get(jpxPath.filename.toString)
+    val originalFileExtensionMaybe = originalFilenameMaybe.map(FilenameUtils.getExtension).filter(_ != null)
+    val targetFormat               = originalFileExtensionMaybe.flatMap(SipiImageFormat.fromExtension).getOrElse(fallBackFormat)
+    val originalFilename           = originalFilenameMaybe
+      .map { fileName =>
+        if (fileName.endsWith(targetFormat.extension)) fileName
+        else fileName.replace(FilenameUtils.getExtension(fileName), targetFormat.extension)
+      }
+      .getOrElse(s"$assetId.${targetFormat.extension}")
+
+    CreateOriginalFor(assetId, jpxPath, targetFormat, originalFilename)
   }
 
   private def createOriginal(c: CreateOriginalFor) =
@@ -106,5 +112,4 @@ object MaintenanceActions {
       checksumOriginal = checksumOriginal.toString,
       checksumDerivative = checksumDerivative.toString,
     )
-
 }
