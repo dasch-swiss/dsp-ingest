@@ -14,11 +14,12 @@ import zio.stream.{ ZSink, ZStream }
 
 object MaintenanceActions {
 
-  def createOriginals(projectPath: Path, mapping: Map[String, String]) = findJpeg2000Files(projectPath)
-    .flatMap(findAssetsWithoutOriginal(_, mapping))
-    .mapZIOPar(8)(createOriginal(_).flatMap(c => updateAssetInfo(c)))
-    .as(1)
-    .run(ZSink.sum)
+  def createOriginals(projectPath: Path, mapping: Map[String, String])
+      : ZIO[FileChecksumService with SipiClient, Throwable, Int] =
+    findJpeg2000Files(projectPath)
+      .flatMap(findAssetsWithoutOriginal(_, mapping))
+      .mapZIOPar(8)(createOriginalAndUpdateInfoFile)
+      .run(ZSink.sum)
 
   private def findJpeg2000Files(projectPath: Path): ZStream[Any, Throwable, Path] =
     Files
@@ -81,16 +82,16 @@ object MaintenanceActions {
     CreateOriginalFor(assetId, jpxPath, targetFormat, originalFilename)
   }
 
+  private def createOriginalAndUpdateInfoFile =
+    (c: CreateOriginalFor) => createOriginal(c) *> updateAssetInfo(c) as 1
+
   private def createOriginal(c: CreateOriginalFor) =
-    ZIO.logInfo(s"Creating ${c.originalPath} for ${c.jpxPath}") *>
+    ZIO.logInfo(s"Creating ${c.originalPath}/${c.targetFormat} for ${c.jpxPath}") *>
       SipiClient
         .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = c.targetFormat)
-        .map(sipiOut => (c.assetId, c.jpxPath, c.originalPath, sipiOut))
-        .tap(it => ZIO.logDebug(it.toString()))
-        .as(c)
+        .tap(sipiOut => ZIO.logDebug(s"Sipi response for $c: $sipiOut"))
 
   private def updateAssetInfo(c: CreateOriginalFor) = {
-
     val infoFilePath = c.jpxPath.parent.orNull / s"${c.assetId}.info"
     for {
       _    <- ZIO.logInfo(s"Updating ${c.assetId} info file $infoFilePath")
