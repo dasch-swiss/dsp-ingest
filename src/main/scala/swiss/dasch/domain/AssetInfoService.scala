@@ -7,7 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{ DeriveJsonCodec, JsonCodec, JsonDecoder }
+import zio.json.{ DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder }
 import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
 import zio.stream.ZStream
@@ -18,9 +18,12 @@ final private case class AssetInfoFileContent(
     originalFilename: String,
     checksumOriginal: String,
     checksumDerivative: String,
-  )
+  ) {
+  def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum.toString)
+}
 private object AssetInfoFileContent {
-  implicit val codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
+  implicit val decoder: JsonDecoder[AssetInfoFileContent] = DeriveJsonDecoder.gen[AssetInfoFileContent]
+  implicit val encoder: JsonEncoder[AssetInfoFileContent] = DeriveJsonEncoder.gen[AssetInfoFileContent]
 }
 
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
@@ -33,14 +36,20 @@ final case class AssetInfo(
 
 trait AssetInfoService  {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
+  def getInfoFilePath(asset: Asset): UIO[Path]
   def findByAsset(asset: Asset): Task[AssetInfo]
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
+  def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
 }
 object AssetInfoService {
   def findByAsset(asset: Asset): ZIO[AssetInfoService, Throwable, AssetInfo]                                       =
     ZIO.serviceWithZIO[AssetInfoService](_.findByAsset(asset))
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): ZIO[AssetInfoService, Throwable, AssetInfo] =
     ZIO.serviceWithZIO[AssetInfoService](_.loadFromFilesystem(infoFile, shortcode))
+  def updateAssetInfoForDerivative(derivative: Path): ZIO[AssetInfoService, Throwable, Unit]                       =
+    ZIO.serviceWithZIO[AssetInfoService](_.updateAssetInfoForDerivative(derivative))
+  def getInfoFilePath(asset: Asset): ZIO[AssetInfoService, Nothing, Path]                                          =
+    ZIO.serviceWithZIO[AssetInfoService](_.getInfoFilePath(asset))
 }
 
 final case class AssetInfoServiceLive(storageService: StorageService) extends AssetInfoService {
@@ -57,8 +66,10 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
   override def findByAsset(asset: Asset): Task[AssetInfo] =
     getInfoFilePath(asset).flatMap(parseAssetInfoFile(asset, _))
 
-  private def getInfoFilePath(asset: Asset): UIO[Path] =
-    storageService.getAssetDirectory(asset).map(_ / s"${asset.id.toString}.info")
+  def getInfoFilePath(asset: Asset): UIO[Path] =
+    storageService.getAssetDirectory(asset).map(_ / infoFilename(asset.id))
+
+  private def infoFilename(assetId: AssetId): String = s"${assetId.toString}.info"
 
   private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] =
     storageService.loadJsonFile[AssetInfoFileContent](infoFile).flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
@@ -95,6 +106,22 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
       .filter(_.filename.toString.endsWith(".info"))
       .filterZIO(path => Files.isRegularFile(path) && Files.isHidden(path).negate)
       .mapZIOPar(StorageService.maxParallelism())(loadFromFilesystem(_, shortcode))
+
+  override def updateAssetInfoForDerivative(derivative: Path): Task[Unit] = for {
+    assetId <- ZIO
+                 .fromOption(AssetId.makeFromPath(derivative))
+                 .orElseFail(IllegalArgumentException(s"Unable to parse asset id from $derivative"))
+    infoFile = derivative.parent.map(_ / infoFilename(assetId)).orNull
+    _       <- ZIO.whenZIO(Files.exists(infoFile))(
+                 doDerivativeUpdate(infoFile, derivative)
+               )
+  } yield ()
+
+  private def doDerivativeUpdate(infoFile: Path, derivative: Path) = for {
+    content     <- storageService.loadJsonFile[AssetInfoFileContent](infoFile)
+    newChecksum <- FileChecksumService.createSha256Hash(derivative)
+    _           <- storageService.saveJsonFile(infoFile, content.withDerivativeChecksum(newChecksum))
+  } yield ()
 }
 object AssetInfoServiceLive {
   val layer = ZLayer.fromFunction(AssetInfoServiceLive.apply _)
