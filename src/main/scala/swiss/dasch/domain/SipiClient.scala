@@ -17,7 +17,6 @@ import scala.sys.process.{ ProcessLogger, stringToProcess }
   * See https://sipi.io/running/#command-line-options
   */
 private trait SipiCommandLine      {
-  def help(): UIO[String]                                    = ZIO.succeed("--help")
   def compare(file1: Path, file2: Path): IO[IOError, String] = for {
     abs1 <- file1.toAbsolutePath
     abs2 <- file2.toAbsolutePath
@@ -33,8 +32,7 @@ private trait SipiCommandLine      {
   } yield s"--format $outputFormat $abs1 $abs2"
 }
 private object SipiCommandLineLive {
-  private val sipiExecutable                          = "/sipi/sipi"
-  def help(): ZIO[SipiCommandLine, Throwable, String] = ZIO.serviceWithZIO[SipiCommandLine](_.help())
+  private val sipiExecutable = "/sipi/sipi"
 
   val layer: URLayer[SipiConfig with StorageConfig, SipiCommandLine] = ZLayer.fromZIO {
     for {
@@ -53,7 +51,6 @@ private object SipiCommandLineLive {
 
 final private case class SipiCommandLineLive(prefix: String) extends SipiCommandLine {
   private def addPrefix[E](cmd: IO[E, String]): IO[E, String]         = cmd.map(cmdStr => s"$prefix $cmdStr")
-  override def help(): UIO[String]                                    = addPrefix(super.help())
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
   override def format(
       outputFormat: String,
