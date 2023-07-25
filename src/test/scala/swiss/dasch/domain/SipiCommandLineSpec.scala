@@ -21,7 +21,19 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
       } yield assertTrue(
         cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --compare /tmp/example /tmp/example2"
       )
-    }
+    },
+    test("should assemble format command") {
+      check(Gen.fromIterable(SipiImageFormat.all)) { format =>
+        for {
+          assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
+          cmd       <- ZIO.serviceWithZIO[SipiCommandLine](
+                         _.format(format.toCliString, Path("/tmp/example"), Path("/tmp/example2"))
+                       )
+        } yield assertTrue(
+          cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --format ${format.toCliString} /tmp/example /tmp/example2"
+        )
+      }
+    },
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = true)),
     SpecConfigurations.storageConfigLayer,
@@ -35,7 +47,18 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
       } yield assertTrue(
         cmd == s"/sipi/sipi --compare /tmp/example /tmp/example2"
       )
-    }
+    },
+    test("should assemble format command") {
+      check(Gen.fromIterable(SipiImageFormat.all)) { format =>
+        for {
+          cmd <- ZIO.serviceWithZIO[SipiCommandLine](
+                   _.format(format.toCliString, Path("/tmp/example"), Path("/tmp/example2"))
+                 )
+        } yield assertTrue(
+          cmd == s"/sipi/sipi --format ${format.toCliString} /tmp/example /tmp/example2"
+        )
+      }
+    },
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = false)),
     SpecConfigurations.storageConfigLayer,

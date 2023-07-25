@@ -86,6 +86,7 @@ case object Png extends SipiImageFormat {
   override def extension: String = "png"
 }
 object SipiImageFormat       {
+  val all                                                       = List(Jpx, Jpg, Tif, Png)
   def fromExtension(extension: String): Option[SipiImageFormat] =
     List(Jpx, Jpg, Tif, Png).find(_.acceptsExtension(extension))
 }
