@@ -17,19 +17,30 @@ import scala.sys.process.{ ProcessLogger, stringToProcess }
   * See https://sipi.io/running/#command-line-options
   */
 private trait SipiCommandLine      {
-  def compare(file1: Path, file2: Path): IO[IOError, String] = for {
+  def compare(file1: Path, file2: Path): IO[IOError, String] =
+    withAbsolutePath(file1, file2, (a, b) => s"--compare $a $b")
+
+  private def withAbsolutePath(
+      file1: Path,
+      file2: Path,
+      createCommand: (String, String) => String,
+    ) = for {
     abs1 <- file1.toAbsolutePath
     abs2 <- file2.toAbsolutePath
-  } yield s"--compare $abs1 $abs2"
+  } yield createCommand.apply(abs1.toString, abs2.toString)
 
   def format(
       outputFormat: String,
       fileIn: Path,
       fileOut: Path,
-    ): Task[String] = for {
-    abs1 <- fileIn.toAbsolutePath
-    abs2 <- fileOut.toAbsolutePath
-  } yield s"--format $outputFormat $abs1 $abs2"
+    ): Task[String] =
+    withAbsolutePath(fileIn, fileOut, (a, b) => s"--format $outputFormat $a $b")
+
+  def query(fileIn: Path): Task[String] =
+    fileIn.toAbsolutePath.map(abs => s"--query $abs")
+
+  def topleft(fileIn: Path, fileOut: Path): Task[String] =
+    withAbsolutePath(fileIn, fileOut, (a, b) => s"--topleft $a $b")
 }
 private object SipiCommandLineLive {
   private val sipiExecutable = "/sipi/sipi"
@@ -50,13 +61,20 @@ private object SipiCommandLineLive {
 }
 
 final private case class SipiCommandLineLive(prefix: String) extends SipiCommandLine {
-  private def addPrefix[E](cmd: IO[E, String]): IO[E, String]         = cmd.map(cmdStr => s"$prefix $cmdStr")
+
+  private def addPrefix[E](cmd: IO[E, String]): IO[E, String] = cmd.map(cmdStr => s"$prefix $cmdStr")
+
   override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
+
   override def format(
       outputFormat: String,
       fileIn: Path,
       fileOut: Path,
     ): Task[String] = addPrefix(super.format(outputFormat, fileIn, fileOut))
+
+  override def query(fileIn: Path): Task[String] = addPrefix(super.query(fileIn))
+
+  override def topleft(fileIn: Path, fileOut: Path): Task[String] = addPrefix(super.topleft(fileIn, fileOut))
 }
 
 /** Defines the output format of the image. Used with the `--format` option.

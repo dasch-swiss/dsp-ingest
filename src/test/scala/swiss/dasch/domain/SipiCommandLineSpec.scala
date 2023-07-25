@@ -34,6 +34,24 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
         )
       }
     },
+    test("should assemble query command") {
+      for {
+        assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
+        cmd       <- ZIO.serviceWithZIO[SipiCommandLine](_.query(Path("/tmp/example")))
+      } yield assertTrue(
+        cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --query /tmp/example"
+      )
+    },
+    test("should topleft command") {
+      for {
+        assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
+        cmd       <- ZIO.serviceWithZIO[SipiCommandLine](
+                       _.topleft(Path("/tmp/example"), Path("/tmp/example2"))
+                     )
+      } yield assertTrue(
+        cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --topleft /tmp/example /tmp/example2"
+      )
+    },
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = true)),
     SpecConfigurations.storageConfigLayer,
@@ -54,10 +72,18 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
           cmd <- ZIO.serviceWithZIO[SipiCommandLine](
                    _.format(format.toCliString, Path("/tmp/example"), Path("/tmp/example2"))
                  )
-        } yield assertTrue(
-          cmd == s"/sipi/sipi --format ${format.toCliString} /tmp/example /tmp/example2"
-        )
+        } yield assertTrue(cmd == s"/sipi/sipi --format ${format.toCliString} /tmp/example /tmp/example2")
       }
+    },
+    test("should assemble query command") {
+      for {
+        cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.query(Path("/tmp/example")))
+      } yield assertTrue(cmd == s"/sipi/sipi --query /tmp/example")
+    },
+    test("should topleft command") {
+      for {
+        cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.topleft(Path("/tmp/example"), Path("/tmp/example2")))
+      } yield assertTrue(cmd == s"/sipi/sipi --topleft /tmp/example /tmp/example2")
     },
   ).provide(
     ZLayer.succeed(SipiConfig(useLocalDev = false)),
