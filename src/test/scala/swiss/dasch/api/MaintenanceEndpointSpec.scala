@@ -101,11 +101,3 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
       ZLayer.succeed(SipiClientMock()),
     )
 }
-
-final case class SipiClientMock() extends SipiClient {
-  override def transcodeImageFile(
-      fileIn: file.Path,
-      fileOut: file.Path,
-      outputFormat: SipiImageFormat,
-    ): Task[SipiOutput] = Files.createFile(fileOut).as(SipiOutput("", ""))
-}

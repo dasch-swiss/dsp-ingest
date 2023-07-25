@@ -9,16 +9,13 @@ import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
 import zio.*
 import zio.nio.file.Path
 
-import java.io.IOError
 import scala.sys.process.{ ProcessLogger, stringToProcess }
 
 /** Defines the commands that can be executed with Sipi.
   *
   * See https://sipi.io/running/#command-line-options
   */
-private trait SipiCommandLine      {
-  def compare(file1: Path, file2: Path): IO[IOError, String] =
-    withAbsolutePath(file1, file2, (a, b) => s"--compare $a $b")
+private trait SipiCommandLine {
 
   private def withAbsolutePath(
       file1: Path,
@@ -64,8 +61,6 @@ final private case class SipiCommandLineLive(prefix: String) extends SipiCommand
 
   private def addPrefix[E](cmd: IO[E, String]): IO[E, String] = cmd.map(cmdStr => s"$prefix $cmdStr")
 
-  override def compare(file1: Path, file2: Path): IO[IOError, String] = addPrefix(super.compare(file1, file2))
-
   override def format(
       outputFormat: String,
       fileIn: Path,
@@ -110,14 +105,27 @@ object SipiImageFormat       {
 }
 
 final case class SipiOutput(stdOut: String, stdErr: String)
-trait SipiClient  {
+trait SipiClient {
+
+  def applyTopLeftCorrection(fileIn: Path, fileOut: Path): ZIO[SipiClient, Throwable, SipiOutput]
+
+  def queryImageFile(file: Path): ZIO[SipiClient, Throwable, SipiOutput]
+
   def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
       outputFormat: SipiImageFormat,
     ): Task[SipiOutput]
 }
+
 object SipiClient {
+
+  def applyTopLeftCorrection(fileIn: Path, fileOut: Path): ZIO[SipiClient, Throwable, SipiOutput] =
+    ZIO.serviceWithZIO[SipiClient](_.applyTopLeftCorrection(fileIn, fileOut))
+
+  def queryImageFile(file: Path): ZIO[SipiClient, Throwable, SipiOutput] =
+    ZIO.serviceWithZIO[SipiClient](_.queryImageFile(file))
+
   def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
@@ -126,7 +134,8 @@ object SipiClient {
     ZIO.serviceWithZIO[SipiClient](_.transcodeImageFile(fileIn, fileOut, outputFormat))
 }
 
-final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
+final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient {
+
   private def execute(commandLineTask: Task[String]): Task[SipiOutput] =
     commandLineTask.flatMap { cmd =>
       val logger = new InMemoryProcessLogger
@@ -134,14 +143,20 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient    {
         ZIO.attemptBlocking(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logInfo(out.toString))
     }.logError
 
+  override def applyTopLeftCorrection(fileIn: Path, fileOut: Path): Task[SipiOutput] = execute(
+    cmd.topleft(fileIn, fileOut)
+  )
+
   override def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
       outputFormat: SipiImageFormat,
-    ): Task[SipiOutput] =
-    execute(cmd.format(outputFormat.toCliString, fileIn, fileOut))
+    ): Task[SipiOutput] = execute(cmd.format(outputFormat.toCliString, fileIn, fileOut))
+
+  override def queryImageFile(file: Path): Task[SipiOutput] = execute(cmd.query(file))
 }
-final private class InMemoryProcessLogger             extends ProcessLogger {
+
+final private class InMemoryProcessLogger extends ProcessLogger {
   private val sbOut                    = new StringBuilder
   private val sbErr                    = new StringBuilder
   override def out(s: => String): Unit = sbOut.append(s)

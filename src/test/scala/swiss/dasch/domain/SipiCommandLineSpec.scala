@@ -14,14 +14,6 @@ import zio.test.*
 
 object SipiCommandLineSpec extends ZIOSpecDefault {
   private val localDevSuite = suite("SipiCommandLineLive set up for local development")(
-    test("should assemble compare command") {
-      for {
-        assetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath)
-        cmd       <- ZIO.serviceWithZIO[SipiCommandLine](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
-      } yield assertTrue(
-        cmd == s"docker run --entrypoint /sipi/sipi -v $assetPath:$assetPath daschswiss/knora-sipi:latest --compare /tmp/example /tmp/example2"
-      )
-    },
     test("should assemble format command") {
       check(Gen.fromIterable(SipiImageFormat.all)) { format =>
         for {
@@ -59,13 +51,6 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
   )
 
   private val liveSuite = suite("SipiCommandLineLive set up with local sipi executable")(
-    test("should assemble compare command") {
-      for {
-        cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.compare(Path("/tmp/example"), Path("/tmp/example2")))
-      } yield assertTrue(
-        cmd == s"/sipi/sipi --compare /tmp/example /tmp/example2"
-      )
-    },
     test("should assemble format command") {
       check(Gen.fromIterable(SipiImageFormat.all)) { format =>
         for {
