@@ -112,12 +112,10 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
                  .fromOption(AssetId.makeFromPath(derivative))
                  .orElseFail(IllegalArgumentException(s"Unable to parse asset id from $derivative"))
     infoFile = derivative.parent.map(_ / infoFilename(assetId)).orNull
-    _       <- ZIO.whenZIO(Files.exists(infoFile))(
-                 doDerivativeUpdate(infoFile, derivative)
-               )
+    _       <- ZIO.whenZIO(Files.exists(infoFile))(updateDerivativeChecksum(infoFile, derivative))
   } yield ()
 
-  private def doDerivativeUpdate(infoFile: Path, derivative: Path) = for {
+  private def updateDerivativeChecksum(infoFile: Path, derivative: Path) = for {
     content     <- storageService.loadJsonFile[AssetInfoFileContent](infoFile)
     newChecksum <- FileChecksumService.createSha256Hash(derivative)
     _           <- storageService.saveJsonFile(infoFile, content.withDerivativeChecksum(newChecksum))
