@@ -29,7 +29,7 @@ trait StorageService  {
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
 }
 object StorageService {
-  def findInPath(path: Path, filter: Path => IO[IOException, Boolean]): ZStream[Any, IOException, Path]               =
+  def findInPath(path: Path, filter: FileFilter): ZStream[Any, IOException, Path]                                     =
     Files.walk(path).filterZIO(filter)
   def maxParallelism(): Int                                                                                           = 10
   def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path]                              =

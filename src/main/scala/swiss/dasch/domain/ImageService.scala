@@ -5,11 +5,9 @@
 
 package swiss.dasch.domain
 
-import org.apache.commons.io.FilenameUtils
-import swiss.dasch.domain.SipiImageFormat.Jpx
+import swiss.dasch.domain.FileFilters.isJpeg2000
 import zio.*
-import zio.nio.file.Files
-import zio.nio.file.Path
+import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
 
 import java.io.IOException
@@ -26,17 +24,6 @@ trait ImageService {
   def applyTopLeftCorrection(image: Path): Task[Option[Path]]
 }
 object ImageService {
-
-  def isJpeg2000(p: Path): IO[IOException, Boolean] =
-    isNonHiddenRegularFile(p) &&
-    ZIO.succeed(Jpx.allExtensions.contains(FilenameUtils.getExtension(p.filename.toString)))
-
-  def isImage(path: Path): IO[IOException, Boolean] =
-    isNonHiddenRegularFile(path) &&
-    ZIO.succeed(SipiImageFormat.allExtension.contains(FilenameUtils.getExtension(path.filename.toString)))
-
-  private def isNonHiddenRegularFile(path: Path) = Files.isRegularFile(path) && Files.isHidden(path).negate
-
   def findJpeg2000Files(path: Path): ZStream[Any, Throwable, Path] = StorageService.findInPath(path, isJpeg2000)
 
   def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]] =
@@ -70,7 +57,7 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
     )
 
   private def needsTopLeftCorrection(image: Path): IO[IOException, Boolean] =
-    ImageService.isImage(image) &&
+    FileFilters.isImage(image) &&
     sipiClient
       .queryImageFile(image)
       .map(_.stdOut.split('\n'))

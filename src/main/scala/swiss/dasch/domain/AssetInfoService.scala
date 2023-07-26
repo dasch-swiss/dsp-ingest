@@ -7,8 +7,8 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{ DeriveJsonCodec, JsonCodec }
-import zio.nio.file.{ Files, Path }
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.nio.file.{Files, Path}
 import zio.prelude.Validation
 import zio.stream.ZStream
 
@@ -100,10 +100,8 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
       .mapError(e => new IllegalArgumentException(s"Invalid asset info file content $raw, $infoFileDirectory, $e"))
 
   override def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
-    Files
-      .walk(path)
-      .filter(_.filename.toString.endsWith(".info"))
-      .filterZIO(path => Files.isRegularFile(path) && Files.isHidden(path).negate)
+    StorageService
+      .findInPath(path, FileFilters.hasFileExtension("info"))
       .mapZIOPar(StorageService.maxParallelism())(loadFromFilesystem(_, shortcode))
 
   override def updateAssetInfoForDerivative(derivative: Path): Task[Unit] = for {
