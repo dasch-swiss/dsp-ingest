@@ -7,7 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{ DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
 import zio.stream.ZStream
@@ -22,8 +22,7 @@ final private case class AssetInfoFileContent(
   def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum.toString)
 }
 private object AssetInfoFileContent {
-  implicit val decoder: JsonDecoder[AssetInfoFileContent] = DeriveJsonDecoder.gen[AssetInfoFileContent]
-  implicit val encoder: JsonEncoder[AssetInfoFileContent] = DeriveJsonEncoder.gen[AssetInfoFileContent]
+  implicit val codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
 }
 
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash)
