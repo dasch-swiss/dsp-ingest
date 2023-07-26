@@ -10,8 +10,8 @@ import eu.timepit.refined.refineV
 import eu.timepit.refined.string.MatchesRegex
 import org.apache.commons.io.FileUtils
 import zio.*
-import zio.nio.file.Files.{isDirectory, newDirectoryStream}
-import zio.nio.file.{Files, Path}
+import zio.nio.file.Files.{ isDirectory, newDirectoryStream }
+import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
 
 import java.io.IOException
