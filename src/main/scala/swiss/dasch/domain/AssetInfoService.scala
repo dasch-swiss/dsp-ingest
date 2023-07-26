@@ -66,9 +66,10 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
     getInfoFilePath(asset).flatMap(parseAssetInfoFile(asset, _))
 
   def getInfoFilePath(asset: Asset): UIO[Path] =
-    storageService.getAssetDirectory(asset).map(_ / infoFilename(asset.id))
+    storageService.getAssetDirectory(asset).map(_ / infoFilename(asset))
 
-  private def infoFilename(id: AssetId): String = s"$id.info"
+  private def infoFilename(asset: Asset): String = infoFilename(asset.id)
+  private def infoFilename(id: AssetId): String  = s"$id.info"
 
   private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] =
     storageService.loadJsonFile[AssetInfoFileContent](infoFile).flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
