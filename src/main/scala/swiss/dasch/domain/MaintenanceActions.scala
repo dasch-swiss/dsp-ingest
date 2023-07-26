@@ -8,6 +8,7 @@ package swiss.dasch.domain
 import org.apache.commons.io.FilenameUtils
 import zio.json.EncoderOps
 import swiss.dasch.domain
+import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import zio.*
 import zio.nio.file.{ Files, Path }
@@ -16,16 +17,16 @@ import zio.stream.{ ZSink, ZStream }
 object MaintenanceActions {
 
   def applyTopLeftCorrections(projectPath: Path): ZIO[ImageService, Throwable, Int] =
-    ImageService
-      .findJpeg2000Files(projectPath)
+    findJpeg2000Files(projectPath)
       .mapZIOPar(8)(ImageService.applyTopLeftCorrection)
       .map(_.map(_ => 1).getOrElse(0))
       .run(ZSink.sum)
 
+  private def findJpeg2000Files(projectPath: Path) = StorageService.findInPath(projectPath, isJpeg2000)
+
   def createOriginals(projectPath: Path, mapping: Map[String, String])
       : ZIO[FileChecksumService with SipiClient, Throwable, Int] =
-    ImageService
-      .findJpeg2000Files(projectPath)
+    findJpeg2000Files(projectPath)
       .flatMap(findAssetsWithoutOriginal(_, mapping))
       .mapZIOPar(8)(createOriginalAndUpdateInfoFile)
       .run(ZSink.sum)

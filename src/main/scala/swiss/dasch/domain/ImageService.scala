@@ -5,10 +5,8 @@
 
 package swiss.dasch.domain
 
-import swiss.dasch.domain.FileFilters.isJpeg2000
 import zio.*
 import zio.nio.file.{ Files, Path }
-import zio.stream.ZStream
 
 import java.io.IOException
 
@@ -24,8 +22,6 @@ trait ImageService {
   def applyTopLeftCorrection(image: Path): Task[Option[Path]]
 }
 object ImageService {
-  def findJpeg2000Files(path: Path): ZStream[Any, Throwable, Path] = StorageService.findInPath(path, isJpeg2000)
-
   def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]] =
     ZIO.serviceWithZIO[ImageService](_.applyTopLeftCorrection(image))
 }
