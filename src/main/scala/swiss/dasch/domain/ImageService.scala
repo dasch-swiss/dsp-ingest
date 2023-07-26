@@ -12,8 +12,12 @@ import java.io.IOException
 
 trait ImageService {
 
-  /** Apply top left correction to image if needed. Creates a backup of the original image "${image.filename}.bak" in
-    * the same directory.
+  /** Apply top left correction to the image if needed.
+    *
+    * Creates a backup of the original image "${image.filename}.bak" in the same directory.
+    *
+    * Updates the asset info for the derivative.
+    *
     * @param image
     *   the image to apply the correction to
     * @return
