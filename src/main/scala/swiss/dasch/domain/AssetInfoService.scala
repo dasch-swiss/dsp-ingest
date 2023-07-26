@@ -7,8 +7,8 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import zio.*
-import zio.json.{DeriveJsonCodec, JsonCodec}
-import zio.nio.file.{Files, Path}
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.nio.file.{ Files, Path }
 import zio.prelude.Validation
 import zio.stream.ZStream
 
@@ -68,7 +68,7 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
   def getInfoFilePath(asset: Asset): UIO[Path] =
     storageService.getAssetDirectory(asset).map(_ / infoFilename(asset.id))
 
-  private def infoFilename(assetId: AssetId): String = s"${assetId.toString}.info"
+  private def infoFilename(id: AssetId): String = s"$id.info"
 
   private def parseAssetInfoFile(asset: Asset, infoFile: Path): Task[AssetInfo] =
     storageService.loadJsonFile[AssetInfoFileContent](infoFile).flatMap(toAssetInfo(_, infoFile.parent.orNull, asset))
