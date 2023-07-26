@@ -10,6 +10,7 @@ import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
 import zio.json.{ DecoderOps, EncoderOps, JsonDecoder, JsonEncoder }
 import zio.nio.file.{ Files, Path }
+import zio.stream.ZStream
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption.*
@@ -28,6 +29,8 @@ trait StorageService  {
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
 }
 object StorageService {
+  def findInPath(path: Path, filter: Path => IO[IOException, Boolean]): ZStream[Any, IOException, Path]               =
+    Files.walk(path).filterZIO(filter)
   def maxParallelism(): Int                                                                                           = 10
   def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, Path]                              =
     ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))

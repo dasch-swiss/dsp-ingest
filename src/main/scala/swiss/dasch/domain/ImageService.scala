@@ -37,14 +37,10 @@ object ImageService {
 
   private def isNonHiddenRegularFile(path: Path) = Files.isRegularFile(path) && Files.isHidden(path).negate
 
-  def findJpeg2000Files(path: Path): ZStream[Any, Throwable, Path] = findInPath(path, isJpeg2000)
-
-  private def findInPath(path: Path, filter: Path => IO[IOException, Boolean]): ZStream[Any, Throwable, Path] =
-    Files.walk(path).filterZIO(filter)
+  def findJpeg2000Files(path: Path): ZStream[Any, Throwable, Path] = StorageService.findInPath(path, isJpeg2000)
 
   def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]] =
     ZIO.serviceWithZIO[ImageService](_.applyTopLeftCorrection(image))
-
 }
 
 // see also https://exiftool.org/TagNames/EXIF.html
