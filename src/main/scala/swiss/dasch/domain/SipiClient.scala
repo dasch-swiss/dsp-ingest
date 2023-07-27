@@ -6,78 +6,64 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.{ SipiConfig, StorageConfig }
+import swiss.dasch.domain.SipiCommand.{ FormatArgument, QueryArgument, TopLeftArgument }
 import zio.*
+import zio.metrics.Metric
 import zio.nio.file.Path
 
+import java.time.temporal.ChronoUnit
 import scala.sys.process.{ ProcessLogger, stringToProcess }
 
-/** Defines the commands that can be executed with Sipi.
-  *
-  * See https://sipi.io/running/#command-line-options
-  */
-private trait SipiCommandLine {
+sealed trait SipiCommand {
+  def flag: String
+  def render(prefix: String): UIO[String]
+}
 
-  private def withAbsolutePath(
-      file1: Path,
-      file2: Path,
-      createCommand: (String, String) => String,
-    ): UIO[String] = (for {
-    abs1 <- file1.toAbsolutePath
-    abs2 <- file2.toAbsolutePath
-  } yield createCommand.apply(abs1.toString, abs2.toString)).orDie
+object SipiCommand {
+  final case class QueryArgument(fileIn: Path) extends SipiCommand {
+    def flag: String                        = "--query"
+    def render(prefix: String): UIO[String] =
+      fileIn.toAbsolutePath.orDie.map(abs => s"$prefix $flag $abs")
+  }
 
-  def format(
-      outputFormat: String,
+  final case class FormatArgument(
+      outputFormat: SipiImageFormat,
       fileIn: Path,
       fileOut: Path,
-    ): UIO[String] =
-    withAbsolutePath(fileIn, fileOut, (a, b) => s"--format $outputFormat $a $b")
+    ) extends SipiCommand {
+    def flag: String                        = "--format"
+    def render(prefix: String): UIO[String] =
+      (for {
+        abs1 <- fileIn.toAbsolutePath
+        abs2 <- fileOut.toAbsolutePath
+      } yield s"$prefix $flag ${outputFormat.toCliString} $abs1 $abs2").orDie
+  }
 
-  def query(fileIn: Path): UIO[String] =
-    fileIn.toAbsolutePath.orDie.map(abs => s"--query $abs")
-
-  /** Applies the top-left correction to the image. This is an undocumented feature of Sipi.
+  /** Applies the top-left correction to the image.
+    *
     * @param fileIn
     *   the image file to be corrected
     * @param fileOut
-    *   the corrected image file
-    * @return
-    *   the command line to be executed
+    *   the corrected image file,
+    *
+    * will be created if it does not exist,
+    *
+    * will be overwritten if it exists,
+    *
+    * if fileOut is the same as fileIn, the file will be overwritten
     */
-  def topleft(fileIn: Path, fileOut: Path): UIO[String] =
-    withAbsolutePath(fileIn, fileOut, (a, b) => s"--topleft $a $b")
-}
-private object SipiCommandLineLive {
-  private val sipiExecutable = "/sipi/sipi"
-
-  val layer: URLayer[SipiConfig with StorageConfig, SipiCommandLine] = ZLayer.fromZIO {
-    for {
-      config            <- ZIO.service[SipiConfig]
-      absoluteAssetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath).orDie
-      prefix             = if (config.useLocalDev) {
-                             s"docker run " +
-                               s"--entrypoint $sipiExecutable " +
-                               s"-v $absoluteAssetPath:$absoluteAssetPath " +
-                               s"daschswiss/knora-sipi:latest"
-                           }
-                           else { sipiExecutable }
-    } yield SipiCommandLineLive(prefix)
-  }
-}
-
-final private case class SipiCommandLineLive(prefix: String) extends SipiCommandLine {
-
-  private def addPrefix[E](cmd: IO[E, String]): IO[E, String] = cmd.map(cmdStr => s"$prefix $cmdStr")
-
-  override def format(
-      outputFormat: String,
+  final case class TopLeftArgument(
       fileIn: Path,
       fileOut: Path,
-    ): UIO[String] = addPrefix(super.format(outputFormat, fileIn, fileOut))
+    ) extends SipiCommand {
+    def flag: String                        = "--topleft"
+    def render(prefix: String): UIO[String] =
+      (for {
+        abs1 <- fileIn.toAbsolutePath
+        abs2 <- fileOut.toAbsolutePath
+      } yield s"$prefix $flag $abs1 $abs2").orDie
+  }
 
-  override def query(fileIn: Path): UIO[String] = addPrefix(super.query(fileIn))
-
-  override def topleft(fileIn: Path, fileOut: Path): UIO[String] = addPrefix(super.topleft(fileIn, fileOut))
 }
 
 /** Defines the output format of the image. Used with the `--format` option.
@@ -144,26 +130,35 @@ object SipiClient {
     ZIO.serviceWithZIO[SipiClient](_.transcodeImageFile(fileIn, fileOut, outputFormat))
 }
 
-final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient {
+final case class SipiClientLive(prefix: String) extends SipiClient {
 
-  private def execute(commandLineTask: UIO[String]): UIO[SipiOutput] =
-    commandLineTask.flatMap { cmd =>
-      val logger = new InMemoryProcessLogger
-      ZIO.logDebug(s"Calling \n$cmd") *>
-        ZIO.succeed(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logDebug(out.toString))
-    }.logError
+  private val timer = Metric.timer("sipi_command_duration", ChronoUnit.MILLIS, Chunk.iterate(1.0, 6)(_ * 10))
 
-  override def applyTopLeftCorrection(fileIn: Path, fileOut: Path): UIO[SipiOutput] = execute(
-    cmd.topleft(fileIn, fileOut)
-  )
+  private def execute(command: SipiCommand): UIO[SipiOutput] =
+    command
+      .render(prefix)
+      .flatMap { cmd =>
+        val timerTagged = timer.tagged("command", command.flag)
+        val logger      = new InMemoryProcessLogger
+        ZIO.logInfo(s"Running sipi \n$cmd") *>
+          (ZIO.succeed(cmd ! logger) @@ timerTagged.trackDuration)
+            .as(logger.getOutput)
+            .tap(out => ZIO.logDebug(out.toString))
+      }
+      .logError
+
+  override def applyTopLeftCorrection(fileIn: Path, fileOut: Path): UIO[SipiOutput] =
+    execute(TopLeftArgument(fileIn, fileOut))
 
   override def transcodeImageFile(
       fileIn: Path,
       fileOut: Path,
       outputFormat: SipiImageFormat,
-    ): UIO[SipiOutput] = execute(cmd.format(outputFormat.toCliString, fileIn, fileOut))
+    ): UIO[SipiOutput] =
+    execute(FormatArgument(outputFormat, fileIn, fileOut))
 
-  override def queryImageFile(file: Path): UIO[SipiOutput] = execute(cmd.query(file))
+  override def queryImageFile(file: Path): UIO[SipiOutput] =
+    execute(QueryArgument(file))
 }
 
 final private class InMemoryProcessLogger extends ProcessLogger {
@@ -176,6 +171,18 @@ final private class InMemoryProcessLogger extends ProcessLogger {
 }
 
 object SipiClientLive {
-  val layer: ZLayer[SipiConfig with StorageConfig, Nothing, SipiClient] =
-    SipiCommandLineLive.layer >>> ZLayer.fromFunction(SipiClientLive.apply _)
+
+  private val sipiPrefix = "/sipi/sipi"
+
+  private def dockerPrefix(assetPath: Path) =
+    s"docker run --entrypoint $sipiPrefix -v $assetPath:$assetPath daschswiss/knora-sipi:latest"
+
+  val layer: URLayer[SipiConfig with StorageConfig, SipiClient] = ZLayer.fromZIO {
+    for {
+      config            <- ZIO.service[SipiConfig]
+      absoluteAssetPath <- ZIO.serviceWithZIO[StorageConfig](_.assetPath.toAbsolutePath).orDie
+      prefix             = if (config.useLocalDev) { dockerPrefix(absoluteAssetPath) }
+                           else { sipiPrefix }
+    } yield SipiClientLive(prefix)
+  }
 }
