@@ -150,7 +150,7 @@ final case class SipiClientLive(cmd: SipiCommandLine) extends SipiClient {
     commandLineTask.flatMap { cmd =>
       val logger = new InMemoryProcessLogger
       ZIO.logDebug(s"Calling \n$cmd") *>
-        ZIO.succeed(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logInfo(out.toString))
+        ZIO.succeed(cmd ! logger).as(logger.getOutput).tap(out => ZIO.logDebug(out.toString))
     }.logError
 
   override def applyTopLeftCorrection(fileIn: Path, fileOut: Path): UIO[SipiOutput] = execute(
