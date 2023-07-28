@@ -65,7 +65,7 @@ object SipiCommandLineSpec extends ZIOSpecDefault {
         cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.query(Path("/tmp/example")))
       } yield assertTrue(cmd == s"/sipi/sipi --query /tmp/example")
     },
-    test("should topleft command") {
+    test("should assemble topleft command") {
       for {
         cmd <- ZIO.serviceWithZIO[SipiCommandLine](_.topleft(Path("/tmp/example"), Path("/tmp/example2")))
       } yield assertTrue(cmd == s"/sipi/sipi --topleft /tmp/example /tmp/example2")
