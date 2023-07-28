@@ -15,15 +15,15 @@ import java.time.temporal.ChronoUnit
 import scala.sys.process.{ ProcessLogger, stringToProcess }
 
 sealed trait SipiCommand {
-  def flag: String
-  def render(prefix: String): UIO[String]
+  def flag(): String
+  def render(): UIO[String]
 }
 
 object SipiCommand {
   final case class QueryArgument(fileIn: Path) extends SipiCommand {
-    def flag: String                        = "--query"
-    def render(prefix: String): UIO[String] =
-      fileIn.toAbsolutePath.orDie.map(abs => s"$prefix $flag $abs")
+    def flag(): String        = "--query"
+    def render(): UIO[String] =
+      fileIn.toAbsolutePath.orDie.map(abs => s"${flag()} $abs")
   }
 
   final case class FormatArgument(
@@ -31,12 +31,12 @@ object SipiCommand {
       fileIn: Path,
       fileOut: Path,
     ) extends SipiCommand {
-    def flag: String                        = "--format"
-    def render(prefix: String): UIO[String] =
+    def flag(): String        = "--format"
+    def render(): UIO[String] =
       (for {
         abs1 <- fileIn.toAbsolutePath
         abs2 <- fileOut.toAbsolutePath
-      } yield s"$prefix $flag ${outputFormat.toCliString} $abs1 $abs2").orDie
+      } yield s"${flag()} ${outputFormat.toCliString} $abs1 $abs2").orDie
   }
 
   /** Applies the top-left correction to the image.
@@ -56,14 +56,13 @@ object SipiCommand {
       fileIn: Path,
       fileOut: Path,
     ) extends SipiCommand {
-    def flag: String                        = "--topleft"
-    def render(prefix: String): UIO[String] =
+    def flag(): String        = "--topleft"
+    def render(): UIO[String] =
       (for {
         abs1 <- fileIn.toAbsolutePath
         abs2 <- fileOut.toAbsolutePath
-      } yield s"$prefix $flag $abs1 $abs2").orDie
+      } yield s"${flag()} $abs1 $abs2").orDie
   }
-
 }
 
 /** Defines the output format of the image. Used with the `--format` option.
@@ -136,9 +135,10 @@ final case class SipiClientLive(prefix: String) extends SipiClient {
 
   private def execute(command: SipiCommand): UIO[SipiOutput] =
     command
-      .render(prefix)
+      .render()
+      .map(prefix + " " + _)
       .flatMap { cmd =>
-        val timerTagged = timer.tagged("command", command.flag)
+        val timerTagged = timer.tagged("command", command.flag())
         val logger      = new InMemoryProcessLogger
         ZIO.logInfo(s"Running sipi \n$cmd") *>
           (ZIO.succeed(cmd ! logger) @@ timerTagged.trackDuration)
