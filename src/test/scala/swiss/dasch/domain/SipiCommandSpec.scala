@@ -5,7 +5,7 @@
 
 package swiss.dasch.domain
 
-import swiss.dasch.domain.SipiCommand.{FormatArgument, QueryArgument, TopLeftArgument}
+import swiss.dasch.domain.SipiCommand.{ FormatArgument, QueryArgument, TopLeftArgument }
 import zio.*
 import zio.nio.file.*
 import zio.test.*
