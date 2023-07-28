@@ -22,8 +22,8 @@ object ImportEndpoint {
   case class UploadResponse(status: String = "okey")
 
   private object UploadResponse {
-    implicit val schema: Schema[UploadResponse]       = DeriveSchema.gen[UploadResponse]
-    implicit val encoder: JsonEncoder[UploadResponse] = DeriveJsonEncoder.gen[UploadResponse]
+    given schema: Schema[UploadResponse]       = DeriveSchema.gen[UploadResponse]
+    given encoder: JsonEncoder[UploadResponse] = DeriveJsonEncoder.gen[UploadResponse]
   }
 
   private val importEndpoint =
@@ -35,8 +35,8 @@ object ImportEndpoint {
       .inCodec(ContentCodec.contentStream[Byte] ++ HeaderCodec.contentType)
       .out[UploadResponse]
       .outErrors(
-        HttpCodec.error[IllegalArguments](Status.BadRequest),
-        HttpCodec.error[InternalProblem](Status.InternalServerError),
+        HttpCodec.error[ApiProblem.BadRequest](Status.BadRequest),
+        HttpCodec.error[ApiProblem.InternalServerError](Status.InternalServerError),
       )
 
   val app: App[StorageService with ImportService] = importEndpoint
@@ -52,15 +52,16 @@ object ImportEndpoint {
           _         <- ImportService
                          .importZipStream(shortcode, stream)
                          .mapError {
-                           case IoError(e)       => ApiProblem.internalError(s"Import of project $shortcodeStr failed", e)
-                           case EmptyFile        => ApiProblem.invalidBody("The uploaded file is empty")
-                           case NoZipFile        => ApiProblem.invalidBody("The uploaded file is not a zip file")
-                           case InvalidChecksums => ApiProblem.invalidBody("The uploaded file contains invalid checksums")
+                           case IoError(e)       => ApiProblem.InternalServerError(s"Import of project $shortcodeStr failed", e)
+                           case EmptyFile        => ApiProblem.BadRequest.invalidBody("The uploaded file is empty")
+                           case NoZipFile        => ApiProblem.BadRequest.invalidBody("The uploaded file is not a zip file")
+                           case InvalidChecksums =>
+                             ApiProblem.BadRequest.invalidBody("The uploaded file contains invalid checksums")
                          }
         } yield UploadResponse()
     )
     .toApp
 
   private def verifyContentType(actual: ContentType, expected: ContentType) =
-    ZIO.when(actual != expected)(ZIO.fail(ApiProblem.invalidHeaderContentType(actual, expected)))
+    ZIO.when(actual != expected)(ZIO.fail(ApiProblem.BadRequest.invalidHeaderContentType(actual, expected)))
 }

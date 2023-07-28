@@ -5,6 +5,8 @@
 
 package swiss.dasch.api.monitoring
 
+import swiss.dasch.infrastructure
+import swiss.dasch.infrastructure.HealthCheckService
 import zio.*
 import zio.http.*
 import zio.json.EncoderOps
@@ -15,8 +17,8 @@ object HealthEndpoint {
       HealthCheckService.check.map { result =>
         val response = Response.json(result.toJson)
         result.status match {
-          case UP   => response
-          case DOWN => response.withStatus(Status.ServiceUnavailable)
+          case infrastructure.Status.UP   => response
+          case infrastructure.Status.DOWN => response.withStatus(Status.ServiceUnavailable)
         }
       }
   }

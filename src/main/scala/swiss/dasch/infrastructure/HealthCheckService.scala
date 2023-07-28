@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.monitoring
+package swiss.dasch.infrastructure
 
-import swiss.dasch.infrastructure.FileSystemCheck
 import zio.{ UIO, URIO, URLayer, ZIO, ZLayer }
 
 trait HealthCheckService  {

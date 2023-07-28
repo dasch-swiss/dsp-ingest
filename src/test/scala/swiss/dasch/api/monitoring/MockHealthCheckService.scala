@@ -5,6 +5,7 @@
 
 package swiss.dasch.api.monitoring
 
+import swiss.dasch.infrastructure.{ Health, HealthCheckService }
 import zio.*
 
 final class MockHealthCheckService(val statusRef: Ref[Health]) extends HealthCheckService {

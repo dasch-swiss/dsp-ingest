@@ -12,28 +12,27 @@ import zio.http.Header.ContentRange.EndTotal
 import zio.http.codec.{ ContentCodec, HeaderCodec }
 import zio.http.endpoint.Endpoint
 import zio.http.{ App, Status }
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 object ListProjectsEndpoint {
   final case class ProjectResponse(id: String)
   object ProjectResponse {
-    def make(shortcode: ProjectShortcode): ProjectResponse = ProjectResponse(shortcode.toString)
-
-    implicit val schema: Schema[ProjectResponse]           = DeriveSchema.gen[ProjectResponse]
-    implicit val jsonEncoder: JsonEncoder[ProjectResponse] = DeriveJsonEncoder.gen[ProjectResponse]
+    def make(shortcode: ProjectShortcode): ProjectResponse = ProjectResponse(shortcode.value)
+    given schema: Schema[ProjectResponse]                  = DeriveSchema.gen[ProjectResponse]
+    given codec: JsonCodec[ProjectResponse]                = DeriveJsonCodec.gen[ProjectResponse]
   }
 
   private val listProjectsEndpoint = Endpoint
     .get(projects)
     .outCodec(HeaderCodec.contentRange ++ ContentCodec.content[Chunk[ProjectResponse]])
-    .outError[InternalProblem](Status.InternalServerError)
+    .outError[ApiProblem.InternalServerError](Status.InternalServerError)
 
   val app: App[ProjectService] = listProjectsEndpoint
     .implement(_ =>
       ProjectService
         .listAllProjects()
         .mapBoth(
-          ApiProblem.internalError,
+          ApiProblem.InternalServerError(_),
           shortcodes => (EndTotal("items", 0, shortcodes.size, shortcodes.size), shortcodes.map(ProjectResponse.make)),
         )
     )

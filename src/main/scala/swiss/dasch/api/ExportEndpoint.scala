@@ -27,9 +27,9 @@ object ExportEndpoint {
     .post(projects / shortcodePathVar / "export")
     .outCodec(downloadCodec)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[ApiProblem.NotFound](Status.NotFound),
+      HttpCodec.error[ApiProblem.BadRequest](Status.BadRequest),
+      HttpCodec.error[ApiProblem.InternalServerError](Status.InternalServerError),
     )
 
   val app: App[ProjectService] = exportEndpoint
@@ -41,8 +41,8 @@ object ExportEndpoint {
                        .some
                        .mapBoth(
                          {
-                           case Some(err) => ApiProblem.internalError(err)
-                           case _         => ApiProblem.projectNotFound(shortcode)
+                           case Some(err) => ApiProblem.InternalServerError(err)
+                           case _         => ApiProblem.NotFound(shortcode)
                          },
                          path =>
                            (

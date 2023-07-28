@@ -6,7 +6,6 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.*
-import swiss.dasch.api.monitoring.{ HealthEndpoint, InfoEndpoint, MetricsEndpoint }
 import swiss.dasch.config.Configuration.ServiceConfig
 import swiss.dasch.version.BuildInfo
 import zio.http.*
@@ -15,25 +14,20 @@ import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
-  private val serviceApps    =
+  private val serviceApps =
     (ExportEndpoint.app ++
       ImportEndpoint.app ++
-      ListProjectsEndpoint.app ++
-      ReportEndpoint.app ++
-      MaintenanceEndpoint.app) @@ Authenticator.middleware
-  private val managementApps = HealthEndpoint.app ++ InfoEndpoint.app ++ MetricsEndpoint.app
-  private val app            = ((managementApps ++ serviceApps)
-    @@ HttpRoutesMiddlewares.dropTrailingSlash)
+      MaintenanceEndpoint.app) @@ AuthService.middleware
+  private val app         = serviceApps
+    @@ HttpRoutesMiddlewares.dropTrailingSlash
     @@ HttpRoutesMiddlewares.cors(CorsConfig())
 
   def startup() =
     ZIO.logInfo(s"Starting ${BuildInfo.name}") *>
       Server.install(app) *>
       ZIO.serviceWithZIO[ServiceConfig](c =>
-        ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version} on http://${c.host}:${c.port}/info")
+        ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
       )
-      *>
-      ZIO.never
 
   val layer: URLayer[ServiceConfig, Server] = ZLayer
     .service[ServiceConfig]

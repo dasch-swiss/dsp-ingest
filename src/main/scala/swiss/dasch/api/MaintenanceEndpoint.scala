@@ -6,6 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.shortcodePathVar
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
 import swiss.dasch.domain.{ MaintenanceActions, ProjectService }
 import zio.*
 import zio.http.*
@@ -20,17 +21,17 @@ object MaintenanceEndpoint {
 
   final case class MappingEntry(internalFilename: String, originalFilename: String)
   object MappingEntry {
-    implicit val encoder: JsonEncoder[MappingEntry] = DeriveJsonEncoder.gen[MappingEntry]
-    implicit val schema: Schema[MappingEntry]       = DeriveSchema.gen[MappingEntry]
+    given encoder: JsonEncoder[MappingEntry] = DeriveJsonEncoder.gen[MappingEntry]
+    given schema: Schema[MappingEntry]       = DeriveSchema.gen[MappingEntry]
   }
 
   private val applyTopLeftCorrectionEndpoint = Endpoint
     .post("maintenance" / "apply-top-left-correction" / shortcodePathVar)
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   private val applyTopLeftCorrectionRoute =
@@ -51,8 +52,8 @@ object MaintenanceEndpoint {
       .fromPathVarToProjectShortcode(shortcodeStr)
       .flatMap(code =>
         ProjectService.findProject(code).some.mapError {
-          case Some(e) => ApiProblem.internalError(e)
-          case _       => ApiProblem.projectNotFound(code)
+          case Some(e) => ApiProblem.InternalServerError(e)
+          case _       => NotFound(code)
         }
       )
 
@@ -61,9 +62,9 @@ object MaintenanceEndpoint {
     .inCodec(ContentCodec.content[Chunk[MappingEntry]](MediaType.application.json))
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   private val createOriginalRoute =
