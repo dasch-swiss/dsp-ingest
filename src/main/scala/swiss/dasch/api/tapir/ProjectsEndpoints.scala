@@ -8,8 +8,10 @@ import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.api.ReportEndpoint.AssetCheckResultResponse
+import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
 import swiss.dasch.domain.ProjectShortcode
 import zio.{ Chunk, ZLayer }
+
 final case class ProjectsEndpoints(base: BaseEndpoints) {
 
   val getProjectsEndpoint = base
@@ -17,11 +19,6 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .get
     .in("projects")
     .out(jsonBody[Chunk[ProjectResponse]])
-
-  private val shortcodePathVar: EndpointInput.PathCapture[ProjectShortcode] = path[ProjectShortcode]
-    .name("shortcode")
-    .description("The shortcode of the project must be an exactly 4 characters long hexadecimal string.")
-    .example(ProjectShortcode.make("0001").getOrElse(throw Exception("Invalid shortcode")))
 
   val getProjectByShortcodeEndpoint = base
     .secureEndpoint
@@ -39,5 +36,11 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
 }
 
 object ProjectsEndpoints {
+
+  val shortcodePathVar: EndpointInput.PathCapture[ProjectShortcode] = path[ProjectShortcode]
+    .name("shortcode")
+    .description("The shortcode of the project must be an exactly 4 characters long hexadecimal string.")
+    .example(ProjectShortcode.make("0001").getOrElse(throw Exception("Invalid shortcode")))
+
   val layer = ZLayer.fromFunction(ProjectsEndpoints.apply _)
 }

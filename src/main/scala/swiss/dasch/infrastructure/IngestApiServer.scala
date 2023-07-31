@@ -16,8 +16,7 @@ object IngestApiServer {
 
   private val serviceApps =
     (ExportEndpoint.app ++
-      ImportEndpoint.app ++
-      MaintenanceEndpoint.app) @@ AuthService.middleware
+      ImportEndpoint.app) @@ AuthService.middleware
   private val app         = serviceApps
     @@ HttpRoutesMiddlewares.dropTrailingSlash
     @@ HttpRoutesMiddlewares.cors(CorsConfig())

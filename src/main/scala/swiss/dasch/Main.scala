@@ -41,6 +41,8 @@ object Main extends ZIOAppDefault {
         ImportServiceLive.layer,
         ImageServiceLive.layer,
         IngestApiServer.layer,
+        MaintenanceEndpoints.layer,
+        MaintenanceEndpointsHandler.layer,
         Metrics.layer,
         ProjectsEndpoints.layer,
         ProjectsEndpointsHandler.layer,
