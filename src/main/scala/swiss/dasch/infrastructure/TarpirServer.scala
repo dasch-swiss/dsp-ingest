@@ -12,6 +12,7 @@ import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
 import swiss.dasch.Endpoints
 import zio.*
 import zio.http.*
+
 object TarpirServer {
 
   private val serverOptions = ZioHttpServerOptions
