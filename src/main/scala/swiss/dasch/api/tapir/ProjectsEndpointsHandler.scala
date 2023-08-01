@@ -1,5 +1,6 @@
 package swiss.dasch.api.tapir
 
+import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
@@ -19,7 +20,11 @@ final case class ProjectsEndpointsHandler(
       _ =>
         projectService
           .listAllProjects()
-          .mapBoth(_ => ApiProblem.InternalServerError("Something went wrong"), list => list.map(ProjectResponse.make))
+          .mapBoth(
+            _ => ApiProblem.InternalServerError("Something went wrong"),
+            list =>
+              (list.map(ProjectResponse.make), ContentRange("items", Some(0, list.size), Some(list.size)).toString),
+          )
     )
 
   val getProjectByShortcodeEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints

@@ -4,6 +4,8 @@
  */
 
 package swiss.dasch.infrastructure
+import sttp.tapir.server.interceptor.cors.CORSConfig.AllowedOrigin
+import sttp.tapir.server.interceptor.cors.{ CORSConfig, CORSInterceptor }
 import sttp.tapir.server.metrics.zio.ZioMetrics
 import sttp.tapir.server.ziohttp
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
@@ -15,6 +17,16 @@ object TarpirServer {
   private val serverOptions = ZioHttpServerOptions
     .customiseInterceptors
     .metricsInterceptor(ZioMetrics.default[Task]().metricsInterceptor())
+    .corsInterceptor(
+      CORSInterceptor.customOrThrow(
+        CORSConfig
+          .default
+          .copy(
+            allowedOrigin = AllowedOrigin.All
+          )
+          .exposeAllHeaders
+      )
+    )
     .options
 
   def startup(): ZIO[Server with Endpoints, Nothing, Unit] = for {

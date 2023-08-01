@@ -1,5 +1,6 @@
 package swiss.dasch.api.tapir
 
+import sttp.model.HeaderNames
 import sttp.tapir.EndpointInput
 import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
@@ -19,6 +20,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .get
     .in("projects")
     .out(jsonBody[Chunk[ProjectResponse]])
+    .out(header[String](HeaderNames.ContentRange))
 
   val getProjectByShortcodeEndpoint = base
     .secureEndpoint
