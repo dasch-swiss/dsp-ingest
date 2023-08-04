@@ -52,4 +52,13 @@ object MaintenanceEndpoint {
       HttpCodec.error[IllegalArguments](Status.BadRequest),
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
+
+  val needsOriginalsEndpoint = Endpoint
+    .get(maintenance / "needs-originals")
+    .out[String](Status.Accepted)
+    .outErrors(
+      HttpCodec.error[ProjectNotFound](Status.NotFound),
+      HttpCodec.error[IllegalArguments](Status.BadRequest),
+      HttpCodec.error[InternalProblem](Status.InternalServerError),
+    )
 }
