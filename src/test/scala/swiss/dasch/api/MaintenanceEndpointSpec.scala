@@ -36,19 +36,19 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
       test("should return 404 for a non-existent project") {
         val request = createOriginalsRequest(nonExistentProject)
         for {
-          response <- MaintenanceEndpoint.app.runZIO(request).logError
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
         } yield assertTrue(response.status == Status.NotFound)
       },
       test("should return 400 for an invalid project shortcode") {
         val request = createOriginalsRequest("invalid-shortcode")
         for {
-          response <- MaintenanceEndpoint.app.runZIO(request).logError
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
         } yield assertTrue(response.status == Status.BadRequest)
       },
       test("should return 204 for a project shortcode ") {
         val request = createOriginalsRequest(existingProject)
         for {
-          response <- MaintenanceEndpoint.app.runZIO(request).logError
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
         } yield assertTrue(response.status == Status.Accepted)
       },
       test("should return 204 for a project shortcode and create originals for jp2 and jpx assets") {
@@ -70,7 +70,7 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
         val request     = createOriginalsRequest(existingProject, List(testMapping))
 
         for {
-          response         <- MaintenanceEndpoint.app.runZIO(request).logError
+          response         <- MaintenanceEndpointRoutes.app.runZIO(request).logError
           newOrigExistsJpx <- doesOrigExist(assetJpx, SipiImageFormat.Jpg)
           newOrigExistsJp2 <- doesOrigExist(assetJp2, SipiImageFormat.Tif)
           assetInfoJpx     <- loadAssetInfo(assetJpx)
