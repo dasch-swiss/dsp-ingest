@@ -7,6 +7,7 @@ package swiss.dasch.api
 
 import swiss.dasch.api.MaintenanceEndpoint.MappingEntry
 import swiss.dasch.domain.*
+import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.SipiImageFormat.Jpg
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Projects.{ existingProject, nonExistentProject }
@@ -92,7 +93,43 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
     ) @@ TestAspect.withLiveClock
   }
 
-  val spec = suite("MaintenanceEndpoint")(createOriginalsSuite)
+  private val needsOriginalsSuite =
+    suite("/maintenance/needs-originals should")(
+      test("should return 204 and create a report") {
+        val request = Request.get(URL(Root / "maintenance" / "needs-originals"))
+        for {
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          projects <- loadReport("needsOriginals_images_only.json")
+        } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
+      },
+      test("should return 204 and create a extended report") {
+        val request = Request.get(URL(Root / "maintenance" / "needs-originals").withQueryParams("imagesOnly=false"))
+        for {
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          projects <- loadReport("needsOriginals.json")
+        } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
+      },
+    ) @@ TestAspect.withLiveClock
+
+  private def loadReport(name: String) =
+    StorageService.getTempDirectory().flatMap { tmpDir =>
+      val report = tmpDir / "reports" / name
+      awaitTrue(Files.exists(report)) *> StorageService.loadJsonFile[Chunk[String]](report)
+    }
+
+  private val needsTopleftCorrectionSuite =
+    suite("/maintenance/needs-top-left-correction should")(
+      test("should return 204 and create a report") {
+        val request = Request.get(URL(Root / "maintenance" / "needs-top-left-correction"))
+        for {
+          _        <- SipiClientMock.setOrientation(OrientationValue.Rotate270CW)
+          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          projects <- loadReport("needsTopLeftCorrection.json")
+        } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
+      }
+    ) @@ TestAspect.withLiveClock
+
+  val spec = suite("MaintenanceEndpoint")(createOriginalsSuite, needsOriginalsSuite, needsTopleftCorrectionSuite)
     .provide(
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,
