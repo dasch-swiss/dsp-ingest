@@ -8,6 +8,7 @@ import zio.nio.file.Files
 import zio.{ Chunk, IO, ZIO }
 
 import java.io.IOException
+import zio.json.JsonEncoder
 
 object MaintenanceEndpointRoutes {
 
@@ -21,40 +22,45 @@ object MaintenanceEndpointRoutes {
         }
       )
 
-  private val needsOriginalsRoute = needsOriginalsEndpoint.implement(_ =>
-    (for {
-      _                 <- ZIO.logInfo(s"Checking for originals")
-      assetDir          <- StorageService.getAssetDirectory()
-      tmpDir            <- StorageService.getTempDirectory()
-      projectShortcodes <- ProjectService.listAllProjects()
-      _                 <- ZIO
-                             .foreach(projectShortcodes)(shortcode =>
-                               Files
-                                 .walk(assetDir / shortcode.toString)
-                                 .mapZIOPar(8)(originalNotPresent)
-                                 .filter(identity)
-                                 .as(ProjectResponse.make(shortcode))
-                                 .runHead
-                             )
-                             .map(_.flatten)
-                             .flatMap(
-                               Files.createDirectories(tmpDir / "reports") *>
-                                 Files.deleteIfExists(tmpDir / "reports" / "needsOriginals.json") *>
-                                 Files.createFile(tmpDir / "reports" / "needsOriginals.json") *>
-                                 StorageService.saveJsonFile(tmpDir / "reports" / "needsOriginals.json", _)
-                             )
-                             .zipLeft(ZIO.logInfo(s"Created needsOriginals.json"))
-                             .logError
-                             .forkDaemon
+  private def saveReport[A](
+      tmpDir: file.Path,
+      name: String,
+      report: A,
+    )(implicit encoder: JsonEncoder[A]
+    ): ZIO[StorageService, Throwable, Unit] =
+    Files.createDirectories(tmpDir / "reports") *>
+      Files.deleteIfExists(tmpDir / "reports" / s"$name.json") *>
+      Files.createFile(tmpDir / "reports" / s"$name.json") *>
+      StorageService.saveJsonFile(tmpDir / "reports" / s"$name.json", report)
 
-    } yield "work in progress")
-      .logError
-      .mapError(it => ApiProblem.internalError(it))
+  private val needsOriginalsRoute = needsOriginalsEndpoint.implement(imagesOnly =>
+    (
+      for {
+        _                 <- ZIO.logInfo(s"Checking for originals")
+        assetDir          <- StorageService.getAssetDirectory()
+        tmpDir            <- StorageService.getTempDirectory()
+        projectShortcodes <- ProjectService.listAllProjects()
+        _                 <- ZIO
+                               .foreach(projectShortcodes)(shortcode =>
+                                 Files
+                                   .walk(assetDir / shortcode.toString)
+                                   .mapZIOPar(8)(originalNotPresent(imagesOnly))
+                                   .filter(identity)
+                                   .as(ProjectResponse.make(shortcode))
+                                   .runHead
+                               )
+                               .map(_.flatten)
+                               .flatMap(saveReport(tmpDir, "needsOriginals", _))
+                               .zipLeft(ZIO.logInfo(s"Created needsOriginals.json"))
+                               .logError
+                               .forkDaemon
+      } yield "work in progress"
+    ).logError.mapError(ApiProblem.internalError)
   )
 
-  private def originalNotPresent(path: file.Path): IO[IOException, Boolean] = {
+  private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
     val assetId = AssetId.makeFromPath(path).map(_.toString).getOrElse("unknown-asset-id")
-    FileFilters.isImage(path) &&
+    (ZIO.succeed(imagesOnly).negate || FileFilters.isImage(path)) &&
     Files
       .list(path.parent.orNull)
       .map(_.filename.toString)
@@ -79,35 +85,30 @@ object MaintenanceEndpointRoutes {
 
   private val needsTopLeftCorrectionRoute =
     needsTopLeftCorrectionEndpoint.implement(_ =>
-      (for {
-        _                 <- ZIO.logInfo(s"Checking for top left correction")
-        assetDir          <- StorageService.getAssetDirectory()
-        tmpDir            <- StorageService.getTempDirectory()
-        imageService      <- ZIO.service[ImageService]
-        projectShortcodes <- ProjectService.listAllProjects()
-        _                 <-
-          ZIO
-            .foreach(projectShortcodes)(shortcode =>
-              Files
-                .walk(assetDir / shortcode.toString)
-                .mapZIOPar(8)(imageService.needsTopLeftCorrection)
-                .filter(identity)
-                .runHead
-                .map(_.map(_ => ProjectResponse.make(shortcode)))
-            )
-            .map(_.flatten)
-            .flatMap(
-              Files.createDirectories(tmpDir / "reports") *>
-                Files.deleteIfExists(tmpDir / "reports" / "needsTopLeftCorrection.json") *>
-                Files.createFile(tmpDir / "reports" / "needsTopLeftCorrection.json") *>
-                StorageService.saveJsonFile(tmpDir / "reports" / "needsTopLeftCorrection.json", _)
-            )
-            .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
-            .logError
-            .forkDaemon
-      } yield "work in progress")
-        .logError
-        .mapError(ApiProblem.internalError)
+      (
+        for {
+          _                 <- ZIO.logInfo(s"Checking for top left correction")
+          assetDir          <- StorageService.getAssetDirectory()
+          tmpDir            <- StorageService.getTempDirectory()
+          imageService      <- ZIO.service[ImageService]
+          projectShortcodes <- ProjectService.listAllProjects()
+          _                 <-
+            ZIO
+              .foreach(projectShortcodes)(shortcode =>
+                Files
+                  .walk(assetDir / shortcode.toString)
+                  .mapZIOPar(8)(imageService.needsTopLeftCorrection)
+                  .filter(identity)
+                  .runHead
+                  .map(_.map(_ => ProjectResponse.make(shortcode)))
+              )
+              .map(_.flatten)
+              .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))
+              .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
+              .logError
+              .forkDaemon
+        } yield "work in progress"
+      ).logError.mapError(ApiProblem.internalError)
     )
 
   private val applyTopLeftCorrectionRoute =
