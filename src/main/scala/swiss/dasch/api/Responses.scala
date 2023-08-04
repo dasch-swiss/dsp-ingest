@@ -1,5 +1,3 @@
 package swiss.dasch.api
 
-object Responses {
-
-}
+object Responses {}

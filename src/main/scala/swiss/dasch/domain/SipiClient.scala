@@ -66,7 +66,6 @@ object SipiCommand {
   }
 }
 
-
 final case class SipiOutput(stdOut: String, stdErr: String)
 trait SipiClient {
 
