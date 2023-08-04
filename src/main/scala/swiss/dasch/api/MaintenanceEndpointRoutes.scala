@@ -1,14 +1,13 @@
 package swiss.dasch.api
 
-import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.api.MaintenanceEndpoint.*
 import swiss.dasch.domain.*
+import zio.json.JsonEncoder
 import zio.nio.file
 import zio.nio.file.Files
 import zio.{ Chunk, IO, ZIO }
 
 import java.io.IOException
-import zio.json.JsonEncoder
 
 object MaintenanceEndpointRoutes {
 
@@ -33,8 +32,10 @@ object MaintenanceEndpointRoutes {
       Files.createFile(tmpDir / "reports" / s"$name.json") *>
       StorageService.saveJsonFile(tmpDir / "reports" / s"$name.json", report)
 
-  private val needsOriginalsRoute = needsOriginalsEndpoint.implement(imagesOnly =>
-    (
+  private val needsOriginalsRoute = needsOriginalsEndpoint.implement(imagesOnlyMaybe =>
+    {
+      val imagesOnly = imagesOnlyMaybe.getOrElse(true)
+      val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
       for {
         _                 <- ZIO.logInfo(s"Checking for originals")
         assetDir          <- StorageService.getAssetDirectory()
@@ -46,16 +47,16 @@ object MaintenanceEndpointRoutes {
                                    .walk(assetDir / shortcode.toString)
                                    .mapZIOPar(8)(originalNotPresent(imagesOnly))
                                    .filter(identity)
-                                   .as(ProjectResponse.make(shortcode))
+                                   .as(shortcode)
                                    .runHead
                                )
                                .map(_.flatten)
-                               .flatMap(saveReport(tmpDir, "needsOriginals", _))
-                               .zipLeft(ZIO.logInfo(s"Created needsOriginals.json"))
+                               .flatMap(saveReport(tmpDir, reportName, _))
+                               .zipLeft(ZIO.logInfo(s"Created $reportName.json"))
                                .logError
                                .forkDaemon
       } yield "work in progress"
-    ).logError.mapError(ApiProblem.internalError)
+    }.logError.mapError(ApiProblem.internalError)
   )
 
   private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
@@ -100,7 +101,7 @@ object MaintenanceEndpointRoutes {
                   .mapZIOPar(8)(imageService.needsTopLeftCorrection)
                   .filter(identity)
                   .runHead
-                  .map(_.map(_ => ProjectResponse.make(shortcode)))
+                  .map(_.map(_ => shortcode))
               )
               .map(_.flatten)
               .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))

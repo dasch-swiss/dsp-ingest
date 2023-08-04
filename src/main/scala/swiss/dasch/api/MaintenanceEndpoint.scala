@@ -55,7 +55,7 @@ object MaintenanceEndpoint {
 
   val needsOriginalsEndpoint = Endpoint
     .get(maintenance / "needs-originals")
-    .query(queryBool("imagesOnly"))
+    .query(queryBool("imagesOnly").optional)
     .out[String](Status.Accepted)
     .outErrors(
       HttpCodec.error[ProjectNotFound](Status.NotFound),
