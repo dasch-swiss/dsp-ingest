@@ -7,6 +7,7 @@ package swiss.dasch.api
 
 import swiss.dasch.api.MaintenanceEndpoint.*
 import swiss.dasch.domain.*
+import swiss.dasch.domain.FileFilters.{ isImage, isNonHiddenRegularFile }
 import zio.json.JsonEncoder
 import zio.nio.file
 import zio.nio.file.Files
@@ -65,8 +66,14 @@ object MaintenanceEndpointRoutes {
   )
 
   private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
-    val assetId = AssetId.makeFromPath(path).map(_.toString).getOrElse("unknown-asset-id")
-    (ZIO.succeed(imagesOnly).negate || FileFilters.isImage(path)) &&
+    lazy val assetId                          = AssetId.makeFromPath(path).map(_.toString).getOrElse("unknown-asset-id")
+    def checkIsImageIfNeeded(path: file.Path) = {
+      val shouldNotCheckImages = ZIO.succeed(!imagesOnly)
+      shouldNotCheckImages || isImage(path)
+    }
+
+    isNonHiddenRegularFile(path) &&
+    checkIsImageIfNeeded(path) &&
     Files
       .list(path.parent.orNull)
       .map(_.filename.toString)
