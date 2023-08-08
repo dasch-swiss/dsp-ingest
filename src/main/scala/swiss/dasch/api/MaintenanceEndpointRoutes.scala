@@ -17,9 +17,9 @@ import java.io.IOException
 
 object MaintenanceEndpointRoutes {
 
-  private def getProjectPath(shortcodeStr: String): ZIO[ProjectService, ApiProblem, file.Path] =
+  private def getProjectPath(shortcode: String): ZIO[ProjectService, ApiProblem, file.Path] =
     ApiStringConverters
-      .fromPathVarToProjectShortcode(shortcodeStr)
+      .fromPathVarToProjectShortcode(shortcode)
       .flatMap(code =>
         ProjectService.findProject(code).some.mapError {
           case Some(e) => ApiProblem.internalError(e)
