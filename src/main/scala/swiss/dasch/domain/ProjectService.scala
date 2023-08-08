@@ -22,7 +22,7 @@ opaque type ProjectShortcode = String Refined MatchesRegex["""^\p{XDigit}{4,4}$"
 
 object ProjectShortcode {
 
-  def make(shortcodeStr: String): Either[String, ProjectShortcode] = refineV(shortcodeStr.toUpperCase)
+  def make(shortcode: String): Either[String, ProjectShortcode] = refineV(shortcode.toUpperCase)
 
   extension (c: ProjectShortcode) { def value: String = c.toString }
 
