@@ -28,7 +28,7 @@ Once the necessary software is installed you can use `mkdocs serve` for a live p
 
 ## Contributing
 
-Our commit messages follow the [Conventinal Commits Guidelines](https://www.conventionalcommits.org/en/v1.0.0/).
+Our commit messages follow the [Conventional Commits Guidelines](https://www.conventionalcommits.org/en/v1.0.0/).
 
 Source code must be formatted with `sbt fmt`.
 
