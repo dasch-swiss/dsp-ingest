@@ -112,7 +112,7 @@ jobs:
  
   send-chat-notification:
       name: Send google chat notification
-      needs: [publish-release]
+      needs: [publish-docker-image]
       runs-on: ubuntu-latest
       if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
       steps:
