@@ -109,8 +109,7 @@ jobs:
           curl -f -u "${JENKINS_BASIC_AUTH_USER}:${JENKINS_BASIC_AUTH_PASS}" \
                -X POST "${JENKINS_DEV_WEBHOOK}" \
                -d "Service=ingest&Version=${IMAGE_TAG}"
-
-   
+ 
   send-chat-notification:
       name: Send google chat notification
       needs: [publish-release]
