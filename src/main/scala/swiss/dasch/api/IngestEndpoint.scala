@@ -1,22 +1,21 @@
 package swiss.dasch.api
 
-import zio.http.endpoint.Endpoint
-import swiss.dasch.api.ApiPathCodecSegments.projects
-import swiss.dasch.api.ApiPathCodecSegments.shortcodePathVar
-import zio.http.Status
-import zio.*
-import zio.nio.file.Files
+import org.apache.commons.io.FilenameUtils
+import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
-import swiss.dasch.domain.ProjectShortcode
+import swiss.dasch.domain.SipiImageFormat.Jpx
+import swiss.dasch.domain.*
+import zio.*
+import zio.http.Status
 import zio.http.codec.HttpCodec
-import swiss.dasch.domain.StorageService
-import swiss.dasch.domain.FileFilters
-import zio.nio.file.Path
-import swiss.dasch.domain.AssetId
+import zio.http.endpoint.Endpoint
+import zio.nio.file.{ Files, Path }
+
+import java.nio.file.StandardOpenOption
 
 object IngestEndpoint {
 
-  val endpoint = Endpoint
+  private val endpoint = Endpoint
     .post(projects / shortcodePathVar / "bulk-ingest")
     .out[ProjectResponse]
     .outErrors(
@@ -25,52 +24,79 @@ object IngestEndpoint {
       HttpCodec.error[InternalProblem](Status.InternalServerError),
     )
 
-  val route = endpoint.implement(shortcode =>
+  private val route = endpoint.implement(shortcode =>
     ApiStringConverters.fromPathVarToProjectShortcode(shortcode).flatMap { code =>
-      BulkIngestService
-        .startBulkIngest(code)
-        .mapError(ApiProblem.internalError(_))
-        .as(ProjectResponse(code))
+      ZIO.logInfo(s"Starting bulk ingest for project $code") *>
+        BulkIngestService.startBulkIngest(code).forkDaemon *>
+        ZIO.succeed(ProjectResponse(code))
     }
   )
 
+  val app = route.toApp
 }
 
 trait BulkIngestService {
 
-  def startBulkIngest(shortcode: ProjectShortcode): Task[Unit]
+  def startBulkIngest(shortcode: ProjectShortcode): Task[Int]
 }
 
 object BulkIngestService {
-  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
+  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Int] =
     ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
 }
 
-final case class BulkIngestServiceLive(storage: StorageService) extends BulkIngestService {
+final case class BulkIngestServiceLive(
+    storage: StorageService,
+    sipiClient: SipiClient,
+    assetInfo: AssetInfoService,
+  ) extends BulkIngestService {
 
-  override def startBulkIngest(shortcode: ProjectShortcode): Task[Unit] =
+  override def startBulkIngest(shortcode: ProjectShortcode): Task[Int] =
     for {
       importDir  <- storage.getTempDirectory().map(_ / "import" / shortcode.value)
-      imageFiles <- StorageService.findInPath(importDir, FileFilters.isImage).runCollect
-      projectDir <- createProjectDirectory(shortcode)
-      _          <- ZIO.foreachDiscard(imageFiles)(ingestSingleImage(_, projectDir))
-    } yield ()
+      mappingFile = importDir / "mapping.csv"
+      _          <- Files.createFile(mappingFile)
+      _          <- Files.writeLines(mappingFile, List("original,derivative\n"))
+      sum        <- StorageService
+                      .findInPath(importDir, FileFilters.isImage)
+                      .mapZIOPar(8)(ingestSingleImage(_, shortcode, mappingFile))
+                      .runSum
+    } yield sum
 
-  private def createProjectDirectory(code: ProjectShortcode): Task[Path] =
+  private def ingestSingleImage(
+      file: Path,
+      shortcode: ProjectShortcode,
+      mappingFile: Path,
+    ): Task[Int] =
     for {
-      projectDir <- storage.getProjectDirectory(code)
-      _          <- ZIO.whenZIO(Files.isDirectory(projectDir).negate)(Files.createDirectories(projectDir))
-    } yield projectDir
+      assetId <- AssetId.makeNew
 
-  private def ingestSingleImage(file: Path, projectDir: Path): Task[Unit] =
-    for {
-      _                <- ZIO.unit
-      assetId: AssetId <- ZIO.succeed(???)
-      _                <- copyOriginal
-      _                <- createJpeg2000
-      _                <- createInfoFile
-      _                <- removeTempFile
-    } yield ()
+      // ensure asset dir exists
+      assetDir <- storage.getAssetDirectory(Asset(assetId, shortcode))
+      _        <- Files.createDirectories(assetDir)
+
+      // copy original to asset dir
+      originalFile = assetDir / s"${assetId.toString}${FilenameUtils.getExtension(file.filename.toString)}.orig"
+      _           <- Files.copy(file, originalFile)
+
+      // transcode to derivative
+      derivativeFile = assetDir / s"$assetId.${Jpx.extension}"
+      _             <- sipiClient.transcodeImageFile(originalFile, derivativeFile, Jpx)
+
+      // create asset info
+      originalFilename = file.filename.toString
+      _               <- assetInfo.createAssetInfo(Asset(assetId, shortcode), originalFilename)
+
+      // update mapping
+      _ <- Files.writeLines(
+             mappingFile,
+             List(s"$originalFilename,${derivativeFile.filename}\n"),
+             openOptions = Set(StandardOpenOption.APPEND),
+           )
+
+      // cleanup
+      _ <- Files.delete(file)
+    } yield 1
 
 }
 
