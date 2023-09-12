@@ -34,3 +34,7 @@ object AssetId {
 }
 
 final case class Asset(id: AssetId, belongsToProject: ProjectShortcode)
+
+object Asset {
+  def makeNew(project: ProjectShortcode): UIO[Asset] = AssetId.makeNew.map(id => Asset(id, project))
+}

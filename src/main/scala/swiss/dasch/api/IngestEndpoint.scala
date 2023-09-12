@@ -61,7 +61,7 @@ final case class BulkIngestServiceLive(
       importDir  <- storage.getTempDirectory().map(_ / "import" / shortcode.value)
       mappingFile = importDir / "mapping.csv"
       _          <- Files.createFile(mappingFile)
-      _          <- Files.writeLines(mappingFile, List("original,derivative\n"))
+      _          <- Files.writeLines(mappingFile, List("original,derivative"))
       sum        <- StorageService
                       .findInPath(importDir, FileFilters.isImage)
                       .mapZIOPar(8)(ingestSingleImage(_, shortcode, mappingFile))
@@ -75,34 +75,59 @@ final case class BulkIngestServiceLive(
       mappingFile: Path,
     ): Task[Int] =
     for {
-      assetId <- AssetId.makeNew
-
-      // ensure asset dir exists
-      assetDir <- storage.getAssetDirectory(Asset(assetId, shortcode))
-      _        <- Files.createDirectories(assetDir)
-
-      // copy original to asset dir
-      originalFile = assetDir / s"${assetId.toString}${FilenameUtils.getExtension(file.filename.toString)}.orig"
-      _           <- Files.copy(file, originalFile)
-
-      // transcode to derivative
-      derivativeFile = assetDir / s"$assetId.${Jpx.extension}"
-      _             <- sipiClient.transcodeImageFile(originalFile, derivativeFile, Jpx)
-
-      // create asset info
+      _               <- ZIO.logInfo(s"Ingesting image $file")
+      asset           <- Asset.makeNew(shortcode)
+      assetDir        <- ensureAssetDirExists(asset)
+      originalFile    <- copyFileToAssetDir(file, assetDir, asset)
+      derivativeFile  <- transcode(assetDir, originalFile, asset)
       originalFilename = file.filename.toString
-      _               <- assetInfo.createAssetInfo(Asset(assetId, shortcode), originalFilename)
-
-      // update mapping
-      _ <- Files.writeLines(
-             mappingFile,
-             List(s"$originalFilename,${derivativeFile.filename}\n"),
-             openOptions = Set(StandardOpenOption.APPEND),
-           )
-
-      // cleanup
-      _ <- Files.delete(file)
+      _               <- assetInfo.createAssetInfo(asset, originalFilename)
+      _               <- updateMappingCvs(mappingFile, derivativeFile, originalFilename, asset)
+      _               <- Files.delete(file)
+      _               <- ZIO.logInfo(s"Finished ingesting image $file")
     } yield 1
+
+  private def updateMappingCvs(
+      mappingFile: Path,
+      derivativeFile: Path,
+      originalFilename: String,
+      asset: Asset,
+    ) =
+    ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *>
+      Files.writeLines(
+        mappingFile,
+        List(s"$originalFilename,${derivativeFile.filename}"),
+        openOptions = Set(StandardOpenOption.APPEND),
+      )
+
+  private def ensureAssetDirExists(asset: Asset) =
+    for {
+      _        <- ZIO.logInfo(s"Ensuring asset dir exists, $asset")
+      assetDir <- storage.getAssetDirectory(asset)
+      _        <- Files.createDirectories(assetDir)
+    } yield assetDir
+
+  private def copyFileToAssetDir(
+      file: Path,
+      assetDir: Path,
+      asset: Asset,
+    ) = {
+    val originalFile = assetDir / s"${asset.id}${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    ZIO.logInfo(s"Copying file $file to $assetDir, $asset") *>
+      Files.copy(file, originalFile).as(originalFile)
+  }
+
+  private def transcode(
+      assetDir: Path,
+      originalFile: Path,
+      asset: Asset,
+    ) = {
+    val derivativeFile = assetDir / s"${asset.id}.${Jpx.extension}"
+    ZIO.logInfo(s"Transcoding $originalFile to $derivativeFile, $asset") *>
+      sipiClient
+        .transcodeImageFile(originalFile, derivativeFile, Jpx)
+        .as(derivativeFile)
+  }
 
 }
 
