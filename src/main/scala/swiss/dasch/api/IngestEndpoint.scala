@@ -31,8 +31,7 @@ object IngestEndpoint {
 
   private val route = endpoint.implement(shortcode =>
     ApiStringConverters.fromPathVarToProjectShortcode(shortcode).flatMap { code =>
-      ZIO.logInfo(s"Starting bulk ingest for project $code") *>
-        BulkIngestService.startBulkIngest(code).forkDaemon *>
+      BulkIngestService.startBulkIngest(code).forkDaemon *>
         ZIO.succeed(ProjectResponse(code))
     }
   )
@@ -58,6 +57,7 @@ final case class BulkIngestServiceLive(
 
   override def startBulkIngest(shortcode: ProjectShortcode): Task[Int] =
     for {
+      _          <- ZIO.logInfo(s"Starting bulk ingest for project $shortcode")
       importDir  <- storage.getTempDirectory().map(_ / "import" / shortcode.value)
       mappingFile = importDir / "mapping.csv"
       _          <- Files.createFile(mappingFile)
@@ -66,6 +66,7 @@ final case class BulkIngestServiceLive(
                       .findInPath(importDir, FileFilters.isImage)
                       .mapZIOPar(8)(ingestSingleImage(_, shortcode, mappingFile))
                       .runSum
+      _          <- ZIO.logInfo(s"Finished bulk ingest for project $shortcode, ingested $sum images")
     } yield sum
 
   private def ingestSingleImage(
