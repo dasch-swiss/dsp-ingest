@@ -102,9 +102,7 @@ object MaintenanceActions {
         _    <- Files.deleteIfExists(infoFilePath) *> Files.createFile(infoFilePath)
         _    <- Files.writeBytes(infoFilePath, Chunk.fromArray(info.toJsonPretty.getBytes))
       } yield 1)
-      .someOrElseZIO(
-        ZIO.logWarning(s"Sipi did not create an original for $c") *> ZIO.succeed(0)
-      )
+      .someOrElseZIO(ZIO.logWarning(s"Sipi did not create an original for $c") *> ZIO.succeed(0))
   }
 
   private def createNewAssetInfoFileContent(c: CreateOriginalFor): IO[Throwable, AssetInfoFileContent] =
