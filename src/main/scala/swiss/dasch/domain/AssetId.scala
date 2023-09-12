@@ -31,9 +31,6 @@ object AssetId {
       case false => None
     }
   }
-
-//  def makeNew: UIO[AssetId] = ZIO.succeed(Base62.encode(UUID.randomUUID())).map(AssetId.make)
-
 }
 
 final case class Asset(id: AssetId, belongsToProject: ProjectShortcode)
