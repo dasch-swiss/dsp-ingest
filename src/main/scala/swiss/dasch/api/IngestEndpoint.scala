@@ -8,6 +8,7 @@ package swiss.dasch.api
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
+import swiss.dasch.config.Configuration.IngestConfig
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import swiss.dasch.domain.*
 import zio.*
@@ -53,6 +54,7 @@ final case class BulkIngestServiceLive(
     storage: StorageService,
     sipiClient: SipiClient,
     assetInfo: AssetInfoService,
+    config: IngestConfig,
   ) extends BulkIngestService {
 
   override def startBulkIngest(project: ProjectShortcode): Task[(Int, Int)] =
@@ -65,7 +67,7 @@ final case class BulkIngestServiceLive(
       total      <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum        <- StorageService
                       .findInPath(importDir, FileFilters.isImage)
-                      .mapZIOPar(8)(image =>
+                      .mapZIOPar(config.bulkMaxParallel)(image =>
                         ingestSingleImage(image, project, mappingFile)
                           .catchNonFatalOrDie(e => ZIO.logError(s"Error ingesting image $image: ${e.getMessage}").as((0, 1)))
                       )
