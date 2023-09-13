@@ -59,7 +59,7 @@ final case class BulkIngestServiceLive(
     for {
       _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
       importDir  <- storage.getTempDirectory().map(_ / "import" / project.value)
-      mappingFile = importDir / "mapping.csv"
+      mappingFile = importDir.parent.head / s"mapping-$project.csv"
       _          <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
                       .whenZIO(Files.exists(mappingFile).negate)
       total      <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
