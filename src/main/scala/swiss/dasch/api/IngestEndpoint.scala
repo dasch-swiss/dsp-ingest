@@ -119,7 +119,7 @@ final case class BulkIngestServiceLive(
       assetDir: Path,
       asset: Asset,
     ) = {
-    val originalFile = assetDir / s"${asset.id}${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    val originalFile = assetDir / s"${asset.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
     ZIO.logInfo(s"Copying file $file to $assetDir, $asset") *>
       Files.copy(file, originalFile).as(originalFile)
   }
