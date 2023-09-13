@@ -41,11 +41,11 @@ object IngestEndpoint {
 
 trait BulkIngestService {
 
-  def startBulkIngest(shortcode: ProjectShortcode): Task[Int]
+  def startBulkIngest(shortcode: ProjectShortcode): Task[(Int, Int)]
 }
 
 object BulkIngestService {
-  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Int] =
+  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, (Int, Int)] =
     ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
 }
 
@@ -55,28 +55,32 @@ final case class BulkIngestServiceLive(
     assetInfo: AssetInfoService,
   ) extends BulkIngestService {
 
-  override def startBulkIngest(project: ProjectShortcode): Task[Int] =
+  override def startBulkIngest(project: ProjectShortcode): Task[(Int, Int)] =
     for {
       _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
       importDir  <- storage.getTempDirectory().map(_ / "import" / project.value)
       mappingFile = importDir / "mapping.csv"
       _          <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
                       .whenZIO(Files.exists(mappingFile).negate)
+      total      <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum        <- StorageService
                       .findInPath(importDir, FileFilters.isImage)
                       .mapZIOPar(8)(image =>
                         ingestSingleImage(image, project, mappingFile)
-                          .catchNonFatalOrDie(e => ZIO.logError(s"Error ingesting image $image: ${e.getMessage}").as(0))
+                          .catchNonFatalOrDie(e => ZIO.logError(s"Error ingesting image $image: ${e.getMessage}").as((0, 1)))
                       )
-                      .runSum
-      _          <- ZIO.logInfo(s"Finished bulk ingest for project $project, ingested $sum images")
+                      .runFold(0, 0)((acc, v) => (acc._1 + v._1, acc._2 + v._2))
+      _          <-
+        ZIO.logInfo(
+          s"Finished bulk ingest for project $project, found $total files, ingested ${sum._1} and failed ${sum._2} images"
+        )
     } yield sum
 
   private def ingestSingleImage(
       file: Path,
       project: ProjectShortcode,
       csv: Path,
-    ): Task[Int] =
+    ): Task[(Int, Int)] =
     for {
       _               <- ZIO.logInfo(s"Ingesting image $file")
       asset           <- Asset.makeNew(project)
@@ -88,7 +92,7 @@ final case class BulkIngestServiceLive(
       _               <- updateMappingCsv(csv, derivativeFile, originalFilename, asset)
       _               <- Files.delete(file)
       _               <- ZIO.logInfo(s"Finished ingesting image $file")
-    } yield 1
+    } yield (1, 0)
 
   private def updateMappingCsv(
       mappingFile: Path,
