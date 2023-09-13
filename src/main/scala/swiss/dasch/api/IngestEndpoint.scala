@@ -112,7 +112,7 @@ final case class BulkIngestServiceLive(
       _               <- assetInfo.createAssetInfo(asset, originalFilename)
       _               <- updateMappingCsv(csv, derivativeFile, originalFilename, asset)
       _               <- Files.delete(file)
-      _               <- ZIO.logInfo(s"Finished ingesting image $file bytes")
+      _               <- ZIO.logInfo(s"Finished ingesting image $file")
     } yield IngestResult.success
 
   private def updateMappingCsv(
