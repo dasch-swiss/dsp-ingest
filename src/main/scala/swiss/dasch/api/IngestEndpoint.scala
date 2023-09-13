@@ -74,7 +74,7 @@ final case class BulkIngestServiceLive(
                       .runFold(0, 0)((acc, v) => (acc._1 + v._1, acc._2 + v._2))
       _          <-
         ZIO.logInfo(
-          s"Finished bulk ingest for project $project, found $total files, ingested ${sum._1} and failed ${sum._2} images"
+          s"Finished bulk ingest for project $project:  $total / ${sum._1} / ${sum._2} ('total files' / 'ingested images' / 'failed images')."
         )
     } yield sum
 
@@ -136,11 +136,11 @@ final case class BulkIngestServiceLive(
       sipiClient.transcodeImageFile(originalFile, derivativeFile, Jpx) *>
       ZIO
         .whenZIO(Files.exists(derivativeFile).negate)(
-          ZIO.fail(IllegalStateException(s"Sipi failed transcoding $originalFile to $derivativeFile"))
+          Files.delete(originalFile) *>
+            ZIO.fail(IllegalStateException(s"Sipi failed transcoding $originalFile to $derivativeFile"))
         )
         .as(derivativeFile)
   }
-
 }
 
 object BulkIngestServiceLive {
