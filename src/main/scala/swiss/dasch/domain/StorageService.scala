@@ -46,6 +46,8 @@ object StorageService {
     ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
   def getTempDirectory(): RIO[StorageService, Path]                                                                   =
     ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
+  def getBulkIngestImportFolder(project: ProjectShortcode): RIO[StorageService, Path]                                 =
+    ZIO.serviceWithZIO[StorageService](_.getBulkIngestImportFolder(project))
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None)
       : ZIO[Scope with StorageService, IOException, Path] =
     ZIO.serviceWithZIO[StorageService](_.createTempDirectoryScoped(directoryName, prefix))
