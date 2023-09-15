@@ -98,37 +98,37 @@ final case class BulkIngestServiceLive(
     } yield sum
 
   private def ingestSingleImage(
-      file: Path,
+      imageToIngest: Path,
       project: ProjectShortcode,
       csv: Path,
     ): Task[IngestResult] =
     for {
-      _              <- ZIO.logInfo(s"Ingesting image $file")
+      _              <- ZIO.logInfo(s"Ingesting image $imageToIngest")
       asset          <- Asset.makeNew(project)
       assetDir       <- ensureAssetDirExists(asset)
-      originalFile   <- copyFileToAssetDir(file, assetDir, asset)
+      originalFile   <- copyFileToAssetDir(imageToIngest, assetDir, asset)
       derivativeFile <- transcode(assetDir, originalFile, asset)
-      _              <- assetInfo.createAssetInfo(asset, file.filename.toString)
-      _              <- updateMappingCsv(csv, derivativeFile, file, asset)
-      _              <- Files.delete(file)
-      _              <- ZIO.logInfo(s"Finished ingesting image $file")
+      _              <- assetInfo.createAssetInfo(asset, imageToIngest.filename.toString)
+      _              <- updateMappingCsv(csv, derivativeFile, imageToIngest, asset)
+      _              <- Files.delete(imageToIngest)
+      _              <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
     } yield IngestResult.success
 
   private def updateMappingCsv(
       mappingFile: Path,
       derivativeFile: Path,
-      originalFile: Path,
+      imageToIngest: Path,
       asset: Asset,
     ) =
     ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
       for {
-        importDir <- storage.getBulkIngestImportFolder(asset.belongsToProject)
-        original   = importDir.relativize(originalFile)
-        _         <- Files.writeLines(
-                       mappingFile,
-                       List(s"$original,${derivativeFile.filename}"),
-                       openOptions = Set(StandardOpenOption.APPEND),
-                     )
+        importDir                <- storage.getBulkIngestImportFolder(asset.belongsToProject)
+        imageToIngestRelativePath = importDir.relativize(imageToIngest)
+        _                        <- Files.writeLines(
+                                      mappingFile,
+                                      List(s"$imageToIngestRelativePath,${derivativeFile.filename}"),
+                                      openOptions = Set(StandardOpenOption.APPEND),
+                                    )
       } yield ()
     }
 
