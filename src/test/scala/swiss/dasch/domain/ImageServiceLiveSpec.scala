@@ -15,8 +15,8 @@ import zio.test.*
 
 object ImageServiceLiveSpec extends ZIOSpecDefault {
 
-  private val imageAsset = Asset("needs-topleft-correction".toAssetId, "0001".toProjectShortcode)
-  private val imageFile  = StorageService.getAssetDirectory(imageAsset).map(_ / s"${imageAsset.id}.jp2")
+  private val asset      = GenericAsset("needs-topleft-correction".toAssetId, "0001".toProjectShortcode)
+  private val imageFile  = StorageService.getAssetDirectory(asset).map(_ / s"${asset.id}.jp2")
   private val backupFile = imageFile.map(image => image.parent.map(_ / s"${image.filename}.bak").orNull)
 
   val spec =
@@ -26,8 +26,8 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           _                 <- SipiClientMock.setOrientation(OrientationValue.Rotate270CW)
           image             <- imageFile
           backup            <- backupFile
-          info              <- AssetInfoService.findByAsset(imageAsset)
-          infoFile          <- AssetInfoService.getInfoFilePath(imageAsset)
+          info              <- AssetInfoService.findByAsset(asset)
+          infoFile          <- AssetInfoService.getInfoFilePath(asset)
           _                 <- StorageService.saveJsonFile[AssetInfoFileContent](
                                  infoFile,
                                  AssetInfoFileContent(
@@ -41,7 +41,7 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           _                 <- ImageService.applyTopLeftCorrection(image)
           backupExists      <- Files.exists(backup)
           correctionApplied <- SipiClientMock.wasInvoked(ApplyTopLeftCorrection(image, image))
-          checksumUpdated   <- FileChecksumService.verifyChecksumDerivative(imageAsset)
+          checksumUpdated   <- FileChecksumService.verifyChecksumDerivative(asset)
         } yield assertTrue(backupExists, correctionApplied, checksumUpdated)
       },
       test("not apply top left if not necessary") {

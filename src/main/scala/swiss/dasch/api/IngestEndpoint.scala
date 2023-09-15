@@ -108,17 +108,17 @@ final case class BulkIngestServiceLive(
       assetDir       <- ensureAssetDirExists(asset)
       originalFile   <- copyFileToAssetDir(imageToIngest, assetDir, asset)
       derivativeFile <- transcode(assetDir, originalFile, asset)
-      _              <- assetInfo.createAssetInfo(asset, imageToIngest.filename.toString)
-      _              <- updateMappingCsv(csv, derivativeFile, imageToIngest, asset)
+      imageAsset      = asset.makeImageAsset(imageToIngest.filename.toString, originalFile, derivativeFile)
+      _              <- assetInfo.createAssetInfo(imageAsset)
+      _              <- updateMappingCsv(csv, imageToIngest, imageAsset)
       _              <- Files.delete(imageToIngest)
       _              <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
     } yield IngestResult.success
 
   private def updateMappingCsv(
       mappingFile: Path,
-      derivativeFile: Path,
       imageToIngest: Path,
-      asset: Asset,
+      asset: ImageAsset,
     ) =
     ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
       for {
@@ -126,7 +126,7 @@ final case class BulkIngestServiceLive(
         imageToIngestRelativePath = importDir.relativize(imageToIngest)
         _                        <- Files.writeLines(
                                       mappingFile,
-                                      List(s"$imageToIngestRelativePath,${derivativeFile.filename}"),
+                                      List(s"$imageToIngestRelativePath,${asset.derivative.filename}"),
                                       openOptions = Set(StandardOpenOption.APPEND),
                                     )
       } yield ()

@@ -34,7 +34,7 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
       for {
         assetPath <- ZIO.serviceWith[StorageConfig](_.assetPath)
         actual    <-
-          StorageService.getAssetDirectory(Asset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode))
+          StorageService.getAssetDirectory(GenericAsset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode))
       } yield assertTrue(actual == assetPath / "0001" / "fg" / "il")
     },
     test("should return asset path") {
@@ -62,7 +62,7 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
       } yield assertTrue(expected == actual)
     },
     test("should load asset info file") {
-      val asset = Asset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode)
+      val asset = GenericAsset("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode)
       val name  = NonEmptyString.unsafeFrom("250x250.jp2")
       for {
         projectPath <- ZIO.serviceWith[StorageConfig](_.assetPath).map(_ / asset.belongsToProject.toString)

@@ -33,8 +33,27 @@ object AssetId {
   }
 }
 
-final case class Asset(id: AssetId, belongsToProject: ProjectShortcode)
+sealed trait Asset {
+  def id: AssetId
+  def belongsToProject: ProjectShortcode
+}
 
 object Asset {
-  def makeNew(project: ProjectShortcode): UIO[Asset] = AssetId.makeNew.map(id => Asset(id, project))
+  def makeNew(project: ProjectShortcode): UIO[GenericAsset] = AssetId.makeNew.map(id => GenericAsset(id, project))
 }
+
+final case class GenericAsset(id: AssetId, belongsToProject: ProjectShortcode) extends Asset {
+  def makeImageAsset(
+      originalFilename: String,
+      original: Path,
+      derivative: Path,
+    ): ImageAsset =
+    ImageAsset(id, belongsToProject, originalFilename, original, derivative)
+}
+final case class ImageAsset(
+    id: AssetId,
+    belongsToProject: ProjectShortcode,
+    originalFilename: String,
+    original: Path,
+    derivative: Path,
+  ) extends Asset
