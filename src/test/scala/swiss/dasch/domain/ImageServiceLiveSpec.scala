@@ -15,7 +15,7 @@ import zio.test.*
 
 object ImageServiceLiveSpec extends ZIOSpecDefault {
 
-  private val asset      = GenericAsset("needs-topleft-correction".toAssetId, "0001".toProjectShortcode)
+  private val asset      = SimpleAsset("needs-topleft-correction".toAssetId, "0001".toProjectShortcode)
   private val imageFile  = StorageService.getAssetDirectory(asset).map(_ / s"${asset.id}.jp2")
   private val backupFile = imageFile.map(image => image.parent.map(_ / s"${image.filename}.bak").orNull)
 

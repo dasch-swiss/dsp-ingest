@@ -22,6 +22,19 @@ final private case class AssetInfoFileContent(
   def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum.toString)
 }
 private object AssetInfoFileContent {
+  def make(
+      imageAsset: ImageAsset,
+      originalChecksum: Sha256Hash,
+      derivativeChecksum: Sha256Hash,
+    ): AssetInfoFileContent =
+    AssetInfoFileContent(
+      imageAsset.derivativeFilename,
+      imageAsset.originalInternalFilename,
+      imageAsset.originalFilename,
+      originalChecksum.toString,
+      derivativeChecksum.toString,
+    )
+
   implicit val codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
 }
 
@@ -58,7 +71,7 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
   override def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo] =
     for {
       content   <- storageService.loadJsonFile[AssetInfoFileContent](infoFile)
-      assetMaybe = AssetId.makeFromPath(Path(content.internalFilename)).map(id => GenericAsset(id, shortcode))
+      assetMaybe = AssetId.makeFromPath(Path(content.internalFilename)).map(id => SimpleAsset(id, shortcode))
       assetInfo <- assetMaybe match {
                      case Some(asset) => toAssetInfo(content, infoFile.parent.orNull, asset)
                      case None        => ZIO.fail(IllegalArgumentException(s"Unable to parse asset id from $infoFile"))
@@ -125,15 +138,9 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
   override def createAssetInfo(asset: ImageAsset): Task[Unit] = for {
     assetDir           <- storageService.getAssetDirectory(asset)
     infoFile            = assetDir / infoFilename(asset)
-    checksumOriginal   <- FileChecksumService.createSha256Hash(asset.original)
-    checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative)
-    content             = AssetInfoFileContent(
-                            asset.derivative.filename.toString,
-                            asset.original.filename.toString,
-                            asset.originalFilename,
-                            checksumOriginal.toString,
-                            checksumDerivative.toString,
-                          )
+    checksumOriginal   <- FileChecksumService.createSha256Hash(asset.original.toPath)
+    checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative.toPath)
+    content             = AssetInfoFileContent.make(asset, checksumOriginal, checksumDerivative)
     _                  <- Files.createFile(infoFile)
     _                  <- storageService.saveJsonFile(infoFile, content)
   } yield ()

@@ -10,6 +10,7 @@ import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.config.Configuration.IngestConfig
 import swiss.dasch.domain.*
+import swiss.dasch.domain.OriginalFile.*
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import zio.*
 import zio.http.Status
@@ -107,7 +108,7 @@ final case class BulkIngestServiceLive(
       asset          <- Asset.makeNew(project)
       assetDir       <- ensureAssetDirExists(asset)
       originalFile   <- copyFileToAssetDir(imageToIngest, assetDir, asset)
-      derivativeFile <- transcode(assetDir, originalFile, asset)
+      derivativeFile <- transcode(originalFile, assetDir, asset)
       imageAsset      = asset.makeImageAsset(imageToIngest.filename.toString, originalFile, derivativeFile)
       _              <- assetInfo.createAssetInfo(imageAsset)
       _              <- updateMappingCsv(csv, imageToIngest, imageAsset)
@@ -126,7 +127,7 @@ final case class BulkIngestServiceLive(
         imageToIngestRelativePath = importDir.relativize(imageToIngest)
         _                        <- Files.writeLines(
                                       mappingFile,
-                                      List(s"$imageToIngestRelativePath,${asset.derivative.filename}"),
+                                      List(s"$imageToIngestRelativePath,${asset.derivativeFilename}"),
                                       openOptions = Set(StandardOpenOption.APPEND),
                                     )
       } yield ()
@@ -144,25 +145,26 @@ final case class BulkIngestServiceLive(
       assetDir: Path,
       asset: Asset,
     ) = {
-    val originalFile = assetDir / s"${asset.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    val originalFile =
+      OriginalFile.unsafeFrom(assetDir / s"${asset.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig")
     ZIO.logInfo(s"Copying file $file to $assetDir, $asset") *>
-      Files.copy(file, originalFile).as(originalFile)
+      Files.copy(file, originalFile.toPath).as(originalFile)
   }
 
   private def transcode(
+      originalFile: OriginalFile,
       assetDir: Path,
-      originalFile: Path,
       asset: Asset,
     ) = {
     val derivativeFile = assetDir / s"${asset.id}.${Jpx.extension}"
     ZIO.logInfo(s"Transcoding $originalFile to $derivativeFile, $asset") *>
-      sipiClient.transcodeImageFile(originalFile, derivativeFile, Jpx) *>
+      sipiClient.transcodeImageFile(originalFile.toPath, derivativeFile, Jpx) *>
       ZIO
         .whenZIO(Files.exists(derivativeFile).negate)(
-          Files.delete(originalFile) *>
+          Files.delete(originalFile.toPath) *>
             ZIO.fail(IllegalStateException(s"Sipi failed transcoding $originalFile to $derivativeFile"))
         )
-        .as(derivativeFile)
+        .as(DerivativeFile.unsafeFrom(derivativeFile))
   }
 }
 
