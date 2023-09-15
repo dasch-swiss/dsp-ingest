@@ -7,7 +7,6 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-
 val zioVersion                  = "2.0.16"
 val zioJsonVersion              = "0.6.1"
 val zioConfigVersion            = "3.0.7"
@@ -15,7 +14,7 @@ val zioLoggingVersion           = "2.1.14"
 val testContainersVersion       = "0.40.15"
 val zioMetricsConnectorsVersion = "2.1.0"
 val zioMockVersion              = "1.0.0-RC11"
-val zioNioVersion               = "2.0.1"
+val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC20"
 val zioHttpVersion              = "3.0.0-RC2"
 
