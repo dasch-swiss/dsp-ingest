@@ -54,6 +54,17 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           correctionNotApplied <- SipiClientMock.wasInvoked(ApplyTopLeftCorrection(image, image)).negate
         } yield assertTrue(backupNotCreated, correctionNotApplied)
       },
+      test("createDerivative should create a jpx file with correct name") {
+        for {
+          assetId    <- AssetId.makeNew
+          assetDir   <- StorageService.getAssetDirectory(SimpleAsset(assetId, "0001".toProjectShortcode))
+          _          <- Files.createDirectories(assetDir)
+          image       = assetDir / s"$assetId.jp2.orig"
+          _          <- Files.createFile(image)
+          derivative <- ImageService.createDerivative(OriginalFile.unsafeFrom(image))
+          fileExists <- Files.exists(derivative.toPath)
+        } yield assertTrue(fileExists, derivative.toPath.filename.toString == s"$assetId.jpx")
+      },
     ).provide(
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,

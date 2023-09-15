@@ -32,10 +32,12 @@ trait ImageService {
 }
 
 object ImageService {
-  def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]] =
+  def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]]        =
     ZIO.serviceWithZIO[ImageService](_.applyTopLeftCorrection(image))
-  def needsTopLeftCorrection(image: Path): ZIO[ImageService, IOException, Boolean]    =
+  def needsTopLeftCorrection(image: Path): ZIO[ImageService, IOException, Boolean]           =
     ZIO.serviceWithZIO[ImageService](_.needsTopLeftCorrection(image))
+  def createDerivative(original: OriginalFile): ZIO[ImageService, Throwable, DerivativeFile] =
+    ZIO.serviceWithZIO[ImageService](_.createDerivative(original))
 }
 
 final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoService) extends ImageService {
