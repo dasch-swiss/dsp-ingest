@@ -69,7 +69,7 @@ final case class BulkIngestServiceLive(
   override def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
     for {
       _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
-      importDir  <- storage.getTempDirectory().map(_ / "import" / project.value)
+      importDir  <- storage.getBulkIngestImportFolder(project)
       mappingFile = importDir.parent.head / s"mapping-$project.csv"
       _          <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
                       .whenZIO(Files.exists(mappingFile).negate)
@@ -103,30 +103,34 @@ final case class BulkIngestServiceLive(
       csv: Path,
     ): Task[IngestResult] =
     for {
-      _               <- ZIO.logInfo(s"Ingesting image $file")
-      asset           <- Asset.makeNew(project)
-      assetDir        <- ensureAssetDirExists(asset)
-      originalFile    <- copyFileToAssetDir(file, assetDir, asset)
-      derivativeFile  <- transcode(assetDir, originalFile, asset)
-      originalFilename = file.filename.toString
-      _               <- assetInfo.createAssetInfo(asset, originalFilename)
-      _               <- updateMappingCsv(csv, derivativeFile, originalFilename, asset)
-      _               <- Files.delete(file)
-      _               <- ZIO.logInfo(s"Finished ingesting image $file")
+      _              <- ZIO.logInfo(s"Ingesting image $file")
+      asset          <- Asset.makeNew(project)
+      assetDir       <- ensureAssetDirExists(asset)
+      originalFile   <- copyFileToAssetDir(file, assetDir, asset)
+      derivativeFile <- transcode(assetDir, originalFile, asset)
+      _              <- assetInfo.createAssetInfo(asset, file.filename.toString)
+      _              <- updateMappingCsv(csv, derivativeFile, file, asset)
+      _              <- Files.delete(file)
+      _              <- ZIO.logInfo(s"Finished ingesting image $file")
     } yield IngestResult.success
 
   private def updateMappingCsv(
       mappingFile: Path,
       derivativeFile: Path,
-      originalFilename: String,
+      originalFile: Path,
       asset: Asset,
     ) =
-    ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *>
-      Files.writeLines(
-        mappingFile,
-        List(s"$originalFilename,${derivativeFile.filename}"),
-        openOptions = Set(StandardOpenOption.APPEND),
-      )
+    ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
+      for {
+        importDir <- storage.getBulkIngestImportFolder(asset.belongsToProject)
+        original   = importDir.relativize(originalFile)
+        _         <- Files.writeLines(
+                       mappingFile,
+                       List(s"$original,${derivativeFile.filename}"),
+                       openOptions = Set(StandardOpenOption.APPEND),
+                     )
+      } yield ()
+    }
 
   private def ensureAssetDirExists(asset: Asset) =
     for {
