@@ -79,6 +79,10 @@ object OriginalFile {
   extension (file: OriginalFile) {
     def toPath: Path = file
   }
+
+  extension (file: OriginalFile) {
+    def assetId: AssetId = AssetId.makeFromPath(file).head
+  }
 }
 
 opaque type DerivativeFile = Path
@@ -96,5 +100,8 @@ object DerivativeFile {
 
   extension (file: DerivativeFile) {
     def toPath: Path = file
+  }
+  extension (file: DerivativeFile) {
+    def assetId: AssetId = AssetId.makeFromPath(file).head
   }
 }

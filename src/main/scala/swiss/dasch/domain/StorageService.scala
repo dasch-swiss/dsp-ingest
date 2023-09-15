@@ -5,14 +5,14 @@
 
 package swiss.dasch.domain
 
-import org.apache.commons.io.FileUtils
+import org.apache.commons.io.{ FileUtils, FilenameUtils }
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.*
 import zio.json.{ DecoderOps, EncoderOps, JsonDecoder, JsonEncoder }
 import zio.nio.file.{ Files, Path }
 import zio.stream.ZStream
 
-import java.io.IOException
+import java.io.{ FileNotFoundException, IOException }
 import java.nio.file.StandardOpenOption.*
 import java.nio.file.{ OpenOption, StandardOpenOption }
 import java.text.ParseException
@@ -22,6 +22,17 @@ import java.time.{ ZoneId, ZoneOffset }
 trait StorageService  {
   def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[Path]
   def getAssetDirectory(asset: Asset): UIO[Path]
+
+  def createOriginalFileInAssetDir(file: Path, asset: Asset): IO[IOException, OriginalFile] = for {
+    _           <- ZIO.logInfo(s"Creating original from $file, $asset")
+    _           <- ZIO
+                     .fail(new FileNotFoundException(s"File $file is not a regular file"))
+                     .whenZIO(FileFilters.isNonHiddenRegularFile(file).negate)
+    assetDir    <- getAssetDirectory(asset).tap(Files.createDirectories(_))
+    originalPath = assetDir / s"${asset.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    _           <- Files.copy(file, originalPath)
+  } yield OriginalFile.unsafeFrom(originalPath)
+
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
   def getBulkIngestImportFolder(project: ProjectShortcode): UIO[Path] =

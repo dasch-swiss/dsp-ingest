@@ -5,20 +5,13 @@
 
 package swiss.dasch.api
 
-import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
-import swiss.dasch.config.Configuration.IngestConfig
 import swiss.dasch.domain.*
-import swiss.dasch.domain.OriginalFile.*
-import swiss.dasch.domain.SipiImageFormat.Jpx
 import zio.*
 import zio.http.Status
 import zio.http.codec.HttpCodec
 import zio.http.endpoint.Endpoint
-import zio.nio.file.{ Files, Path }
-
-import java.nio.file.StandardOpenOption
 
 object IngestEndpoint {
 
@@ -39,135 +32,4 @@ object IngestEndpoint {
   )
 
   val app = route.toApp
-}
-
-trait BulkIngestService {
-
-  def startBulkIngest(shortcode: ProjectShortcode): Task[IngestResult]
-}
-
-object BulkIngestService {
-  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, IngestResult] =
-    ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
-}
-
-case class IngestResult(success: Int = 0, failed: Int = 0) {
-  def +(other: IngestResult): IngestResult = IngestResult(success + other.success, failed + other.failed)
-}
-
-object IngestResult {
-  val success: IngestResult = IngestResult(success = 1)
-  val failed: IngestResult  = IngestResult(failed = 1)
-}
-
-final case class BulkIngestServiceLive(
-    storage: StorageService,
-    sipiClient: SipiClient,
-    assetInfo: AssetInfoService,
-    config: IngestConfig,
-  ) extends BulkIngestService {
-
-  override def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
-    for {
-      _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
-      importDir  <- storage.getBulkIngestImportFolder(project)
-      mappingFile = importDir.parent.head / s"mapping-$project.csv"
-      _          <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
-                      .whenZIO(Files.exists(mappingFile).negate)
-      total      <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
-      sum        <- StorageService
-                      .findInPath(importDir, FileFilters.isImage)
-                      .mapZIOPar(config.bulkMaxParallel)(image =>
-                        ingestSingleImage(image, project, mappingFile)
-                          .catchNonFatalOrDie(e =>
-                            ZIO
-                              .logError(s"Error ingesting image $image: ${e.getMessage}")
-                              .as(IngestResult.failed)
-                          )
-                      )
-                      .runFold(IngestResult())(_ + _)
-      _          <- {
-        val countImages  = sum.success + sum.failed
-        val countSuccess = sum.success
-        val countFailed  = sum.failed
-        ZIO.logInfo(
-          s"Finished bulk ingest for project $project. " +
-            s"Found $countImages images from $total files. " +
-            s"Ingested $countSuccess successfully and failed $countFailed images (See logs above for more details)."
-        )
-      }
-    } yield sum
-
-  private def ingestSingleImage(
-      imageToIngest: Path,
-      project: ProjectShortcode,
-      csv: Path,
-    ): Task[IngestResult] =
-    for {
-      _              <- ZIO.logInfo(s"Ingesting image $imageToIngest")
-      asset          <- Asset.makeNew(project)
-      assetDir       <- ensureAssetDirExists(asset)
-      originalFile   <- copyFileToAssetDir(imageToIngest, assetDir, asset)
-      derivativeFile <- transcode(originalFile, assetDir, asset)
-      imageAsset      = asset.makeImageAsset(imageToIngest.filename.toString, originalFile, derivativeFile)
-      _              <- assetInfo.createAssetInfo(imageAsset)
-      _              <- updateMappingCsv(csv, imageToIngest, imageAsset)
-      _              <- Files.delete(imageToIngest)
-      _              <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
-    } yield IngestResult.success
-
-  private def updateMappingCsv(
-      mappingFile: Path,
-      imageToIngest: Path,
-      asset: ImageAsset,
-    ) =
-    ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
-      for {
-        importDir                <- storage.getBulkIngestImportFolder(asset.belongsToProject)
-        imageToIngestRelativePath = importDir.relativize(imageToIngest)
-        _                        <- Files.writeLines(
-                                      mappingFile,
-                                      List(s"$imageToIngestRelativePath,${asset.derivativeFilename}"),
-                                      openOptions = Set(StandardOpenOption.APPEND),
-                                    )
-      } yield ()
-    }
-
-  private def ensureAssetDirExists(asset: Asset) =
-    for {
-      _        <- ZIO.logInfo(s"Ensuring asset dir exists, $asset")
-      assetDir <- storage.getAssetDirectory(asset)
-      _        <- Files.createDirectories(assetDir)
-    } yield assetDir
-
-  private def copyFileToAssetDir(
-      file: Path,
-      assetDir: Path,
-      asset: Asset,
-    ) = {
-    val originalFile =
-      OriginalFile.unsafeFrom(assetDir / s"${asset.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig")
-    ZIO.logInfo(s"Copying file $file to $assetDir, $asset") *>
-      Files.copy(file, originalFile.toPath).as(originalFile)
-  }
-
-  private def transcode(
-      originalFile: OriginalFile,
-      assetDir: Path,
-      asset: Asset,
-    ) = {
-    val derivativeFile = assetDir / s"${asset.id}.${Jpx.extension}"
-    ZIO.logInfo(s"Transcoding $originalFile to $derivativeFile, $asset") *>
-      sipiClient.transcodeImageFile(originalFile.toPath, derivativeFile, Jpx) *>
-      ZIO
-        .whenZIO(Files.exists(derivativeFile).negate)(
-          Files.delete(originalFile.toPath) *>
-            ZIO.fail(IllegalStateException(s"Sipi failed transcoding $originalFile to $derivativeFile"))
-        )
-        .as(DerivativeFile.unsafeFrom(derivativeFile))
-  }
-}
-
-object BulkIngestServiceLive {
-  val layer = ZLayer.fromFunction(BulkIngestServiceLive.apply _)
 }

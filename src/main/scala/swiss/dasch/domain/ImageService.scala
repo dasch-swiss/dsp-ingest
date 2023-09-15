@@ -5,6 +5,7 @@
 
 package swiss.dasch.domain
 
+import swiss.dasch.domain.SipiImageFormat.Jpx
 import zio.*
 import zio.nio.file.{ Files, Path }
 
@@ -26,6 +27,8 @@ trait ImageService {
   def applyTopLeftCorrection(image: Path): Task[Option[Path]]
 
   def needsTopLeftCorrection(image: Path): IO[IOException, Boolean]
+
+  def createDerivative(original: OriginalFile): Task[DerivativeFile]
 }
 
 object ImageService {
@@ -56,6 +59,16 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
           .filter(_.startsWith(Exif.Image.Orientation))
           .exists(_.lastOption.exists(_ != Exif.Image.OrientationValue.Horizontal.value))
       }
+
+  override def createDerivative(original: OriginalFile): Task[DerivativeFile] = {
+    val derivativePath = original.toPath.parent.head / s"${original.assetId}.${Jpx.extension}"
+    ZIO.logInfo(s"Creating derivative for $original") *>
+      sipiClient.transcodeImageFile(original.toPath, derivativePath, Jpx) *>
+      ZIO
+        .fail(new IOException(s"Sipi failed creating derivative for $original"))
+        .whenZIO(Files.notExists(derivativePath))
+        .as(DerivativeFile.unsafeFrom(derivativePath))
+  }
 }
 
 object ImageServiceLive {
