@@ -7,7 +7,6 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-
 val zioVersion                  = "2.0.16"
 val zioJsonVersion              = "0.6.1"
 val zioConfigVersion            = "3.0.7"
@@ -84,7 +83,7 @@ lazy val root = (project in file("."))
       "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
       "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
       "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
-      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.0.8"        % Test,
+      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.0.9"        % Test,
     ),
     testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
     Docker / dockerRepository            := Some("daschswiss"),
