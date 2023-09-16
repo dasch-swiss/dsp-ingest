@@ -65,6 +65,17 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           fileExists <- Files.exists(derivative.toPath)
         } yield assertTrue(fileExists, derivative.toPath.filename.toString == s"$assetId.jpx")
       },
+      test("createDerivative should fail if Sipi silently does not transcode the image") {
+        for {
+          _        <- SipiClientMock.dontTranscode()
+          assetId  <- AssetId.makeNew
+          assetDir <- StorageService.getAssetDirectory(SimpleAsset(assetId, "0001".toProjectShortcode))
+          _        <- Files.createDirectories(assetDir)
+          image     = assetDir / s"$assetId.jp2.orig"
+          _        <- Files.createFile(image)
+          actual   <- ImageService.createDerivative(OriginalFile.unsafeFrom(image)).exit
+        } yield assertTrue(actual.isFailure)
+      },
     ).provide(
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,
