@@ -64,10 +64,11 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
 
   override def createDerivative(original: OriginalFile): Task[DerivativeFile] = {
     val derivativePath = original.toPath.parent.head / s"${original.assetId}.${Jpx.extension}"
-    ZIO.logInfo(s"Creating derivative for $original") *>
-      sipiClient.transcodeImageFile(original.toPath, derivativePath, Jpx) *>
+    val imagePath      = original.toPath
+    ZIO.logInfo(s"Creating derivative for $imagePath") *>
+      sipiClient.transcodeImageFile(imagePath, derivativePath, Jpx) *>
       ZIO
-        .fail(new IOException(s"Sipi failed creating derivative for $original"))
+        .fail(new IOException(s"Sipi failed creating derivative for $imagePath"))
         .whenZIO(Files.notExists(derivativePath))
         .as(DerivativeFile.unsafeFrom(derivativePath))
   }
