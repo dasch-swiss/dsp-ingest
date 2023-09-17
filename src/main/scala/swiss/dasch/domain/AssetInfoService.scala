@@ -30,7 +30,7 @@ private object AssetInfoFileContent {
     AssetInfoFileContent(
       imageAsset.derivativeFilename,
       imageAsset.originalInternalFilename,
-      imageAsset.originalFilename,
+      imageAsset.originalFilename.value,
       originalChecksum.toString,
       derivativeChecksum.toString,
     )

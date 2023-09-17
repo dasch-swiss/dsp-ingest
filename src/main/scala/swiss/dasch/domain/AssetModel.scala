@@ -8,9 +8,10 @@ package swiss.dasch.domain
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.refineV
 import eu.timepit.refined.string.MatchesRegex
+import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.infrastructure.Base62
-import zio.{ Random, UIO }
 import zio.nio.file.Path
+import zio.{ Random, UIO }
 
 opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-_]{4,}$"]
 
@@ -44,7 +45,7 @@ object Asset {
 
 final case class SimpleAsset(id: AssetId, belongsToProject: ProjectShortcode) extends Asset {
   def makeImageAsset(
-      originalFilename: String,
+      originalFilename: NonEmptyString,
       original: OriginalFile,
       derivative: DerivativeFile,
     ): ImageAsset =
@@ -54,7 +55,7 @@ final case class SimpleAsset(id: AssetId, belongsToProject: ProjectShortcode) ex
 final case class ImageAsset(
     id: AssetId,
     belongsToProject: ProjectShortcode,
-    originalFilename: String,
+    originalFilename: NonEmptyString,
     original: OriginalFile,
     derivative: DerivativeFile,
   ) extends Asset {
@@ -66,7 +67,7 @@ def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.makeFromPath(file).
 
 opaque type OriginalFile = Path
 object OriginalFile {
-  def fromPath(file: Path): Option[OriginalFile] =
+  def from(file: Path): Option[OriginalFile] =
     file match {
       case directory if directory.toString.endsWith("/")            => None
       case hidden if hidden.filename.toString.startsWith(".")       => None
@@ -74,7 +75,7 @@ object OriginalFile {
       case _                                                        => None
     }
 
-  def unsafeFrom(file: Path): OriginalFile = fromPath(file).getOrElse(throw new Exception("Not an original file"))
+  def unsafeFrom(file: Path): OriginalFile = from(file).getOrElse(throw new Exception("Not an original file"))
 
   extension (file: OriginalFile) {
     def toPath: Path = file
@@ -88,7 +89,7 @@ object OriginalFile {
 opaque type DerivativeFile = Path
 
 object DerivativeFile {
-  def fromPath(file: Path): Option[DerivativeFile] =
+  def from(file: Path): Option[DerivativeFile] =
     file match {
       case directory if directory.toString.endsWith("/")            => None
       case hidden if hidden.filename.toString.startsWith(".")       => None
@@ -96,7 +97,8 @@ object DerivativeFile {
       case other                                                    => hasAssetIdInFilename(other)
     }
 
-  def unsafeFrom(file: Path): DerivativeFile = fromPath(file).getOrElse(throw new Exception("Not a derivative file"))
+  def unsafeFrom(file: Path): DerivativeFile =
+    from(file).getOrElse(throw new Exception("Not a derivative file"))
 
   extension (file: DerivativeFile) {
     def toPath: Path = file

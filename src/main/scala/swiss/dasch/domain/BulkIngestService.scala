@@ -5,6 +5,7 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.IngestConfig
 import zio.{ Task, ZIO, ZLayer }
 import zio.nio.file.{ Files, Path }
@@ -75,15 +76,18 @@ final case class BulkIngestServiceLive(
       csv: Path,
     ): Task[IngestResult] =
     for {
-      _          <- ZIO.logInfo(s"Ingesting image $imageToIngest")
-      asset      <- Asset.makeNew(project)
-      original   <- storage.createOriginalFileInAssetDir(imageToIngest, asset)
-      derivative <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
-      imageAsset  = asset.makeImageAsset(imageToIngest.filename.toString, original, derivative)
-      _          <- assetInfo.createAssetInfo(imageAsset)
-      _          <- updateMappingCsv(csv, imageToIngest, imageAsset)
-      _          <- Files.delete(imageToIngest)
-      _          <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
+      _                     <- ZIO.logInfo(s"Ingesting image $imageToIngest")
+      asset                 <- Asset.makeNew(project)
+      original              <- storage.createOriginalFileInAssetDir(imageToIngest, asset)
+      derivative            <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
+      imageToIngestFilename <- ZIO
+                                 .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
+                                 .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
+      imageAsset             = asset.makeImageAsset(imageToIngestFilename, original, derivative)
+      _                     <- assetInfo.createAssetInfo(imageAsset)
+      _                     <- updateMappingCsv(csv, imageToIngest, imageAsset)
+      _                     <- Files.delete(imageToIngest)
+      _                     <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
     } yield IngestResult.success
 
   private def updateMappingCsv(

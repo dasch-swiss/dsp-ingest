@@ -63,8 +63,8 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
       }
 
   override def createDerivative(original: OriginalFile): Task[DerivativeFile] = {
-    val derivativePath = original.toPath.parent.head / s"${original.assetId}.${Jpx.extension}"
     val imagePath      = original.toPath
+    val derivativePath = imagePath.parent.head / s"${original.assetId}.${Jpx.extension}"
     ZIO.logInfo(s"Creating derivative for $imagePath") *>
       sipiClient.transcodeImageFile(imagePath, derivativePath, Jpx) *>
       ZIO
