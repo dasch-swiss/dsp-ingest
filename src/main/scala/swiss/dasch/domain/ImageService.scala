@@ -28,15 +28,15 @@ trait ImageService {
 
   def needsTopLeftCorrection(image: Path): IO[IOException, Boolean]
 
-  def createDerivative(original: OriginalFile): Task[DerivativeFile]
+  def createDerivative(original: OriginalFile): Task[JpxDerivativeFile]
 }
 
 object ImageService {
-  def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]]        =
+  def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]]           =
     ZIO.serviceWithZIO[ImageService](_.applyTopLeftCorrection(image))
-  def needsTopLeftCorrection(image: Path): ZIO[ImageService, IOException, Boolean]           =
+  def needsTopLeftCorrection(image: Path): ZIO[ImageService, IOException, Boolean]              =
     ZIO.serviceWithZIO[ImageService](_.needsTopLeftCorrection(image))
-  def createDerivative(original: OriginalFile): ZIO[ImageService, Throwable, DerivativeFile] =
+  def createDerivative(original: OriginalFile): ZIO[ImageService, Throwable, JpxDerivativeFile] =
     ZIO.serviceWithZIO[ImageService](_.createDerivative(original))
 }
 
@@ -62,7 +62,7 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
           .exists(_.lastOption.exists(_ != Exif.Image.OrientationValue.Horizontal.value))
       }
 
-  override def createDerivative(original: OriginalFile): Task[DerivativeFile] = {
+  override def createDerivative(original: OriginalFile): Task[JpxDerivativeFile] = {
     val imagePath      = original.toPath
     val derivativePath = imagePath.parent.head / s"${original.assetId}.${Jpx.extension}"
     ZIO.logInfo(s"Creating derivative for $imagePath") *>
@@ -70,7 +70,7 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
       ZIO
         .fail(new IOException(s"Sipi failed creating derivative for $imagePath"))
         .whenZIO(Files.notExists(derivativePath))
-        .as(DerivativeFile.unsafeFrom(derivativePath))
+        .as(JpxDerivativeFile.unsafeFrom(derivativePath))
   }
 }
 

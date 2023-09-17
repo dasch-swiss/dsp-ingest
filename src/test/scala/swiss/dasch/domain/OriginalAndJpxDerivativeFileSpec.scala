@@ -8,30 +8,33 @@ package swiss.dasch.domain
 import zio.nio.file.Path
 import zio.test.{ Gen, ZIOSpecDefault, assertTrue, check }
 
-object OriginalAndDerivativeFileSpec extends ZIOSpecDefault {
+object OriginalAndJpxDerivativeFileSpec extends ZIOSpecDefault {
 
   private val derivativeFileSuite = suite("DerivativeFile")(
-    test("can be created from a Path which represents a file") {
-      val path: Path = Path("/tmp/hello.tiff")
-      assertTrue(DerivativeFile.from(path).map(_.toPath).contains(path))
+    test("can be created from a Path which is a derivative file jpx") {
+      val gen = Gen.fromIterable(List("jpx", "JPX", "jp2", "JP2"))
+      check(gen) { extension =>
+        val path: Path = Path(s"/tmp/hello.$extension")
+        assertTrue(JpxDerivativeFile.from(path).map(_.toPath).contains(path))
+      }
     },
     test("cannot be created if filename is not a valid AssetId") {
-      val path: Path = Path("/tmp/Name of this file is not an AssetId.tiff")
-      assertTrue(DerivativeFile.from(path).isEmpty)
+      val path: Path = Path("/tmp/Name of this file is not an AssetId.jpx")
+      assertTrue(JpxDerivativeFile.from(path).isEmpty)
     },
     test("cannot be created from original file") {
       val path: Path = Path(s"/tmp/hello.orig")
-      assertTrue(DerivativeFile.from(path).isEmpty)
+      assertTrue(JpxDerivativeFile.from(path).isEmpty)
     },
     test("cannot be created from directory") {
       val path: Path = Path(s"/tmp/hello/")
-      assertTrue(DerivativeFile.from(path).isEmpty)
+      assertTrue(JpxDerivativeFile.from(path).isEmpty)
     },
     test("cannot be created from hidden file") {
-      val hiddenFiles = Gen.fromIterable(List(".hello.txt", ".hello.tiff"))
+      val hiddenFiles = Gen.fromIterable(List(".hello.txt", ".hello.jpx"))
       check(hiddenFiles) { filename =>
         val path: Path = Path(s"/tmp/$filename")
-        assertTrue(DerivativeFile.from(path).isEmpty)
+        assertTrue(JpxDerivativeFile.from(path).isEmpty)
       }
     },
   )
