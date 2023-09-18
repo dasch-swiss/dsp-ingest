@@ -10,23 +10,25 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val tapirVersion                = "1.6.3"
+val zioVersion                  = "2.0.16"
+val zioJsonVersion              = "0.6.2"
 val zioConfigVersion            = "3.0.7"
-val zioHttpVersion              = "3.0.0-RC2"
-val zioJsonVersion              = "0.6.0"
-val zioLoggingVersion           = "2.1.13"
+val zioLoggingVersion           = "2.1.14"
+val testContainersVersion       = "0.40.15"
 val zioMetricsConnectorsVersion = "2.1.0"
 val zioMockVersion              = "1.0.0-RC11"
-val zioNioVersion               = "2.0.1"
-val zioPreludeVersion           = "1.0.0-RC19"
-val zioVersion                  = "2.0.15"
+val zioNioVersion               = "2.0.2"
+val zioPreludeVersion           = "1.0.0-RC20"
+val zioHttpVersion              = "3.0.0-RC2"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
 val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
 
-ThisBuild / organization := "dasch.swiss"
-ThisBuild / version      := gitVersion
-ThisBuild / scalaVersion := "3.3.0"
-ThisBuild / fork         := true
+ThisBuild / organization      := "dasch.swiss"
+ThisBuild / version           := gitVersion
+ThisBuild / scalaVersion      := "3.3.1"
+ThisBuild / fork              := true
+ThisBuild / semanticdbEnabled := true
 
 scalacOptions ++= Seq("-old-syntax", "-rewrite")
 
@@ -65,24 +67,26 @@ lazy val root = (project in file("."))
       )
     ),
     libraryDependencies ++= tapir ++ metrics ++ Seq(
-      "dev.zio"              %% "zio"                      % zioVersion,
-      "dev.zio"              %% "zio-config"               % zioConfigVersion,
-      "dev.zio"              %% "zio-config-magnolia"      % zioConfigVersion,
-      "dev.zio"              %% "zio-config-typesafe"      % zioConfigVersion,
-      "dev.zio"              %% "zio-http"                 % zioHttpVersion,
-      "dev.zio"              %% "zio-json"                 % zioJsonVersion,
-      "dev.zio"              %% "zio-json-interop-refined" % "0.6.0",
-      "dev.zio"              %% "zio-nio"                  % zioNioVersion,
-      "dev.zio"              %% "zio-prelude"              % zioPreludeVersion,
-      "dev.zio"              %% "zio-streams"              % zioVersion,
-      "eu.timepit"           %% "refined"                  % "0.11.0",
-      "commons-io"            % "commons-io"               % "2.13.0",
-      "com.github.jwt-scala" %% "jwt-zio-json"             % "9.4.3",
+      "dev.zio"              %% "zio"                               % zioVersion,
+      "dev.zio"              %% "zio-config"                        % zioConfigVersion,
+      "dev.zio"              %% "zio-config-magnolia"               % zioConfigVersion,
+      "dev.zio"              %% "zio-config-typesafe"               % zioConfigVersion,
+      "dev.zio"              %% "zio-http"                          % zioHttpVersion,
+      "dev.zio"              %% "zio-json"                          % zioJsonVersion,
+      "dev.zio"              %% "zio-json-interop-refined"          % "0.6.2",
+      "dev.zio"              %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
+      "dev.zio"              %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
+      "dev.zio"              %% "zio-nio"                           % zioNioVersion,
+      "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
+      "dev.zio"              %% "zio-streams"                       % zioVersion,
+      "eu.timepit"           %% "refined"                           % "0.11.0",
+      "commons-io"            % "commons-io"                        % "2.13.0",
+      "com.github.jwt-scala" %% "jwt-zio-json"                      % "9.4.4",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
       // [error] undefined: new com.github.ghik.silencer.silent #
-      "com.github.ghik"       % "silencer-lib_2.13.11"     % "1.17.13",
+      "com.github.ghik"       % "silencer-lib_2.13.11"              % "1.17.13",
 
       // logging
       "dev.zio" %% "zio-logging"               % zioLoggingVersion,
@@ -94,7 +98,7 @@ lazy val root = (project in file("."))
       "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
       "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
       "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
-      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.0.8"        % Test,
+      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.0.9"        % Test,
     ),
     testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
     Docker / dockerRepository            := Some("daschswiss"),

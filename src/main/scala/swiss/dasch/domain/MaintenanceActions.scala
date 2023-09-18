@@ -17,10 +17,12 @@ import zio.stream.{ ZSink, ZStream }
 object MaintenanceActions {
 
   def applyTopLeftCorrections(projectPath: Path): ZIO[ImageService, Throwable, Int] =
-    findJpeg2000Files(projectPath)
-      .mapZIOPar(8)(ImageService.applyTopLeftCorrection)
-      .map(_.map(_ => 1).getOrElse(0))
-      .run(ZSink.sum)
+    ZIO.logInfo(s"Starting top left corrections in $projectPath") *>
+      findJpeg2000Files(projectPath)
+        .mapZIOPar(8)(ImageService.applyTopLeftCorrection)
+        .map(_.map(_ => 1).getOrElse(0))
+        .run(ZSink.sum)
+        .tap(sum => ZIO.logInfo(s"Top left corrections applied for $sum files in $projectPath"))
 
   private def findJpeg2000Files(projectPath: Path) = StorageService.findInPath(projectPath, isJpeg2000)
 
@@ -83,7 +85,7 @@ object MaintenanceActions {
   }
 
   private def createOriginalAndUpdateInfoFile =
-    (c: CreateOriginalFor) => createOriginal(c) *> updateAssetInfo(c) as 1
+    (c: CreateOriginalFor) => createOriginal(c) *> updateAssetInfo(c)
 
   private def createOriginal(c: CreateOriginalFor) =
     ZIO.logInfo(s"Creating ${c.originalPath}/${c.targetFormat} for ${c.jpxPath}") *>
@@ -91,14 +93,16 @@ object MaintenanceActions {
         .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = c.targetFormat)
         .tap(sipiOut => ZIO.logDebug(s"Sipi response for $c: $sipiOut"))
 
-  private def updateAssetInfo(c: CreateOriginalFor) = {
+  private def updateAssetInfo(c: CreateOriginalFor): Task[Int] = {
     val infoFilePath = c.jpxPath.parent.orNull / s"${c.assetId}.info"
-    for {
-      _    <- ZIO.logInfo(s"Updating ${c.assetId} info file $infoFilePath")
-      info <- createNewAssetInfoFileContent(c)
-      _    <- Files.deleteIfExists(infoFilePath) *> Files.createFile(infoFilePath)
-      _    <- Files.writeBytes(infoFilePath, Chunk.fromArray(info.toJsonPretty.getBytes))
-    } yield ()
+    ZIO
+      .whenZIO(Files.exists(c.originalPath))(for {
+        _    <- ZIO.logInfo(s"Updating ${c.assetId} info file $infoFilePath")
+        info <- createNewAssetInfoFileContent(c)
+        _    <- Files.deleteIfExists(infoFilePath) *> Files.createFile(infoFilePath)
+        _    <- Files.writeBytes(infoFilePath, Chunk.fromArray(info.toJsonPretty.getBytes))
+      } yield 1)
+      .someOrElseZIO(ZIO.logWarning(s"Sipi did not create an original for $c") *> ZIO.succeed(0))
   }
 
   private def createNewAssetInfoFileContent(c: CreateOriginalFor): IO[Throwable, AssetInfoFileContent] =

@@ -8,10 +8,10 @@ package swiss.dasch.api
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConfigurations
-import zio.http.{ Request, Root, Status, URL }
+import zio.http.{Request, Root, Status, URL}
 import zio.json.*
-import zio.test.{ ZIOSpecDefault, assertTrue }
-import zio.{ Chunk, http }
+import zio.test.{ZIOSpecDefault, assertTrue}
+import zio.{Chunk, http}
 
 object ListProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -20,7 +20,10 @@ object ListProjectsEndpointSpec extends ZIOSpecDefault {
       for {
         response <- ListProjectsEndpoint.app.runZIO(Request.get(URL(Root / "projects")))
         body     <- response.body.asString
-      } yield assertTrue(response.status == Status.Ok, body == Chunk(ProjectResponse("0001")).toJson)
+      } yield assertTrue(
+        response.status == Status.Ok,
+        body == Chunk(ProjectResponse("0001")).toJson,
+      )
     }
   ).provide(
     AssetInfoServiceLive.layer,

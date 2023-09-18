@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - 'main'
+  release:
+    types: [published]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,7 +30,7 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: sbt
       - name: Build and Test
-        run: sbt -v coverage test headerCheckAll fmtCheck coverageAggregate
+        run: sbt -v clean coverage test headerCheckAll fmtCheck coverageAggregate
       - name: Unit Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
@@ -40,7 +42,7 @@ jobs:
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: ./target/scala-3.3.0/coverage-report/cobertura.xml
+          coverage-reports: ./target/scala-3.3.1/coverage-report/cobertura.xml
 
   test-docs-build:
     name: Test docs
@@ -56,7 +58,8 @@ jobs:
         run: mkdocs build
 
   publish-docker-image:
-    if: github.ref == 'refs/heads/main'
+    if: (github.ref == 'refs/heads/main' && github.event_name != 'release') || startsWith(github.ref, 'refs/tags/')
+    name: Publish docker images to Docker Hub
     needs: build-and-test
     runs-on: ubuntu-latest
     outputs:
@@ -107,3 +110,15 @@ jobs:
           curl -f -u "${JENKINS_BASIC_AUTH_USER}:${JENKINS_BASIC_AUTH_PASS}" \
                -X POST "${JENKINS_DEV_WEBHOOK}" \
                -d "Service=ingest&Version=${IMAGE_TAG}"
+ 
+  send-chat-notification:
+      name: Send google chat notification
+      needs: [publish-docker-image]
+      runs-on: ubuntu-latest
+      if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
+      steps:
+        - name: Send notification to google chat room "DSP releases"
+          uses: lakto/google-chat-action@main
+          with:
+            url: ${{ secrets.GOOGLE_CHAT_DSP_RELEASES_WEBHOOK_URL }}
+

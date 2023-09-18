@@ -14,6 +14,6 @@ object ApiStringConverters {
   def fromPathVarToProjectShortcode(value: String, pathVariableName: String = shortcodePathVarStr)
       : IO[ApiProblem.BadRequest, ProjectShortcode] =
     ZIO
-      .fromEither(ProjectShortcode.make(value))
+      .fromEither(ProjectShortcode.from(value))
       .mapError(BadRequest.invalidPathVariable(pathVariableName, value, _))
 }

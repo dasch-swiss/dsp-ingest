@@ -78,5 +78,4 @@ object ApiProblem {
   object Unauthorized {
     given codec: JsonCodec[Unauthorized] = DeriveJsonCodec.gen[Unauthorized]
   }
-
 }
