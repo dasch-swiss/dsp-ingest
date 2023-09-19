@@ -43,7 +43,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .secureEndpoint
     .post
     .in("projects" / shortcodePathVar / "bulk-ingest")
-    .out(jsonBody[ProjectResponse])
+    .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
     .out(statusCode(StatusCode.Accepted))
 
   val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest)
