@@ -26,6 +26,7 @@ final case class MaintenanceActionsLive(
     projectService: ProjectService,
     imageService: ImageService,
   ) extends MaintenanceActions {
+
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {
     val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
     for {

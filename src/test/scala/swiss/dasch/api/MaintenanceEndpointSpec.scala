@@ -108,16 +108,20 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
   private val needsOriginalsSuite =
     suite("/maintenance/needs-originals should")(
       test("should return 204 and create a report") {
-        val request = Request.get(URL(Root / "maintenance" / "needs-originals"))
+        val request = Request
+          .get(URL(Root / "maintenance" / "needs-originals"))
+          .addHeader(Header.Authorization.name, "Bearer fakeToken")
         for {
-          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          response <- executeRequest(request)
           projects <- loadReport("needsOriginals_images_only.json")
         } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
       },
       test("should return 204 and create an extended report") {
-        val request = Request.get(URL(Root / "maintenance" / "needs-originals").withQueryParams("imagesOnly=false"))
+        val request = Request
+          .get(URL(Root / "maintenance" / "needs-originals").withQueryParams("imagesOnly=false"))
+          .addHeader(Header.Authorization.name, "Bearer fakeToken")
         for {
-          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          response <- executeRequest(request)
           projects <- loadReport("needsOriginals.json")
         } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
       },

@@ -12,6 +12,7 @@ import zio.{ ZIO, ZLayer }
 
 final case class MaintenanceEndpointsHandler(
     maintenanceEndpoints: MaintenanceEndpoints,
+    maintenanceActions: MaintenanceActions,
     projectService: ProjectService,
     fileChecksumService: FileChecksumService,
     sipiClient: SipiClient,
@@ -61,7 +62,19 @@ final case class MaintenanceEndpointsHandler(
           }
     )
 
-  val endpoints: List[ZServerEndpoint[Any, Any]] = List(applyTopLeftCorrectionEndpoint, createOriginalsEndpoint)
+  val needsOriginalsEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints
+    .needsOriginalsEndpoint
+    .serverLogic(_ =>
+      imagesOnlyMaybe =>
+        maintenanceActions
+          .createNeedsOriginalsReport(imagesOnlyMaybe.getOrElse(true))
+          .forkDaemon
+          .logError
+          .as("work in progress")
+    )
+
+  val endpoints: List[ZServerEndpoint[Any, Any]] =
+    List(applyTopLeftCorrectionEndpoint, createOriginalsEndpoint, needsOriginalsEndpoint)
 }
 
 object MaintenanceEndpointsHandler {

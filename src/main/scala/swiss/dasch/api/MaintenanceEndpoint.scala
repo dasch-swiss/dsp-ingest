@@ -34,13 +34,4 @@ object MaintenanceEndpoint {
       HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
-  val needsOriginalsEndpoint = Endpoint
-    .get(maintenance / "needs-originals")
-    .query(queryBool("imagesOnly").optional)
-    .out[String](Status.Accepted)
-    .outErrors(
-      HttpCodec.error[NotFound](Status.NotFound),
-      HttpCodec.error[BadRequest](Status.BadRequest),
-      HttpCodec.error[InternalServerError](Status.InternalServerError),
-    )
 }
