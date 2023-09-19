@@ -6,25 +6,40 @@
 package swiss.dasch.domain
 
 import org.apache.commons.io.FilenameUtils
-import zio.json.{ EncoderOps, JsonEncoder }
 import swiss.dasch.domain
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import zio.*
+import zio.json.{ EncoderOps, JsonEncoder }
 import zio.nio.file
 import zio.nio.file.{ Files, Path }
 import zio.stream.{ ZSink, ZStream }
 
 import java.io.IOException
 
-trait MaintenanceActions      {
+trait MaintenanceActions {
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
+  def applyTopLeftCorrections(projectPath: Path): Task[Int]
+  def createOriginals(projectPath: Path, mapping: Map[String, String]): Task[Int]
 }
+
+object MaintenanceActions     {
+  def createNeedsOriginalsReport(imagesOnly: Boolean): ZIO[MaintenanceActions, Throwable, Unit]                 =
+    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsOriginalsReport(imagesOnly))
+  def createNeedsTopLeftCorrectionReport(): ZIO[MaintenanceActions, Throwable, Unit]                            =
+    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsTopLeftCorrectionReport())
+  def applyTopLeftCorrections(projectPath: Path): ZIO[MaintenanceActions, Throwable, Int]                       =
+    ZIO.serviceWithZIO[MaintenanceActions](_.applyTopLeftCorrections(projectPath))
+  def createOriginals(projectPath: Path, mapping: Map[String, String]): ZIO[MaintenanceActions, Throwable, Int] =
+    ZIO.serviceWithZIO[MaintenanceActions](_.createOriginals(projectPath, mapping))
+}
+
 final case class MaintenanceActionsLive(
-    storageService: StorageService,
-    projectService: ProjectService,
     imageService: ImageService,
+    projectService: ProjectService,
+    sipiClient: SipiClient,
+    storageService: StorageService,
   ) extends MaintenanceActions {
 
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {
@@ -101,30 +116,17 @@ final case class MaintenanceActionsLive(
           .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
     } yield ()
 
-}
-object MaintenanceActionsLive {
-  val layer = ZLayer.fromFunction(MaintenanceActionsLive.apply _)
-}
-
-object MaintenanceActions {
-  def createNeedsOriginalsReport(imagesOnly: Boolean): ZIO[MaintenanceActions, Throwable, Unit] =
-    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsOriginalsReport(imagesOnly))
-
-  def createNeedsTopLeftCorrectionReport(): ZIO[MaintenanceActions, Throwable, Unit] =
-    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsTopLeftCorrectionReport())
-
-  def applyTopLeftCorrections(projectPath: Path): ZIO[ImageService, Throwable, Int] =
+  override def applyTopLeftCorrections(projectPath: Path): Task[Int] =
     ZIO.logInfo(s"Starting top left corrections in $projectPath") *>
       findJpeg2000Files(projectPath)
-        .mapZIOPar(8)(ImageService.applyTopLeftCorrection)
+        .mapZIOPar(8)(imageService.applyTopLeftCorrection)
         .map(_.map(_ => 1).getOrElse(0))
         .run(ZSink.sum)
         .tap(sum => ZIO.logInfo(s"Top left corrections applied for $sum files in $projectPath"))
 
   private def findJpeg2000Files(projectPath: Path) = StorageService.findInPath(projectPath, isJpeg2000)
 
-  def createOriginals(projectPath: Path, mapping: Map[String, String])
-      : ZIO[FileChecksumService with SipiClient, Throwable, Int] =
+  override def createOriginals(projectPath: Path, mapping: Map[String, String]): Task[Int] =
     findJpeg2000Files(projectPath)
       .flatMap(findAssetsWithoutOriginal(_, mapping))
       .mapZIOPar(8)(createOriginalAndUpdateInfoFile)
@@ -186,7 +188,7 @@ object MaintenanceActions {
 
   private def createOriginal(c: CreateOriginalFor) =
     ZIO.logInfo(s"Creating ${c.originalPath}/${c.targetFormat} for ${c.jpxPath}") *>
-      SipiClient
+      sipiClient
         .transcodeImageFile(fileIn = c.jpxPath, fileOut = c.originalPath, outputFormat = c.targetFormat)
         .tap(sipiOut => ZIO.logDebug(s"Sipi response for $c: $sipiOut"))
 
@@ -213,4 +215,7 @@ object MaintenanceActions {
       checksumOriginal = checksumOriginal.toString,
       checksumDerivative = checksumDerivative.toString,
     )
+}
+object MaintenanceActionsLive {
+  val layer = ZLayer.fromFunction(MaintenanceActionsLive.apply _)
 }

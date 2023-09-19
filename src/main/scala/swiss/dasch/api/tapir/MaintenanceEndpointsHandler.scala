@@ -26,9 +26,8 @@ final case class MaintenanceEndpointsHandler(
         .findProject(shortcode)
         .some
         .flatMap(path =>
-          MaintenanceActions
+          maintenanceActions
             .applyTopLeftCorrections(path)
-            .provide(ZLayer.succeed(imageService))
             .tap(count => ZIO.logInfo(s"Created $count originals for $path"))
             .logError
             .forkDaemon
@@ -48,9 +47,8 @@ final case class MaintenanceEndpointsHandler(
           .findProject(shortcode)
           .some
           .flatMap(path =>
-            MaintenanceActions
+            maintenanceActions
               .createOriginals(path, mappings.map(e => e.internalFilename -> e.originalFilename).toMap)
-              .provide(ZLayer.succeed(sipiClient), ZLayer.succeed(fileChecksumService))
               .tap(count => ZIO.logInfo(s"Created $count originals for $path"))
               .logError
               .forkDaemon
