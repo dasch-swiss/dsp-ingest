@@ -45,16 +45,12 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
   private val issuer   = jwtConfig.issuer
 
   def authenticate(jwtString: String): IO[NonEmptyChunk[AuthenticationError], JwtClaim] =
-    if (jwtConfig.disableAuth) {
-      ZIO.succeed(JwtClaim(subject = Some("developer")))
-    }
+    if (jwtConfig.disableAuth) { ZIO.succeed(JwtClaim(subject = Some("developer"))) }
     else {
-      for {
-        claim <- ZIO
-                   .fromTry(JwtZIOJson.decode(jwtString, secret, alg))
-                   .mapError(e => NonEmptyChunk(AuthenticationError.jwtProblem(e)))
-        _     <- verifyClaim(claim)
-      } yield claim
+      ZIO
+        .fromTry(JwtZIOJson.decode(jwtString, secret, alg))
+        .mapError(e => NonEmptyChunk(AuthenticationError.jwtProblem(e)))
+        .flatMap(verifyClaim)
     }
 
   private def verifyClaim(claim: JwtClaim): IO[NonEmptyChunk[AuthenticationError], JwtClaim] = {
