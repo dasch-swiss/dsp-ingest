@@ -6,13 +6,13 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.IngestEndpoint.*
-import swiss.dasch.api.monitoring.{HealthEndpoint, MetricsEndpoint}
+import swiss.dasch.api.monitoring.{ HealthEndpoint, MetricsEndpoint }
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration.ServiceConfig
 import swiss.dasch.version.BuildInfo
 import zio.http.*
 import zio.http.internal.middlewares.Cors.CorsConfig
-import zio.{URLayer, ZIO, ZLayer}
+import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
@@ -22,7 +22,8 @@ object IngestApiServer {
       MaintenanceEndpointRoutes.app ++
       ImportEndpoint.app) @@ AuthService.middleware
   private val managementApps = HealthEndpoint.app ++ MetricsEndpoint.app
-  private val app            = ((managementApps ++ serviceApps)
+
+  private val app = ((managementApps ++ serviceApps)
     @@ HttpRoutesMiddlewares.dropTrailingSlash)
     @@ HttpRoutesMiddlewares.cors(CorsConfig())
 
