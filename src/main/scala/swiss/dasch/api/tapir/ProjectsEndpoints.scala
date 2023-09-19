@@ -5,7 +5,7 @@
 
 package swiss.dasch.api.tapir
 
-import sttp.model.HeaderNames
+import sttp.model.{ HeaderNames, StatusCode }
 import sttp.tapir.EndpointInput
 import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
@@ -39,7 +39,14 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .in("projects" / shortcodePathVar / "checksumreport")
     .out(jsonBody[AssetCheckResultResponse])
 
-  val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport)
+  val postBulkIngest = base
+    .secureEndpoint
+    .post
+    .in("projects" / shortcodePathVar / "bulk-ingest")
+    .out(jsonBody[ProjectResponse])
+    .out(statusCode(StatusCode.Accepted))
+
+  val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest)
 }
 
 object ProjectsEndpoints {

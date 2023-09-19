@@ -10,13 +10,14 @@ import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.api.ReportEndpoint.AssetCheckResultResponse
-import swiss.dasch.domain.{ ProjectService, ReportService }
-import zio.ZLayer
+import swiss.dasch.domain.{ BulkIngestService, ProjectService, ReportService }
+import zio.{ ZIO, ZLayer }
 
 final case class ProjectsEndpointsHandler(
     projectEndpoints: ProjectsEndpoints,
     projectService: ProjectService,
     reportService: ReportService,
+    bulkIngestService: BulkIngestService,
   ) {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
@@ -64,12 +65,16 @@ final case class ProjectsEndpointsHandler(
           )
     )
 
+  val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
+    .postBulkIngest
+    .serverLogic(_ =>
+      code => bulkIngestService.startBulkIngest(code).logError.forkDaemon *> ZIO.succeed(ProjectResponse.make(code))
+    )
+
   val endpoints: List[ZServerEndpoint[Any, Any]] =
-    List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectChecksumReportEndpoint)
+    List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectChecksumReportEndpoint, postBulkIngestEndpoint)
 }
 
 object ProjectsEndpointsHandler {
-
   val layer = ZLayer.fromFunction(ProjectsEndpointsHandler.apply _)
-
 }

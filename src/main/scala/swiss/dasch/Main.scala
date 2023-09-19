@@ -24,8 +24,8 @@ object Main extends ZIOAppDefault {
 
   override val run: ZIO[Any, Any, Nothing] =
     (FileSystemCheck.smokeTestOrDie() *>
-      IngestApiServer.startup() *>
       TarpirServer.startup() *>
+      IngestApiServer.startup() *>
       ZIO.never)
       .provide(
         BaseEndpoints.layer,
