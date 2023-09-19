@@ -10,8 +10,17 @@ import sttp.tapir.json.zio.jsonBody
 import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
 import zio.{ Chunk, ZLayer }
 import sttp.tapir.ztapir.{ statusCode, * }
-import swiss.dasch.api.MaintenanceEndpoint.MappingEntry
 import sttp.tapir.generic.auto.*
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.schema.{ DeriveSchema, Schema }
+
+final case class MappingEntry(internalFilename: String, originalFilename: String)
+
+object MappingEntry {
+  given codec: JsonCodec[MappingEntry] = DeriveJsonCodec.gen[MappingEntry]
+  given schema: Schema[MappingEntry]   = DeriveSchema.gen[MappingEntry]
+}
+
 final case class MaintenanceEndpoints(base: BaseEndpoints) {
 
   val applyTopLeftCorrectionEndpoint = base

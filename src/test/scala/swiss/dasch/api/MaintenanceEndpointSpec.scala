@@ -6,8 +6,7 @@
 package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
-import swiss.dasch.api.MaintenanceEndpoint.MappingEntry
-import swiss.dasch.api.tapir.{ BaseEndpoints, MaintenanceEndpoints, MaintenanceEndpointsHandler }
+import swiss.dasch.api.tapir.{ BaseEndpoints, MaintenanceEndpoints, MaintenanceEndpointsHandler, MappingEntry }
 import swiss.dasch.domain.*
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.SipiImageFormat.Jpg
@@ -136,10 +135,12 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
   private val needsTopleftCorrectionSuite =
     suite("/maintenance/needs-top-left-correction should")(
       test("should return 204 and create a report") {
-        val request = Request.get(URL(Root / "maintenance" / "needs-top-left-correction"))
+        val request = Request
+          .get(URL(Root / "maintenance" / "needs-top-left-correction"))
+          .addHeader(Header.Authorization.name, "Bearer fakeToken")
         for {
           _        <- SipiClientMock.setOrientation(OrientationValue.Rotate270CW)
-          response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
+          response <- executeRequest(request)
           projects <- loadReport("needsTopLeftCorrection.json")
         } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
       }
