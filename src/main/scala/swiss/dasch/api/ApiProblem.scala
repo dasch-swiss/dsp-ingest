@@ -8,7 +8,7 @@ package swiss.dasch.api
 import swiss.dasch.api.ApiProblem.BadRequest.Argument
 import swiss.dasch.domain.ProjectShortcode
 import zio.http.Header.ContentType
-import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 
 sealed trait ApiProblem
@@ -18,7 +18,7 @@ object ApiProblem {
   case class NotFound(id: String, `type`: String) extends ApiProblem
 
   object NotFound {
-    given encoder: JsonCodec[NotFound]               = DeriveJsonCodec.gen[NotFound]
+    given codec: JsonCodec[NotFound]                 = DeriveJsonCodec.gen[NotFound]
     given schema: Schema[NotFound]                   = DeriveSchema.gen[NotFound]
     def apply(shortcode: ProjectShortcode): NotFound = NotFound(shortcode.toString, "project")
   }

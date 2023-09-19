@@ -14,7 +14,7 @@ import zio.http.Header.ContentType
 import zio.http.codec.*
 import zio.http.endpoint.Endpoint
 import zio.http.{ Header, * }
-import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.ZStream
 

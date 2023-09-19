@@ -12,7 +12,7 @@ import zio.Chunk
 import zio.http.*
 import zio.http.codec.*
 import zio.http.endpoint.Endpoint
-import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 
 import scala.collection.immutable.Map
@@ -53,14 +53,14 @@ object ReportEndpoint {
       numberOfChecksumMatches: Int,
     )
   private object AssetCheckResultSummary {
-    implicit val encoder: JsonEncoder[AssetCheckResultSummary] = DeriveJsonEncoder.gen[AssetCheckResultSummary]
-    implicit val schema: Schema[AssetCheckResultSummary]       = DeriveSchema.gen[AssetCheckResultSummary]
+    given codec: JsonCodec[AssetCheckResultSummary] = DeriveJsonCodec.gen[AssetCheckResultSummary]
+    given schema: Schema[AssetCheckResultSummary]   = DeriveSchema.gen[AssetCheckResultSummary]
   }
   final case class AssetCheckResultResponse(summary: AssetCheckResultSummary, results: List[AssetCheckResultEntry])
 
   private object AssetCheckResultResponse {
-    implicit val encoder: JsonEncoder[AssetCheckResultResponse] = DeriveJsonEncoder.gen[AssetCheckResultResponse]
-    implicit val schema: Schema[AssetCheckResultResponse]       = DeriveSchema.gen[AssetCheckResultResponse]
+    given codec: JsonCodec[AssetCheckResultResponse] = DeriveJsonCodec.gen[AssetCheckResultResponse]
+    given schema: Schema[AssetCheckResultResponse]   = DeriveSchema.gen[AssetCheckResultResponse]
 
     def make(report: Report): AssetCheckResultResponse = {
       val reportResults = report.results
