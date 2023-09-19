@@ -20,7 +20,7 @@ import zio.nio.file
 import zio.nio.file.Files
 import zio.test.*
 
-object MaintenanceEndpointSpec extends ZIOSpecDefault {
+object MaintenanceEndpointsSpec extends ZIOSpecDefault {
 
   private def awaitTrue[R, E](awaitThis: ZIO[R, E, Boolean], timeout: Duration = 1.seconds): ZIO[R, E, Boolean] =
     awaitThis.repeatUntil(identity).timeout(timeout).map(_.getOrElse(false))
