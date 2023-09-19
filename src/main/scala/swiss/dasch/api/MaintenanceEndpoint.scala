@@ -12,7 +12,7 @@ import zio.http.*
 import zio.http.codec.*
 import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.*
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 
 object MaintenanceEndpoint {
@@ -20,8 +20,8 @@ object MaintenanceEndpoint {
   final case class MappingEntry(internalFilename: String, originalFilename: String)
 
   object MappingEntry {
-    implicit val encoder: JsonEncoder[MappingEntry] = DeriveJsonEncoder.gen[MappingEntry]
-    implicit val schema: Schema[MappingEntry]       = DeriveSchema.gen[MappingEntry]
+    given codec: JsonCodec[MappingEntry] = DeriveJsonCodec.gen[MappingEntry]
+    given schema: Schema[MappingEntry]   = DeriveSchema.gen[MappingEntry]
   }
 
   private val maintenance = "maintenance"

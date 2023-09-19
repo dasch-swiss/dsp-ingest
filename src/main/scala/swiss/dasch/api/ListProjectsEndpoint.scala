@@ -13,14 +13,15 @@ import zio.http.Header.ContentRange.EndTotal
 import zio.http.codec.{ ContentCodec, HeaderCodec }
 import zio.http.endpoint.Endpoint
 import zio.http.{ App, Status }
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 
 object ListProjectsEndpoint {
+
   final case class ProjectResponse(id: ProjectShortcode)
   object ProjectResponse {
-    implicit val schema: Schema[ProjectResponse]           = DeriveSchema.gen[ProjectResponse]
-    implicit val jsonEncoder: JsonEncoder[ProjectResponse] = DeriveJsonEncoder.gen[ProjectResponse]
+    given schema: Schema[ProjectResponse]   = DeriveSchema.gen[ProjectResponse]
+    given codec: JsonCodec[ProjectResponse] = DeriveJsonCodec.gen[ProjectResponse]
   }
 
   private val listProjectsEndpoint = Endpoint
