@@ -16,6 +16,7 @@ import zio.json.{ DeriveJsonEncoder, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 
 import scala.collection.immutable.Map
+import swiss.dasch.api.ApiProblem.{ BadRequest, * }
 
 object ReportEndpoint {
 
@@ -75,15 +76,15 @@ object ReportEndpoint {
     .get(projects / shortcodePathVar / "checksumreport")
     .out[AssetCheckResultResponse]
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   val app = endpoint
     .implement((shortcode: String) =>
       ApiStringConverters.fromPathVarToProjectShortcode(shortcode).flatMap {
-        ReportService.checksumReport(_).mapBoth(ApiProblem.internalError, AssetCheckResultResponse.make)
+        ReportService.checksumReport(_).mapBoth(ApiProblem.InternalServerError(_), AssetCheckResultResponse.make)
       }
     )
     .toApp

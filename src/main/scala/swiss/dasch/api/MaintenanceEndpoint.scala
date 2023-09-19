@@ -6,13 +6,14 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.shortcodePathVar
+import swiss.dasch.api.ApiProblem.*
 import zio.*
 import zio.http.*
 import zio.http.codec.*
 import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.*
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
-import zio.schema.{ DeriveSchema, Schema }
+import zio.json.{DeriveJsonEncoder, JsonEncoder}
+import zio.schema.{DeriveSchema, Schema}
 
 object MaintenanceEndpoint {
 
@@ -29,18 +30,18 @@ object MaintenanceEndpoint {
     .post(maintenance / "apply-top-left-correction" / shortcodePathVar)
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   val needsTopLeftCorrectionEndpoint = Endpoint
     .get(maintenance / "needs-top-left-correction")
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   val createOriginalsEndpoint = Endpoint
@@ -48,9 +49,9 @@ object MaintenanceEndpoint {
     .inCodec(ContentCodec.content[Chunk[MappingEntry]](MediaType.application.json))
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 
   val needsOriginalsEndpoint = Endpoint
@@ -58,8 +59,8 @@ object MaintenanceEndpoint {
     .query(queryBool("imagesOnly").optional)
     .out[String](Status.Accepted)
     .outErrors(
-      HttpCodec.error[ProjectNotFound](Status.NotFound),
-      HttpCodec.error[IllegalArguments](Status.BadRequest),
-      HttpCodec.error[InternalProblem](Status.InternalServerError),
+      HttpCodec.error[NotFound](Status.NotFound),
+      HttpCodec.error[BadRequest](Status.BadRequest),
+      HttpCodec.error[InternalServerError](Status.InternalServerError),
     )
 }
