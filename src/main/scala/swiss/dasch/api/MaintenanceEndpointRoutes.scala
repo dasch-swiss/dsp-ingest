@@ -5,28 +5,18 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.api.ApiProblem.{ InternalServerError, NotFound }
+import swiss.dasch.api.ApiProblem.InternalServerError
 import swiss.dasch.api.MaintenanceEndpoint.*
 import swiss.dasch.domain.*
-import swiss.dasch.domain.FileFilters.{ isImage, isNonHiddenRegularFile }
+import swiss.dasch.domain.FileFilters.{isImage, isNonHiddenRegularFile}
 import zio.json.JsonEncoder
 import zio.nio.file
 import zio.nio.file.Files
-import zio.{ Chunk, IO, ZIO }
+import zio.{IO, ZIO}
 
 import java.io.IOException
 
 object MaintenanceEndpointRoutes {
-
-  private def getProjectPath(shortcode: String): ZIO[ProjectService, ApiProblem, file.Path] =
-    ApiStringConverters
-      .fromPathVarToProjectShortcode(shortcode)
-      .flatMap(code =>
-        ProjectService.findProject(code).some.mapError {
-          case Some(e) => InternalServerError(e)
-          case _       => NotFound(code)
-        }
-      )
 
   private def saveReport[A](
       tmpDir: file.Path,
@@ -83,20 +73,6 @@ object MaintenanceEndpointRoutes {
       .map(_.isEmpty)
   }
 
-  private val createOriginalsRoute =
-    MaintenanceEndpoint.createOriginalsEndpoint.implement {
-      case (shortCodeStr: String, mapping: Chunk[MappingEntry]) =>
-        for {
-          projectPath <- getProjectPath(shortCodeStr)
-          _           <- ZIO.logInfo(s"Creating originals for $projectPath")
-          _           <- MaintenanceActions
-                           .createOriginals(projectPath, mapping.map(e => e.internalFilename -> e.originalFilename).toMap)
-                           .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
-                           .logError
-                           .forkDaemon
-        } yield "work in progress"
-    }
-
   private val needsTopLeftCorrectionRoute =
     needsTopLeftCorrectionEndpoint.implement(_ =>
       (
@@ -126,20 +102,5 @@ object MaintenanceEndpointRoutes {
       ).logError.mapError(InternalServerError(_))
     )
 
-  private val applyTopLeftCorrectionRoute =
-    applyTopLeftCorrectionEndpoint.implement(shortcodeStr =>
-      for {
-        projectPath <- getProjectPath(shortcodeStr)
-        _           <- MaintenanceActions
-                         .applyTopLeftCorrections(projectPath)
-                         .tap(count => ZIO.logInfo(s"Corrected $count top left images for $projectPath"))
-                         .logError
-                         .forkDaemon
-      } yield "work in progress"
-    )
-
-  val app = (needsOriginalsRoute ++
-    createOriginalsRoute ++
-    needsTopLeftCorrectionRoute ++
-    applyTopLeftCorrectionRoute).toApp
+  val app = (needsOriginalsRoute ++ needsTopLeftCorrectionRoute).toApp
 }

@@ -17,6 +17,11 @@ object SpecConfigurations {
   val jwtConfigLayer: ULayer[JwtConfig] =
     ZLayer.succeed(JwtConfig("secret-key", "https://dsp-ingest.dev.dasch.swiss", "https://admin.dev.dasch.swiss"))
 
+  val jwtConfigDisableAuthLayer: ULayer[JwtConfig] =
+    ZLayer.succeed(
+      JwtConfig("secret-key", "https://dsp-ingest.dev.dasch.swiss", "https://admin.dev.dasch.swiss", disableAuth = true)
+    )
+
   val storageConfigLayer: Layer[IOException, StorageConfig] = ZLayer.scoped {
     for {
       tmpDir  <- Files.createTempDirectoryScoped(None, List.empty)
