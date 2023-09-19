@@ -7,14 +7,14 @@ package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.projects
 import swiss.dasch.api.ApiProblem.*
-import swiss.dasch.domain.{ProjectService, ProjectShortcode}
+import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
 import zio.*
 import zio.http.Header.ContentRange.EndTotal
-import zio.http.codec.{ContentCodec, HeaderCodec}
+import zio.http.codec.{ ContentCodec, HeaderCodec }
 import zio.http.endpoint.Endpoint
-import zio.http.{App, Status}
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
-import zio.schema.{DeriveSchema, Schema}
+import zio.http.{ App, Status }
+import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.schema.{ DeriveSchema, Schema }
 
 object ListProjectsEndpoint {
   final case class ProjectResponse(id: ProjectShortcode)
