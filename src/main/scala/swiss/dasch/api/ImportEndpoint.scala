@@ -52,7 +52,7 @@ object ImportEndpoint {
           _         <- ImportService
                          .importZipStream(shortcode, stream)
                          .mapError {
-                           case IoError(e)       => InternalServerError(s"Import of project $shortcodeStr failed ${e.getMessage}")
+                           case IoError(e)       => InternalServerError(s"Import of project $shortcodeStr failed", e)
                            case EmptyFile        => BadRequest.invalidBody("The uploaded file is empty")
                            case NoZipFile        => BadRequest.invalidBody("The uploaded file is not a zip file")
                            case InvalidChecksums => BadRequest.invalidBody("The uploaded file contains invalid checksums")
