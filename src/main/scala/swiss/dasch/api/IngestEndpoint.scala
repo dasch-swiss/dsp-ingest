@@ -16,7 +16,7 @@ import zio.http.Status
 import zio.http.codec.HttpCodec
 import zio.http.endpoint.Endpoint
 import zio.nio.file.{ Files, Path }
-import swiss.dasch.api.ApiProblem.{ BadRequest, * }
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
 
 import java.nio.file.StandardOpenOption
 

@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.shortcodePathVar
-import swiss.dasch.api.ApiProblem.*
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
 import zio.*
 import zio.http.*
 import zio.http.codec.*

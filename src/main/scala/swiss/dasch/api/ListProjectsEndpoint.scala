@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.projects
-import swiss.dasch.api.ApiProblem.*
+import swiss.dasch.api.ApiProblem.InternalServerError
 import swiss.dasch.domain.{ ProjectService, ProjectShortcode }
 import zio.*
 import zio.http.Header.ContentRange.EndTotal
