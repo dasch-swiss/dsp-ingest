@@ -6,16 +6,15 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
-import swiss.dasch.api.ApiProblem.{ BadRequest, * }
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError }
 import swiss.dasch.api.ApiStringConverters.fromPathVarToProjectShortcode
 import swiss.dasch.domain.*
 import zio.*
 import zio.http.Header.ContentType
 import zio.http.codec.*
-import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.Endpoint
 import zio.http.{ Header, * }
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 import zio.stream.ZStream
 
@@ -23,8 +22,8 @@ object ImportEndpoint {
   case class UploadResponse(status: String = "okey")
 
   private object UploadResponse {
-    implicit val schema: Schema[UploadResponse]       = DeriveSchema.gen[UploadResponse]
-    implicit val encoder: JsonEncoder[UploadResponse] = DeriveJsonEncoder.gen[UploadResponse]
+    given schema: Schema[UploadResponse]   = DeriveSchema.gen[UploadResponse]
+    given codec: JsonCodec[UploadResponse] = DeriveJsonCodec.gen[UploadResponse]
   }
 
   private val importEndpoint =
@@ -53,8 +52,7 @@ object ImportEndpoint {
           _         <- ImportService
                          .importZipStream(shortcode, stream)
                          .mapError {
-                           case IoError(e)       =>
-                             ApiProblem.InternalServerError(s"Import of project $shortcodeStr failed ${e.getMessage}")
+                           case IoError(e)       => InternalServerError(s"Import of project $shortcodeStr failed ${e.getMessage}")
                            case EmptyFile        => BadRequest.invalidBody("The uploaded file is empty")
                            case NoZipFile        => BadRequest.invalidBody("The uploaded file is not a zip file")
                            case InvalidChecksums => BadRequest.invalidBody("The uploaded file contains invalid checksums")

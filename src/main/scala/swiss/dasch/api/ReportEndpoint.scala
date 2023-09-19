@@ -6,27 +6,27 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.*
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
 import swiss.dasch.domain.*
 import zio.Chunk
-import zio.http.codec.*
-import zio.http.codec.HttpCodec.*
-import zio.http.endpoint.Endpoint
 import zio.http.*
-import zio.json.{ DeriveJsonEncoder, JsonEncoder }
+import zio.http.codec.*
+import zio.http.endpoint.Endpoint
+import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
 import zio.schema.{ DeriveSchema, Schema }
 
 import scala.collection.immutable.Map
-import swiss.dasch.api.ApiProblem.{ BadRequest, * }
 
 object ReportEndpoint {
 
   final case class SingleFileCheckResultResponse(filename: String, checksumMatches: Boolean)
   private object SingleFileCheckResultResponse {
-    implicit val encoder: JsonEncoder[SingleFileCheckResultResponse] =
-      DeriveJsonEncoder.gen[SingleFileCheckResultResponse]
-    implicit val schema: Schema[SingleFileCheckResultResponse]       = DeriveSchema.gen[SingleFileCheckResultResponse]
-    def make(result: ChecksumResult): SingleFileCheckResultResponse  =
+
+    def make(result: ChecksumResult): SingleFileCheckResultResponse =
       SingleFileCheckResultResponse(result.file.filename.toString, result.checksumMatches)
+
+    given codec: JsonCodec[SingleFileCheckResultResponse] = DeriveJsonCodec.gen[SingleFileCheckResultResponse]
+    given schema: Schema[SingleFileCheckResultResponse]   = DeriveSchema.gen[SingleFileCheckResultResponse]
   }
 
   final case class AssetCheckResultEntry(
@@ -34,22 +34,25 @@ object ReportEndpoint {
       originalFilename: String,
       results: List[SingleFileCheckResultResponse],
     )
-  private object AssetCheckResultEntry         {
-    implicit val encoder: JsonEncoder[AssetCheckResultEntry]                              = DeriveJsonEncoder.gen[AssetCheckResultEntry]
-    implicit val schema: Schema[AssetCheckResultEntry]                                    = DeriveSchema.gen[AssetCheckResultEntry]
+  private object AssetCheckResultEntry {
+
     def make(assetInfo: AssetInfo, results: Chunk[ChecksumResult]): AssetCheckResultEntry =
       AssetCheckResultEntry(
         assetInfo.asset.id.toString,
         assetInfo.originalFilename.toString,
         results.map(SingleFileCheckResultResponse.make).toList,
       )
+
+    given codec: JsonCodec[AssetCheckResultEntry] = DeriveJsonCodec.gen[AssetCheckResultEntry]
+    given schema: Schema[AssetCheckResultEntry]   = DeriveSchema.gen[AssetCheckResultEntry]
   }
+
   final case class AssetCheckResultSummary(
       numberOfAssets: Int,
       numberOfFiles: Int,
       numberOfChecksumMatches: Int,
     )
-  private object AssetCheckResultSummary       {
+  private object AssetCheckResultSummary {
     implicit val encoder: JsonEncoder[AssetCheckResultSummary] = DeriveJsonEncoder.gen[AssetCheckResultSummary]
     implicit val schema: Schema[AssetCheckResultSummary]       = DeriveSchema.gen[AssetCheckResultSummary]
   }

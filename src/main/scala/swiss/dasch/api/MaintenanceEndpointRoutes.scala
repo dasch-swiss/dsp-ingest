@@ -63,7 +63,7 @@ object MaintenanceEndpointRoutes {
                                .logError
                                .forkDaemon
       } yield "work in progress"
-    }.logError.mapError(ApiProblem.InternalServerError(_))
+    }.logError.mapError(InternalServerError(_))
   )
 
   private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
@@ -122,7 +122,7 @@ object MaintenanceEndpointRoutes {
               .logError
               .forkDaemon
         } yield "work in progress"
-      ).logError.mapError(ApiProblem.InternalServerError(_))
+      ).logError.mapError(InternalServerError(_))
     )
 
   private val applyTopLeftCorrectionRoute =

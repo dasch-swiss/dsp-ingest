@@ -6,11 +6,10 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.ApiPathCodecSegments.{ projects, shortcodePathVar }
-import swiss.dasch.api.ApiProblem.{ BadRequest, * }
+import swiss.dasch.api.ApiProblem.{ BadRequest, NotFound, InternalServerError }
 import swiss.dasch.domain.ProjectService
 import zio.http.Header.{ ContentDisposition, ContentType }
 import zio.http.codec.*
-import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.Endpoint
 import zio.http.{ Header, * }
 import zio.schema.Schema
@@ -42,8 +41,8 @@ object ExportEndpoint {
                        .some
                        .mapBoth(
                          {
-                           case Some(err) => ApiProblem.InternalServerError(err)
-                           case _         => ApiProblem.NotFound(shortcode)
+                           case Some(err) => InternalServerError(err)
+                           case _         => NotFound(shortcode)
                          },
                          path =>
                            (
