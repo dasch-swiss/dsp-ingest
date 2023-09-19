@@ -12,7 +12,7 @@ import zio.{ IO, ZIO }
 
 object ApiStringConverters {
   def fromPathVarToProjectShortcode(value: String, pathVariableName: String = shortcodePathVarStr)
-      : IO[ApiProblem.BadRequest, ProjectShortcode] =
+      : IO[BadRequest, ProjectShortcode] =
     ZIO
       .fromEither(ProjectShortcode.from(value))
       .mapError(BadRequest.invalidPathVariable(pathVariableName, value, _))

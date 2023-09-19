@@ -6,7 +6,6 @@
 package swiss.dasch.infrastructure
 
 import swiss.dasch.api.IngestEndpoint.*
-import swiss.dasch.api.monitoring.{ HealthEndpoint, MetricsEndpoint }
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration.ServiceConfig
 import swiss.dasch.version.BuildInfo
@@ -16,15 +15,14 @@ import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
-  private val serviceApps    =
+  private val serviceApps =
     (ExportEndpoint.app ++
       IngestEndpoint.app ++
       MaintenanceEndpointRoutes.app ++
       ImportEndpoint.app) @@ AuthService.middleware
-  private val managementApps = HealthEndpoint.app ++ MetricsEndpoint.app
 
-  private val app = ((managementApps ++ serviceApps)
-    @@ HttpRoutesMiddlewares.dropTrailingSlash)
+  private val app = serviceApps
+    @@ HttpRoutesMiddlewares.dropTrailingSlash
     @@ HttpRoutesMiddlewares.cors(CorsConfig())
 
   def startup() =

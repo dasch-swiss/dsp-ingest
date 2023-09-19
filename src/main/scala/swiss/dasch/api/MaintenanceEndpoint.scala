@@ -12,7 +12,7 @@ import zio.http.*
 import zio.http.codec.*
 import zio.http.codec.HttpCodec.*
 import zio.http.endpoint.*
-import zio.json.{ DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
 
 object MaintenanceEndpoint {
