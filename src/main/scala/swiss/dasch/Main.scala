@@ -44,6 +44,7 @@ object Main extends ZIOAppDefault {
         IngestApiServer.layer,
         MaintenanceEndpoints.layer,
         MaintenanceEndpointsHandler.layer,
+        MaintenanceActionsLive.layer,
         Metrics.layer,
         ProjectsEndpoints.layer,
         ProjectsEndpointsHandler.layer,

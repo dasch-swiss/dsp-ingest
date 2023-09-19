@@ -6,15 +6,111 @@
 package swiss.dasch.domain
 
 import org.apache.commons.io.FilenameUtils
-import zio.json.EncoderOps
+import zio.json.{ EncoderOps, JsonEncoder }
 import swiss.dasch.domain
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import zio.*
+import zio.nio.file
 import zio.nio.file.{ Files, Path }
 import zio.stream.{ ZSink, ZStream }
 
+import java.io.IOException
+
+trait MaintenanceActions      {
+  def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
+  def createNeedsTopLeftCorrectionReport(): Task[Unit]
+}
+final case class MaintenanceActionsLive(
+    storageService: StorageService,
+    projectService: ProjectService,
+    imageService: ImageService,
+  ) extends MaintenanceActions {
+  def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {
+    val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
+    for {
+      _                 <- ZIO.logInfo(s"Checking for originals")
+      assetDir          <- storageService.getAssetDirectory()
+      tmpDir            <- storageService.getTempDirectory()
+      projectShortcodes <- projectService.listAllProjects()
+      _                 <- ZIO
+                             .foreach(projectShortcodes)(shortcode =>
+                               Files
+                                 .walk(assetDir / shortcode.toString)
+                                 .mapZIOPar(8)(originalNotPresent(imagesOnly))
+                                 .filter(identity)
+                                 .as(shortcode)
+                                 .runHead
+                             )
+                             .map(_.flatten.map(_.toString))
+                             .flatMap(saveReport(tmpDir, reportName, _))
+                             .zipLeft(ZIO.logInfo(s"Created $reportName.json"))
+
+    } yield ()
+  }
+
+  private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
+    lazy val assetId = AssetId.makeFromPath(path).map(_.toString).getOrElse("unknown-asset-id")
+
+    def checkIsImageIfNeeded(path: file.Path) = {
+      val shouldNotCheckImages = ZIO.succeed(!imagesOnly)
+      shouldNotCheckImages || FileFilters.isImage(path)
+    }
+
+    FileFilters.isNonHiddenRegularFile(path) &&
+    checkIsImageIfNeeded(path) &&
+    Files
+      .list(path.parent.orNull)
+      .map(_.filename.toString)
+      .filter(name => name.endsWith(".orig") && name.startsWith(assetId))
+      .runHead
+      .map(_.isEmpty)
+  }
+
+  private def saveReport[A](
+      tmpDir: Path,
+      name: String,
+      report: A,
+    )(implicit encoder: JsonEncoder[A]
+    ): Task[Unit] =
+    Files.createDirectories(tmpDir / "reports") *>
+      Files.deleteIfExists(tmpDir / "reports" / s"$name.json") *>
+      Files.createFile(tmpDir / "reports" / s"$name.json") *>
+      storageService.saveJsonFile(tmpDir / "reports" / s"$name.json", report)
+
+  override def createNeedsTopLeftCorrectionReport(): Task[Unit] =
+    for {
+      _                 <- ZIO.logInfo(s"Checking for top left correction")
+      assetDir          <- storageService.getAssetDirectory()
+      tmpDir            <- storageService.getTempDirectory()
+      projectShortcodes <- projectService.listAllProjects()
+      _                 <-
+        ZIO
+          .foreach(projectShortcodes)(shortcode =>
+            Files
+              .walk(assetDir / shortcode.toString)
+              .mapZIOPar(8)(imageService.needsTopLeftCorrection)
+              .filter(identity)
+              .runHead
+              .map(_.map(_ => shortcode))
+          )
+          .map(_.flatten)
+          .map(_.map(_.toString))
+          .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))
+          .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
+    } yield ()
+
+}
+object MaintenanceActionsLive {
+  val layer = ZLayer.fromFunction(MaintenanceActionsLive.apply _)
+}
+
 object MaintenanceActions {
+  def createNeedsOriginalsReport(imagesOnly: Boolean): ZIO[MaintenanceActions, Throwable, Unit] =
+    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsOriginalsReport(imagesOnly))
+
+  def createNeedsTopLeftCorrectionReport(): ZIO[MaintenanceActions, Throwable, Unit] =
+    ZIO.serviceWithZIO[MaintenanceActions](_.createNeedsTopLeftCorrectionReport())
 
   def applyTopLeftCorrections(projectPath: Path): ZIO[ImageService, Throwable, Int] =
     ZIO.logInfo(s"Starting top left corrections in $projectPath") *>

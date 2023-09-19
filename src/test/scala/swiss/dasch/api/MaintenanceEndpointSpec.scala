@@ -114,7 +114,7 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
           projects <- loadReport("needsOriginals_images_only.json")
         } yield assertTrue(response.status == Status.Accepted, projects == Chunk("0001"))
       },
-      test("should return 204 and create a extended report") {
+      test("should return 204 and create an extended report") {
         val request = Request.get(URL(Root / "maintenance" / "needs-originals").withQueryParams("imagesOnly=false"))
         for {
           response <- MaintenanceEndpointRoutes.app.runZIO(request).logError
@@ -148,6 +148,7 @@ object MaintenanceEndpointSpec extends ZIOSpecDefault {
       FileChecksumServiceLive.layer,
       ImageServiceLive.layer,
       BaseEndpoints.layer,
+      MaintenanceActionsLive.layer,
       MaintenanceEndpoints.layer,
       MaintenanceEndpointsHandler.layer,
       ProjectServiceLive.layer,
