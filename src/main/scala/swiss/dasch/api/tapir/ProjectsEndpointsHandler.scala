@@ -8,8 +8,9 @@ package swiss.dasch.api.tapir
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.ApiProblem
+import swiss.dasch.api.ApiProblem.*
 import swiss.dasch.api.ReportEndpoint.AssetCheckResultResponse
-import swiss.dasch.domain.{ BulkIngestService, ProjectService, ReportService }
+import swiss.dasch.domain.{ BulkIngestService, ProjectService, ProjectShortcode, ReportService }
 import zio.{ ZIO, ZLayer }
 
 final case class ProjectsEndpointsHandler(
@@ -26,7 +27,7 @@ final case class ProjectsEndpointsHandler(
         projectService
           .listAllProjects()
           .mapBoth(
-            _ => ApiProblem.InternalServerError("Something went wrong"),
+            InternalServerError(_),
             list =>
               (list.map(ProjectResponse.make), ContentRange("items", Some(0, list.size), Some(list.size)).toString),
           )
@@ -40,13 +41,13 @@ final case class ProjectsEndpointsHandler(
           .findProject(shortcode)
           .some
           .mapBoth(
-            {
-              case None    => ApiProblem.NotFound(shortcode)
-              case Some(_) => ApiProblem.InternalServerError("Something went wrong")
-            },
+            projectNotFoundOrServerError(_, shortcode),
             _ => ProjectResponse.make(shortcode),
           )
     )
+
+  private def projectNotFoundOrServerError(mayBeError: Option[Throwable], shortcode: ProjectShortcode) =
+    mayBeError.map(InternalServerError(_)).getOrElse(NotFound(shortcode))
 
   val getProjectChecksumReportEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
     .getProjectsChecksumReport
@@ -56,10 +57,7 @@ final case class ProjectsEndpointsHandler(
           .checksumReport(shortcode)
           .some
           .mapBoth(
-            {
-              case None    => ApiProblem.NotFound(shortcode)
-              case Some(e) => ApiProblem.InternalServerError(e)
-            },
+            projectNotFoundOrServerError(_, shortcode),
             AssetCheckResultResponse.make,
           )
     )
