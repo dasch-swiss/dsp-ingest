@@ -48,9 +48,5 @@ object BaseEndpoints {
       oneOfVariant(statusCode(StatusCode.NotFound).and(jsonBody[ApiProblem.NotFound])),
       oneOfVariant(statusCode(StatusCode.ServiceUnavailable).and(jsonBody[ApiProblem.Unhealthy])),
       oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[ApiProblem.Unauthorized])),
-      //    oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[Forbidden])),
-      //    oneOfVariant(statusCode(StatusCode.Conflict).and(jsonBody[Conflict])),
-      //    oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[Unauthorized])),
-      //    oneOfVariant(statusCode(StatusCode.UnprocessableEntity).and(jsonBody[ValidationFailed])),
     )
 }
