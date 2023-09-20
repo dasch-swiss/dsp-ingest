@@ -5,14 +5,15 @@
 
 package swiss.dasch.api
 
-import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
-import swiss.dasch.api.tapir.{ BaseEndpoints, ProjectResponse, ProjectsEndpoints, ProjectsEndpointsHandler }
+import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
+import swiss.dasch.api.tapir.ProjectsEndpointsResponses.ProjectResponse
+import swiss.dasch.api.tapir.{BaseEndpoints, ProjectsEndpoints, ProjectsEndpointsHandler}
 import swiss.dasch.domain.*
 import swiss.dasch.test.SpecConfigurations
-import zio.http.{ Request, Root, Status, URL }
+import zio.http.{Request, Root, Status, URL}
 import zio.json.*
-import zio.test.{ ZIOSpecDefault, assertTrue }
-import zio.{ Chunk, ZIO, http }
+import zio.test.{ZIOSpecDefault, assertTrue}
+import zio.{Chunk, ZIO, http}
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
