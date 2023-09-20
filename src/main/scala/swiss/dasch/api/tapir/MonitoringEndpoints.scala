@@ -11,7 +11,23 @@ import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.infrastructure.Health
+import swiss.dasch.version.BuildInfo
 import zio.*
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+case class InfoEndpointResponse(
+    name: String = BuildInfo.name,
+    version: String = BuildInfo.version,
+    scalaVersion: String = BuildInfo.scalaVersion,
+    sbtVersion: String = BuildInfo.sbtVersion,
+    buildTime: String = BuildInfo.builtAtString,
+    gitCommit: String = BuildInfo.gitCommit,
+  )
+
+object InfoEndpointResponse {
+
+  val instance: InfoEndpointResponse          = InfoEndpointResponse()
+  given code: JsonCodec[InfoEndpointResponse] = DeriveJsonCodec.gen[InfoEndpointResponse]
+}
 
 final case class MonitoringEndpoints(base: BaseEndpoints) {
 
