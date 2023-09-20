@@ -6,7 +6,6 @@
 package swiss.dasch.api.tapir
 
 import sttp.tapir.ztapir.ZServerEndpoint
-import swiss.dasch.api.ApiProblem
 import swiss.dasch.domain.*
 import zio.{ ZIO, ZLayer }
 
