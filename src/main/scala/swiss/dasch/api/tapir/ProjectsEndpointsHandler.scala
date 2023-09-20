@@ -18,7 +18,7 @@ final case class ProjectsEndpointsHandler(
     projectService: ProjectService,
     reportService: ReportService,
     bulkIngestService: BulkIngestService,
-  ) {
+  ) extends HandlerFunctions {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
     .getProjectsEndpoint
@@ -45,9 +45,6 @@ final case class ProjectsEndpointsHandler(
             _ => ProjectResponse.make(shortcode),
           )
     )
-
-  private def projectNotFoundOrServerError(mayBeError: Option[Throwable], shortcode: ProjectShortcode) =
-    mayBeError.map(InternalServerError(_)).getOrElse(NotFound(shortcode))
 
   val getProjectChecksumReportEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
     .getProjectsChecksumReport

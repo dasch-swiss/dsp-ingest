@@ -17,7 +17,7 @@ final case class MaintenanceEndpointsHandler(
     fileChecksumService: FileChecksumService,
     sipiClient: SipiClient,
     imageService: ImageService,
-  ) {
+  ) extends HandlerFunctions {
 
   val applyTopLeftCorrectionEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints
     .applyTopLeftCorrectionEndpoint
@@ -32,11 +32,8 @@ final case class MaintenanceEndpointsHandler(
             .logError
             .forkDaemon
         )
+        .mapError(projectNotFoundOrServerError(_, shortcode))
         .unit
-        .mapError {
-          case None    => ApiProblem.NotFound(shortcode)
-          case Some(e) => ApiProblem.InternalServerError(e)
-        }
     }
 
   val createOriginalsEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints
@@ -53,11 +50,8 @@ final case class MaintenanceEndpointsHandler(
               .logError
               .forkDaemon
           )
+          .mapError(projectNotFoundOrServerError(_, shortcode))
           .unit
-          .mapError {
-            case None    => ApiProblem.NotFound(shortcode)
-            case Some(e) => ApiProblem.InternalServerError(e)
-          }
     )
 
   val needsOriginalsEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints
