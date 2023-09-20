@@ -23,30 +23,32 @@ object MappingEntry {
 
 final case class MaintenanceEndpoints(base: BaseEndpoints) {
 
+  private val maintenance = "maintenance"
+
   val applyTopLeftCorrectionEndpoint = base
     .secureEndpoint
     .post
-    .in("maintenance" / "apply-top-left-correction" / shortcodePathVar)
+    .in(maintenance / "apply-top-left-correction" / shortcodePathVar)
     .out(statusCode(StatusCode.Accepted))
 
   val needsTopLeftCorrectionEndpoint = base
     .secureEndpoint
     .get
-    .in("maintenance" / "needs-top-left-correction")
+    .in(maintenance / "needs-top-left-correction")
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
 
   val createOriginalsEndpoint = base
     .secureEndpoint
     .post
-    .in("maintenance" / "create-originals" / shortcodePathVar)
+    .in(maintenance / "create-originals" / shortcodePathVar)
     .in(jsonBody[Chunk[MappingEntry]])
     .out(statusCode(StatusCode.Accepted))
 
   val needsOriginalsEndpoint = base
     .secureEndpoint
     .get
-    .in("maintenance" / "needs-originals")
+    .in(maintenance / "needs-originals")
     .in(query[Option[Boolean]]("imagesOnly"))
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
