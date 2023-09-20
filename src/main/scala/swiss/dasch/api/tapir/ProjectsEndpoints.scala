@@ -30,29 +30,31 @@ object ProjectResponse {
 
 final case class ProjectsEndpoints(base: BaseEndpoints) {
 
+  private val projects = "projects"
+
   val getProjectsEndpoint = base
     .secureEndpoint
     .get
-    .in("projects")
+    .in(projects)
     .out(jsonBody[Chunk[ProjectResponse]])
     .out(header[String](HeaderNames.ContentRange))
 
   val getProjectByShortcodeEndpoint = base
     .secureEndpoint
     .get
-    .in("projects" / shortcodePathVar)
+    .in(projects / shortcodePathVar)
     .out(jsonBody[ProjectResponse])
 
   val getProjectsChecksumReport = base
     .secureEndpoint
     .get
-    .in("projects" / shortcodePathVar / "checksumreport")
+    .in(projects / shortcodePathVar / "checksumreport")
     .out(jsonBody[AssetCheckResultResponse])
 
   val postBulkIngest = base
     .secureEndpoint
     .post
-    .in("projects" / shortcodePathVar / "bulk-ingest")
+    .in(projects / shortcodePathVar / "bulk-ingest")
     .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
     .out(statusCode(StatusCode.Accepted))
 
