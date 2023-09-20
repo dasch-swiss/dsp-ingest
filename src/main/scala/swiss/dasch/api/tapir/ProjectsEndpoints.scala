@@ -12,11 +12,21 @@ import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem
-import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.api.ReportEndpoint.AssetCheckResultResponse
 import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
 import swiss.dasch.domain.ProjectShortcode
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.schema.{ DeriveSchema, Schema }
 import zio.{ Chunk, ZLayer }
+
+final case class ProjectResponse(id: String)
+
+object ProjectResponse {
+  def make(shortcode: ProjectShortcode): ProjectResponse = ProjectResponse(shortcode.value)
+
+  given schema: Schema[ProjectResponse]   = DeriveSchema.gen[ProjectResponse]
+  given codec: JsonCodec[ProjectResponse] = DeriveJsonCodec.gen[ProjectResponse]
+}
 
 final case class ProjectsEndpoints(base: BaseEndpoints) {
 

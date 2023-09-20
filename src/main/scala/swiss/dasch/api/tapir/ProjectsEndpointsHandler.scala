@@ -8,7 +8,6 @@ package swiss.dasch.api.tapir
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.ApiProblem
-import swiss.dasch.api.ListProjectsEndpoint.ProjectResponse
 import swiss.dasch.api.ReportEndpoint.AssetCheckResultResponse
 import swiss.dasch.domain.{ BulkIngestService, ProjectService, ReportService }
 import zio.{ ZIO, ZLayer }

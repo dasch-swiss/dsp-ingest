@@ -6,7 +6,7 @@
 package swiss.dasch.test
 
 import org.apache.commons.io.FileUtils
-import swiss.dasch.config.Configuration.{ JwtConfig, StorageConfig }
+import swiss.dasch.config.Configuration.{ IngestConfig, JwtConfig, StorageConfig }
 import zio.nio.file.Files
 import zio.{ Layer, ULayer, ZIO, ZLayer }
 
@@ -32,4 +32,6 @@ object SpecConfigurations {
       _       <- ZIO.attemptBlockingIO(FileUtils.copyDirectory(SpecPaths.testFolder.toFile, assetDir.toFile))
     } yield StorageConfig(assetDir.toString, tempDir.toString)
   }
+
+  val ingestConfigLayer = ZLayer.succeed(IngestConfig(2))
 }
