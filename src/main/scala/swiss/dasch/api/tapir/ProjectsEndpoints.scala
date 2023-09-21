@@ -121,6 +121,11 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .in(projects / shortcodePathVar / "bulk-ingest")
     .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
     .out(statusCode(StatusCode.Accepted))
+    .description(
+      "Triggers an ingest on the project with the given shortcode. " +
+        "Currently only supports ingest of images. " +
+        "The files are expected to be in the tmp/<project_shortcode> directory."
+    )
 
   val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest)
 }
