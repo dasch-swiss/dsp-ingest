@@ -30,6 +30,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .post
     .in(maintenance / "apply-top-left-correction" / shortcodePathVar)
     .out(statusCode(StatusCode.Accepted))
+    .tag(maintenance)
 
   val needsTopLeftCorrectionEndpoint = base
     .secureEndpoint
@@ -37,6 +38,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .in(maintenance / "needs-top-left-correction")
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
+    .tag(maintenance)
 
   val createOriginalsEndpoint = base
     .secureEndpoint
@@ -44,6 +46,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .in(maintenance / "create-originals" / shortcodePathVar)
     .in(jsonBody[Chunk[MappingEntry]])
     .out(statusCode(StatusCode.Accepted))
+    .tag(maintenance)
 
   val needsOriginalsEndpoint = base
     .secureEndpoint
@@ -52,6 +55,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .in(query[Option[Boolean]]("imagesOnly"))
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
+    .tag(maintenance)
 
   val endpoints = List(
     applyTopLeftCorrectionEndpoint,

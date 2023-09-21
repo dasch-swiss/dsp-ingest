@@ -102,18 +102,21 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .in(projects)
     .out(jsonBody[Chunk[ProjectResponse]])
     .out(header[String](HeaderNames.ContentRange))
+    .tag(projects)
 
   val getProjectByShortcodeEndpoint = base
     .secureEndpoint
     .get
     .in(projects / shortcodePathVar)
     .out(jsonBody[ProjectResponse])
+    .tag(projects)
 
   val getProjectsChecksumReport = base
     .secureEndpoint
     .get
     .in(projects / shortcodePathVar / "checksumreport")
     .out(jsonBody[AssetCheckResultResponse])
+    .tag(projects)
 
   val postBulkIngest = base
     .secureEndpoint
@@ -124,8 +127,9 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .description(
       "Triggers an ingest on the project with the given shortcode. " +
         "Currently only supports ingest of images. " +
-        "The files are expected to be in the tmp/<project_shortcode> directory."
+        "The files are expected to be in the `tmp/<project_shortcode>` directory."
     )
+    .tag(projects)
 
   val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest)
 }
