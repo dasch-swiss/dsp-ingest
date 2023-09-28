@@ -217,5 +217,5 @@ final case class MaintenanceActionsLive(
     )
 }
 object MaintenanceActionsLive {
-  val layer = ZLayer.fromFunction(MaintenanceActionsLive.apply _)
+  val layer = ZLayer.derive[MaintenanceActionsLive]
 }

@@ -29,5 +29,5 @@ final case class Endpoints(
 }
 
 object Endpoints {
-  val layer = ZLayer.fromFunction(Endpoints.apply _)
+  val layer = ZLayer.derive[Endpoints]
 }

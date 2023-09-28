@@ -37,5 +37,5 @@ case class MonitoringEndpointsHandler(
   val endpoints: List[ZServerEndpoint[Any, Any]] = List(infoEndpoint, healthEndpoint, metricsEndpoint)
 }
 object MonitoringEndpointsHandler {
-  val layer = ZLayer.fromFunction(MonitoringEndpointsHandler.apply _)
+  val layer = ZLayer.derive[MonitoringEndpointsHandler]
 }

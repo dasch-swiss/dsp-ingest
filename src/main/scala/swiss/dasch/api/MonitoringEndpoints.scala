@@ -60,5 +60,5 @@ final case class MonitoringEndpoints(base: BaseEndpoints) {
   val endpoints = List(infoEndpoint, healthEndpoint, metricsEndpoint)
 }
 object MonitoringEndpoints {
-  val layer = ZLayer.fromFunction(MonitoringEndpoints.apply _)
+  val layer = ZLayer.derive[MonitoringEndpoints]
 }

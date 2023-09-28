@@ -174,5 +174,5 @@ object ProjectsEndpoints {
     .description("The shortcode of the project must be an exactly 4 characters long hexadecimal string.")
     .example(ProjectShortcode.from("0001").getOrElse(throw Exception("Invalid shortcode")))
 
-  val layer = ZLayer.fromFunction(ProjectsEndpoints.apply _)
+  val layer = ZLayer.derive[ProjectsEndpoints]
 }

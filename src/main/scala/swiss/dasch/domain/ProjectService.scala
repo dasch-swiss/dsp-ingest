@@ -101,5 +101,5 @@ final case class ProjectServiceLive(
 
 object ProjectServiceLive {
   val layer: ZLayer[AssetInfoService with StorageService with FileChecksumService, Nothing, ProjectService] =
-    ZLayer.fromFunction(ProjectServiceLive.apply _)
+    ZLayer.derive[ProjectServiceLive]
 }

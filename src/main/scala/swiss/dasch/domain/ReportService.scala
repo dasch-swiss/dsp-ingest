@@ -39,5 +39,5 @@ final case class ReportServiceLive(projectService: ProjectService, assetService:
       }
 }
 object ReportServiceLive  {
-  val layer = ZLayer.fromFunction(ReportServiceLive.apply _)
+  val layer = ZLayer.derive[ReportServiceLive]
 }

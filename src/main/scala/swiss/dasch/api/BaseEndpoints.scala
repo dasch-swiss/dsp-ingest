@@ -38,7 +38,7 @@ case class BaseEndpoints(authService: AuthService) {
 
 object BaseEndpoints {
 
-  val layer = ZLayer.fromFunction(BaseEndpoints.apply _)
+  val layer = ZLayer.derive[BaseEndpoints]
 
   val defaultErrorOutputs: EndpointOutput.OneOf[ApiProblem, ApiProblem] =
     oneOf[ApiProblem](

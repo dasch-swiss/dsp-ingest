@@ -66,5 +66,5 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
 }
 
 object MaintenanceEndpoints {
-  val layer = ZLayer.fromFunction(MaintenanceEndpoints.apply _)
+  val layer = ZLayer.derive[MaintenanceEndpoints]
 }
