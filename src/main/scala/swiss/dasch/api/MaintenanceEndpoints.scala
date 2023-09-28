@@ -8,11 +8,11 @@ package swiss.dasch.api
 import sttp.model.StatusCode
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
-import sttp.tapir.ztapir.{statusCode, *}
+import sttp.tapir.ztapir.{ statusCode, * }
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
-import zio.json.{DeriveJsonCodec, JsonCodec}
-import zio.schema.{DeriveSchema, Schema}
-import zio.{Chunk, ZLayer}
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.schema.{ DeriveSchema, Schema }
+import zio.{ Chunk, ZLayer }
 
 final case class MappingEntry(internalFilename: String, originalFilename: String)
 

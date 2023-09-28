@@ -7,7 +7,7 @@ package swiss.dasch.api
 
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.domain.*
-import zio.{ZIO, ZLayer}
+import zio.{ ZIO, ZLayer }
 
 final case class MaintenanceEndpointsHandler(
     maintenanceEndpoints: MaintenanceEndpoints,
