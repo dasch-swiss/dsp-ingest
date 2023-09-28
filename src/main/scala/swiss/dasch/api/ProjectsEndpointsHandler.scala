@@ -68,7 +68,7 @@ final case class ProjectsEndpointsHandler(
       code => bulkIngestService.startBulkIngest(code).logError.forkDaemon *> ZIO.succeed(ProjectResponse.make(code))
     )
 
-  val postExportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
+  val postExportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints
     .postExport
     .serverLogic(_ =>
       shortcode =>
@@ -91,7 +91,7 @@ final case class ProjectsEndpointsHandler(
         } yield response
     )
 
-  val getImportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
+  val getImportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints
     .getImport
     .serverLogic(_ =>
       (shortcode, stream) =>
@@ -108,7 +108,7 @@ final case class ProjectsEndpointsHandler(
           )
     )
 
-  val endpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] =
+  val endpoints: List[ZServerEndpoint[Any, ZioStreams]] =
     List(
       getProjectsEndpoint,
       getProjectByShortcodeEndpoint,
