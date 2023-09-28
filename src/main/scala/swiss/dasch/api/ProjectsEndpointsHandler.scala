@@ -77,10 +77,7 @@ final case class ProjectsEndpointsHandler(
                         .zipProject(shortcode)
                         .some
                         .mapBoth(
-                          {
-                            case Some(err) => InternalServerError(err)
-                            case _         => NotFound(shortcode)
-                          },
+                          projectNotFoundOrServerError(_, shortcode),
                           path =>
                             (
                               s"attachment; filename=export-$shortcode.zip",
