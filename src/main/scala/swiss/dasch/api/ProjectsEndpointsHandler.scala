@@ -9,7 +9,7 @@ import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
-import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError }
 import swiss.dasch.api.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
 import swiss.dasch.domain.*
 import zio.stream.ZStream
@@ -65,27 +65,25 @@ final case class ProjectsEndpointsHandler(
   val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
     .postBulkIngest
     .serverLogic(_ =>
-      code => bulkIngestService.startBulkIngest(code).logError.forkDaemon *> ZIO.succeed(ProjectResponse.make(code))
+      code => bulkIngestService.startBulkIngest(code).logError.forkDaemon.as(ProjectResponse.make(code))
     )
 
   val postExportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints
     .postExport
     .serverLogic(_ =>
       shortcode =>
-        for {
-          response <- projectService
-                        .zipProject(shortcode)
-                        .some
-                        .mapBoth(
-                          projectNotFoundOrServerError(_, shortcode),
-                          path =>
-                            (
-                              s"attachment; filename=export-$shortcode.zip",
-                              "application/zip",
-                              ZStream.fromFile(path.toFile).orDie,
-                            ),
-                        )
-        } yield response
+        projectService
+          .zipProject(shortcode)
+          .some
+          .mapBoth(
+            projectNotFoundOrServerError(_, shortcode),
+            path =>
+              (
+                s"attachment; filename=export-$shortcode.zip",
+                "application/zip",
+                ZStream.fromFile(path.toFile).orDie,
+              ),
+          )
     )
 
   val getImportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints
