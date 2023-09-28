@@ -148,7 +148,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
     .tag(projects)
 
-  val postImport = base
+  val getImport = base
     .secureEndpoint
     .in(projects / shortcodePathVar / "import")
     .in(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
@@ -163,7 +163,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
       getProjectsChecksumReport,
       postBulkIngest,
       postExport,
-      postImport,
+      getImport,
     )
 }
 

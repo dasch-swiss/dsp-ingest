@@ -91,8 +91,8 @@ final case class ProjectsEndpointsHandler(
         } yield response
     )
 
-  val postImportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
-    .postImport
+  val getImportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
+    .getImport
     .serverLogic(_ =>
       (shortcode, stream) =>
         importService
@@ -115,7 +115,7 @@ final case class ProjectsEndpointsHandler(
       getProjectChecksumReportEndpoint,
       postBulkIngestEndpoint,
       postExportEndpoint,
-      postImportEndpoint,
+      getImportEndpoint,
     )
 }
 
