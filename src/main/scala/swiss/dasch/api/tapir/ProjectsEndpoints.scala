@@ -6,19 +6,19 @@
 package swiss.dasch.api.tapir
 
 import sttp.capabilities.zio.ZioStreams
-import sttp.model.{HeaderNames, StatusCode}
-import sttp.tapir.{CodecFormat, EndpointInput}
+import sttp.model.{ HeaderNames, StatusCode }
+import sttp.tapir.{ CodecFormat, EndpointInput }
 import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{AssetCheckResultResponse, ProjectResponse}
-import swiss.dasch.domain.{AssetInfo, ChecksumResult, ProjectShortcode, Report}
-import zio.json.{DeriveJsonCodec, JsonCodec}
-import zio.schema.{DeriveSchema, Schema}
-import zio.{Chunk, ZLayer}
+import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
+import swiss.dasch.domain.{ AssetInfo, ChecksumResult, ProjectShortcode, Report }
+import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.schema.{ DeriveSchema, Schema }
+import zio.{ Chunk, ZLayer }
 
 object ProjectsEndpointsResponses {
   final case class ProjectResponse(id: String)
@@ -91,6 +91,14 @@ object ProjectsEndpointsResponses {
       AssetCheckResultResponse(summary, results)
     }
   }
+
+  case class UploadResponse(status: String = "ok")
+
+  object UploadResponse {
+    given schema: Schema[UploadResponse] = DeriveSchema.gen[UploadResponse]
+
+    given codec: JsonCodec[UploadResponse] = DeriveJsonCodec.gen[UploadResponse]
+  }
 }
 
 final case class ProjectsEndpoints(base: BaseEndpoints) {
@@ -141,8 +149,22 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
     .tag(projects)
 
+  val postImport = base
+    .secureEndpoint
+    .in(projects / shortcodePathVar / "import")
+    .in(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
+    .in(header("Content-Type", "application/zip"))
+    .out(jsonBody[UploadResponse])
+
   val endpoints =
-    List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest, postExport)
+    List(
+      getProjectsEndpoint,
+      getProjectByShortcodeEndpoint,
+      getProjectsChecksumReport,
+      postBulkIngest,
+      postExport,
+      postImport,
+    )
 }
 
 object ProjectsEndpoints {

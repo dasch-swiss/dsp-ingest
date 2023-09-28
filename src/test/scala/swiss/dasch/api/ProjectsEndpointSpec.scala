@@ -8,13 +8,15 @@ package swiss.dasch.api
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
 import swiss.dasch.api.tapir.ProjectsEndpointsResponses.ProjectResponse
 import swiss.dasch.api.tapir.{ BaseEndpoints, ProjectsEndpoints, ProjectsEndpointsHandler }
+import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.*
-import swiss.dasch.test.SpecConfigurations
-import swiss.dasch.test.SpecConstants.Projects.{ existingProject, nonExistentProject }
-import zio.http.{ Body, Request, Root, Status, URL }
+import swiss.dasch.test.{ SpecConfigurations, SpecPaths }
+import swiss.dasch.test.SpecConstants.Projects.{ emptyProject, existingProject, nonExistentProject }
+import zio.http.{ Body, Header, Headers, MediaType, Request, Root, Status, URL }
 import zio.json.*
+import zio.nio.file.Files
 import zio.test.{ ZIOSpecDefault, assertTrue }
-import zio.{ Chunk, ZIO, http }
+import zio.{ Chunk, UIO, ZIO, http }
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -58,8 +60,70 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     )
   }
 
+  private val projectImportSuite = {
+    val validContentTypeHeaders = Headers(Header.ContentType(MediaType.application.zip))
+    val bodyFromZipFile         = Body.fromFile(SpecPaths.testZip.toFile)
+    val nonEmptyChunkBody       = Body.fromFile(SpecPaths.testTextFile.toFile)
+
+    def postImport(
+        shortcode: String | ProjectShortcode,
+        body: Body,
+        headers: Headers,
+      ) = {
+      val url     = URL(Root / "projects" / shortcode.toString / "import")
+      val request = Request.post(body, url).updateHeaders(_ => headers.addHeader("Authorization", "Bearer fakeToken"))
+      executeRequest(request)
+    }
+
+    def validateImportedProjectExists(storageConfig: StorageConfig, shortcode: String | ProjectShortcode)
+        : UIO[Boolean] = {
+      val expectedFiles = List("info", "jp2", "jp2.orig").map("FGiLaT4zzuV-CqwbEDFAFeS." + _)
+      val projectPath   = storageConfig.assetPath / shortcode.toString
+      ZIO.foreach(expectedFiles)(file => Files.exists(projectPath / file)).map(_.forall(identity))
+    }
+
+    suite("POST /projects/{shortcode}/import should")(
+      test("given the shortcode is invalid, return 400")(for {
+        response <- postImport("invalid-shortcode", bodyFromZipFile, validContentTypeHeaders)
+      } yield assertTrue(response.status == Status.BadRequest)),
+      test("given the Content-Type header is invalid/not-present, return correct error")(
+        for {
+          responseNoHeader    <- postImport(existingProject, bodyFromZipFile, Headers.empty)
+          responseWrongHeader <-
+            postImport(emptyProject, bodyFromZipFile, Headers(Header.ContentType(MediaType.application.json)))
+        } yield assertTrue(
+          responseNoHeader.status == Status.BadRequest,
+          responseWrongHeader.status == Status.UnsupportedMediaType,
+        )
+      ),
+      test("given the Body is empty, return 400")(for {
+        response <- postImport(emptyProject, Body.empty, validContentTypeHeaders)
+      } yield assertTrue(response.status == Status.BadRequest)),
+      test("given the Body is a zip, return 200")(
+        for {
+          storageConfig <- ZIO.service[StorageConfig]
+          response      <- postImport(
+                             emptyProject,
+                             bodyFromZipFile,
+                             validContentTypeHeaders,
+                           )
+          importExists  <- Files.isDirectory(storageConfig.assetPath / emptyProject.toString)
+                           && Files.isDirectory(storageConfig.assetPath / emptyProject.toString / "fg")
+        } yield assertTrue(response.status == Status.Ok, importExists)
+      ),
+      test("given the Body is not a zip, will return 400") {
+        for {
+          storageConfig      <- ZIO.service[StorageConfig]
+          response           <- postImport(emptyProject, nonEmptyChunkBody, validContentTypeHeaders)
+          importDoesNotExist <- validateImportedProjectExists(storageConfig, emptyProject).map(!_)
+        } yield assertTrue(response.status == Status.BadRequest, importDoesNotExist)
+      },
+    )
+  }
+
   val spec = suite("ProjectsEndpoint")(
     projectExportSuite,
+    projectImportSuite,
     test("GET /projects should list non-empty project in test folders") {
       val req = Request.get(URL(Root / "projects")).addHeader("Authorization", "Bearer fakeToken")
       for {
@@ -77,6 +141,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     BulkIngestServiceLive.layer,
     FileChecksumServiceLive.layer,
     ImageServiceLive.layer,
+    ImportServiceLive.layer,
     ProjectServiceLive.layer,
     ProjectsEndpoints.layer,
     ProjectsEndpointsHandler.layer,

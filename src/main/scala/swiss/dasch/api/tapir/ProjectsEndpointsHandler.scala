@@ -5,20 +5,22 @@
 
 package swiss.dasch.api.tapir
 
+import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.ApiProblem.*
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse }
-import swiss.dasch.domain.{ BulkIngestService, ProjectService, ProjectShortcode, ReportService }
+import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
+import swiss.dasch.domain.*
 import zio.stream.ZStream
-import zio.{ ZIO, ZLayer }
+import zio.{ ZIO, ZLayer, stream }
 
 final case class ProjectsEndpointsHandler(
+    bulkIngestService: BulkIngestService,
+    importService: ImportService,
     projectEndpoints: ProjectsEndpoints,
     projectService: ProjectService,
     reportService: ReportService,
-    bulkIngestService: BulkIngestService,
   ) extends HandlerFunctions {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints
@@ -89,6 +91,23 @@ final case class ProjectsEndpointsHandler(
         } yield response
     )
 
+  val postImportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
+    .postImport
+    .serverLogic(_ =>
+      (shortcode, stream) =>
+        importService
+          .importZipStream(shortcode, stream.orDie)
+          .mapBoth(
+            {
+              case IoError(e)       => InternalServerError(s"Import of project ${shortcode.value} failed", e)
+              case EmptyFile        => BadRequest.invalidBody("The uploaded file is empty")
+              case NoZipFile        => BadRequest.invalidBody("The uploaded file is not a zip file")
+              case InvalidChecksums => BadRequest.invalidBody("The uploaded file contains invalid checksums")
+            },
+            _ => swiss.dasch.api.tapir.ProjectsEndpointsResponses.UploadResponse(),
+          )
+    )
+
   val endpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] =
     List(
       getProjectsEndpoint,
@@ -96,9 +115,10 @@ final case class ProjectsEndpointsHandler(
       getProjectChecksumReportEndpoint,
       postBulkIngestEndpoint,
       postExportEndpoint,
+      postImportEndpoint,
     )
 }
 
 object ProjectsEndpointsHandler {
-  val layer = ZLayer.fromFunction(ProjectsEndpointsHandler.apply _)
+  val layer = ZLayer.derive[ProjectsEndpointsHandler]
 }
