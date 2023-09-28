@@ -21,14 +21,7 @@ object IngestApiServer {
     .customiseInterceptors
     .metricsInterceptor(ZioMetrics.default[Task]().metricsInterceptor())
     .corsInterceptor(
-      CORSInterceptor.customOrThrow(
-        CORSConfig
-          .default
-          .copy(
-            allowedOrigin = AllowedOrigin.All
-          )
-          .exposeAllHeaders
-      )
+      CORSInterceptor.customOrThrow(CORSConfig.default.copy(allowedOrigin = AllowedOrigin.All).exposeAllHeaders)
     )
     .options
 
