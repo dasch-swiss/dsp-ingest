@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
-import swiss.dasch.api.ApiProblem
-import swiss.dasch.api.ApiProblem.*
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
+import swiss.dasch.api.*
+import swiss.dasch.api.ApiProblem.{ BadRequest, InternalServerError, NotFound }
+import swiss.dasch.api.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
 import swiss.dasch.domain.*
 import zio.stream.ZStream
 import zio.{ ZIO, ZLayer, stream }
@@ -104,7 +104,7 @@ final case class ProjectsEndpointsHandler(
               case NoZipFile        => BadRequest.invalidBody("The uploaded file is not a zip file")
               case InvalidChecksums => BadRequest.invalidBody("The uploaded file contains invalid checksums")
             },
-            _ => swiss.dasch.api.tapir.ProjectsEndpointsResponses.UploadResponse(),
+            _ => UploadResponse(),
           )
     )
 

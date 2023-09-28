@@ -3,18 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.capabilities.zio.ZioStreams
 import sttp.model.{ HeaderNames, StatusCode }
-import sttp.tapir.{ CodecFormat, EndpointInput }
 import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
-import swiss.dasch.api.ApiProblem
-import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
+import sttp.tapir.{ CodecFormat, EndpointInput }
+import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
+import swiss.dasch.api.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse, UploadResponse }
 import swiss.dasch.domain.{ AssetInfo, ChecksumResult, ProjectShortcode, Report }
 import zio.json.{ DeriveJsonCodec, JsonCodec }
 import zio.schema.{ DeriveSchema, Schema }
@@ -155,6 +154,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .in(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
     .in(header("Content-Type", "application/zip"))
     .out(jsonBody[UploadResponse])
+    .tag(projects)
 
   val endpoints =
     List(

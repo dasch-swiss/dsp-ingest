@@ -6,7 +6,6 @@
 package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
-import swiss.dasch.api.tapir.{ BaseEndpoints, MaintenanceEndpoints, MaintenanceEndpointsHandler, MappingEntry }
 import swiss.dasch.domain.*
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.SipiImageFormat.Jpg

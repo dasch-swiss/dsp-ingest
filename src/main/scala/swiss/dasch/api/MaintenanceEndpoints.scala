@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.model.StatusCode
-import sttp.tapir.json.zio.jsonBody
-import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
-import zio.{ Chunk, ZLayer }
-import sttp.tapir.ztapir.{ statusCode, * }
 import sttp.tapir.generic.auto.*
-import zio.json.{ DeriveJsonCodec, JsonCodec }
-import zio.schema.{ DeriveSchema, Schema }
+import sttp.tapir.json.zio.jsonBody
+import sttp.tapir.ztapir.{statusCode, *}
+import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, Schema}
+import zio.{Chunk, ZLayer}
 
 final case class MappingEntry(internalFilename: String, originalFilename: String)
 

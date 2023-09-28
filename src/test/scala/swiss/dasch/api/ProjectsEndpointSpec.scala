@@ -6,8 +6,7 @@
 package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.ProjectResponse
-import swiss.dasch.api.tapir.{ BaseEndpoints, ProjectsEndpoints, ProjectsEndpointsHandler }
+import ProjectsEndpointsResponses.ProjectResponse
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.*
 import swiss.dasch.test.{ SpecConfigurations, SpecPaths }

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.domain.*
-import zio.{ ZIO, ZLayer }
+import zio.{ZIO, ZLayer}
 
 final case class MaintenanceEndpointsHandler(
     maintenanceEndpoints: MaintenanceEndpoints,

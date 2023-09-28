@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.tapir.ztapir.*
-import swiss.dasch.api.ApiProblem
 import swiss.dasch.infrastructure.HealthCheckService
 import zio.*
 import zio.metrics.connectors.prometheus.PrometheusPublisher

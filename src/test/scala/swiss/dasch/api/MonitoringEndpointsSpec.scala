@@ -6,7 +6,6 @@
 package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
-import swiss.dasch.api.tapir.{ BaseEndpoints, InfoEndpointResponse, MonitoringEndpoints, MonitoringEndpointsHandler }
 import swiss.dasch.infrastructure.{ Health, HealthCheckService, Metrics }
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.version.BuildInfo

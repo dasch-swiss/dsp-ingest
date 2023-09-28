@@ -4,19 +4,43 @@
  */
 
 package swiss.dasch.infrastructure
-
+import sttp.tapir.server.interceptor.cors.CORSConfig.AllowedOrigin
+import sttp.tapir.server.interceptor.cors.{ CORSConfig, CORSInterceptor }
+import sttp.tapir.server.metrics.zio.ZioMetrics
+import sttp.tapir.server.ziohttp
+import sttp.tapir.server.ziohttp.{ ZioHttpInterpreter, ZioHttpServerOptions }
+import swiss.dasch.Endpoints
 import swiss.dasch.config.Configuration.ServiceConfig
 import swiss.dasch.version.BuildInfo
+import zio.*
 import zio.http.*
-import zio.{ URLayer, ZIO, ZLayer }
 
 object IngestApiServer {
 
-  def startup() =
-    ZIO.logInfo(s"Starting ${BuildInfo.name}") *>
-      ZIO.serviceWithZIO[ServiceConfig](c =>
-        ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
+  private val serverOptions = ZioHttpServerOptions
+    .customiseInterceptors
+    .metricsInterceptor(ZioMetrics.default[Task]().metricsInterceptor())
+    .corsInterceptor(
+      CORSInterceptor.customOrThrow(
+        CORSConfig
+          .default
+          .copy(
+            allowedOrigin = AllowedOrigin.All
+          )
+          .exposeAllHeaders
       )
+    )
+    .options
+
+  def startup(): ZIO[ServiceConfig with Server with Endpoints, Nothing, Unit] = for {
+    _         <- ZIO.logInfo(s"Starting ${BuildInfo.name}")
+    endpoints <- ZIO.service[Endpoints]
+    httpApp    = ZioHttpInterpreter(serverOptions).toHttp(endpoints.endpoints)
+    _         <- Server.install(httpApp.withDefaultErrorResponse)
+    _         <- ZIO.serviceWithZIO[ServiceConfig](c =>
+                   ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
+                 )
+  } yield ()
 
   val layer: URLayer[ServiceConfig, Server] = ZLayer
     .service[ServiceConfig]

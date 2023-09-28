@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
-import swiss.dasch.api.ApiProblem
-import swiss.dasch.api.ApiProblem.{ InternalServerError, NotFound }
+import swiss.dasch.api.ApiProblem.{InternalServerError, NotFound}
 import swiss.dasch.domain.ProjectShortcode
 
 trait HandlerFunctions {

@@ -6,7 +6,6 @@
 package swiss.dasch
 
 import swiss.dasch.api.*
-import swiss.dasch.api.tapir.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{ JwtConfig, ServiceConfig, StorageConfig }
 import swiss.dasch.domain.*
@@ -24,7 +23,6 @@ object Main extends ZIOAppDefault {
 
   override val run: ZIO[Any, Any, Nothing] =
     (FileSystemCheck.smokeTestOrDie() *>
-      TarpirServer.startup() *>
       IngestApiServer.startup() *>
       ZIO.never)
       .provide(

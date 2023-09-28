@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.tapir.PublicEndpoint
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
-import swiss.dasch.api.ApiProblem
 import swiss.dasch.infrastructure.Health
 import swiss.dasch.version.BuildInfo
 import zio.*
-import zio.json.{ DeriveJsonCodec, JsonCodec }
+import zio.json.{DeriveJsonCodec, JsonCodec}
+
 case class InfoEndpointResponse(
     name: String = BuildInfo.name,
     version: String = BuildInfo.version,

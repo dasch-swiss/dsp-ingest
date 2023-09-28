@@ -7,7 +7,7 @@ package swiss.dasch
 
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.ZServerEndpoint
-import swiss.dasch.api.tapir.{ MaintenanceEndpointsHandler, MonitoringEndpointsHandler, ProjectsEndpointsHandler }
+import swiss.dasch.api.{MaintenanceEndpointsHandler, MonitoringEndpointsHandler, ProjectsEndpointsHandler}
 import swiss.dasch.version.BuildInfo
 import zio.{ Task, ZLayer }
 

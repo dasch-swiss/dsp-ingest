@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package swiss.dasch.api.tapir
+package swiss.dasch.api
 
 import sttp.model.StatusCode
 import sttp.model.headers.WWWAuthenticateChallenge
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
-import sttp.tapir.{ Codec, EndpointOutput, PublicEndpoint, oneOf, oneOfVariant, statusCode }
-import swiss.dasch.api.tapir.BaseEndpoints.defaultErrorOutputs
-import swiss.dasch.api.{ ApiProblem, AuthService }
+import sttp.tapir.{Codec, EndpointOutput, PublicEndpoint, oneOf, oneOfVariant, statusCode}
+import swiss.dasch.api.BaseEndpoints.defaultErrorOutputs
 import zio.ZLayer
 
 case class UserSession(subject: String)
