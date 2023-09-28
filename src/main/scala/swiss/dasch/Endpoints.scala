@@ -7,7 +7,7 @@ package swiss.dasch
 
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.ZServerEndpoint
-import swiss.dasch.api.tapir.{ MonitoringEndpointsHandler, ProjectsEndpointsHandler, MaintenanceEndpointsHandler }
+import swiss.dasch.api.tapir.{ MaintenanceEndpointsHandler, MonitoringEndpointsHandler, ProjectsEndpointsHandler }
 import swiss.dasch.version.BuildInfo
 import zio.{ Task, ZLayer }
 
@@ -17,13 +17,14 @@ final case class Endpoints(
     private val maintenance: MaintenanceEndpointsHandler,
   ) {
 
-  val endpoints: List[ZServerEndpoint[Any, Any]] = {
+  val endpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] = {
     val api  = monitoring.endpoints ++ projects.endpoints ++ maintenance.endpoints
     val docs = createDocsEndpoints(api)
     api ++ docs
   }
 
-  private def createDocsEndpoints(apiEndpoints: List[ZServerEndpoint[Any, Any]]): List[ZServerEndpoint[Any, Any]] =
+  private def createDocsEndpoints(apiEndpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]])
+      : List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] =
     SwaggerInterpreter().fromServerEndpoints[Task](apiEndpoints, BuildInfo.name, BuildInfo.version)
 }
 

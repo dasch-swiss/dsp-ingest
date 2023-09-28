@@ -5,19 +5,20 @@
 
 package swiss.dasch.api.tapir
 
-import sttp.model.{ HeaderNames, StatusCode }
-import sttp.tapir.EndpointInput
+import sttp.capabilities.zio.ZioStreams
+import sttp.model.{HeaderNames, StatusCode}
+import sttp.tapir.{CodecFormat, EndpointInput}
 import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.tapir.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse }
-import swiss.dasch.domain.{ AssetInfo, ChecksumResult, ProjectShortcode, Report }
-import zio.json.{ DeriveJsonCodec, JsonCodec }
-import zio.schema.{ DeriveSchema, Schema }
-import zio.{ Chunk, ZLayer }
+import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{AssetCheckResultResponse, ProjectResponse}
+import swiss.dasch.domain.{AssetInfo, ChecksumResult, ProjectShortcode, Report}
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, Schema}
+import zio.{Chunk, ZLayer}
 
 object ProjectsEndpointsResponses {
   final case class ProjectResponse(id: String)
@@ -131,7 +132,17 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     )
     .tag(projects)
 
-  val endpoints = List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest)
+  val postExport = base
+    .secureEndpoint
+    .post
+    .in(projects / shortcodePathVar / "export")
+    .out(header[String]("Content-Disposition"))
+    .out(header[String]("Content-Type"))
+    .out(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
+    .tag(projects)
+
+  val endpoints =
+    List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectsChecksumReport, postBulkIngest, postExport)
 }
 
 object ProjectsEndpoints {

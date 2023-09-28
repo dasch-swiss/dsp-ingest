@@ -11,6 +11,7 @@ import swiss.dasch.api.ApiProblem
 import swiss.dasch.api.ApiProblem.*
 import swiss.dasch.api.tapir.ProjectsEndpointsResponses.{ AssetCheckResultResponse, ProjectResponse }
 import swiss.dasch.domain.{ BulkIngestService, ProjectService, ProjectShortcode, ReportService }
+import zio.stream.ZStream
 import zio.{ ZIO, ZLayer }
 
 final case class ProjectsEndpointsHandler(
@@ -65,8 +66,37 @@ final case class ProjectsEndpointsHandler(
       code => bulkIngestService.startBulkIngest(code).logError.forkDaemon *> ZIO.succeed(ProjectResponse.make(code))
     )
 
-  val endpoints: List[ZServerEndpoint[Any, Any]] =
-    List(getProjectsEndpoint, getProjectByShortcodeEndpoint, getProjectChecksumReportEndpoint, postBulkIngestEndpoint)
+  val postExportEndpoint: ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams] = projectEndpoints
+    .postExport
+    .serverLogic(_ =>
+      shortcode =>
+        for {
+          response <- projectService
+                        .zipProject(shortcode)
+                        .some
+                        .mapBoth(
+                          {
+                            case Some(err) => InternalServerError(err)
+                            case _         => NotFound(shortcode)
+                          },
+                          path =>
+                            (
+                              s"attachment; filename=export-$shortcode.zip",
+                              "application/zip",
+                              ZStream.fromFile(path.toFile).orDie,
+                            ),
+                        )
+        } yield response
+    )
+
+  val endpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] =
+    List(
+      getProjectsEndpoint,
+      getProjectByShortcodeEndpoint,
+      getProjectChecksumReportEndpoint,
+      postBulkIngestEndpoint,
+      postExportEndpoint,
+    )
 }
 
 object ProjectsEndpointsHandler {
