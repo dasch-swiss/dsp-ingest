@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - 'main'
+      - "main"
   release:
     types: [published]
 
@@ -12,11 +12,11 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  build-and-test:
-    name: Build and Run Tests
+  compile:
+    name: Compile code and tests
     strategy:
       matrix:
-        java-version: [ 17 ]
+        java-version: [17]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
@@ -30,7 +30,47 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: sbt
       - name: Build and Test
-        run: sbt -v clean coverage test headerCheckAll fmtCheck coverageAggregate
+        run: sbt -v clean compile Test/compile
+  check-header-and-fmt:
+    name: Check copyright headers and formatting
+    needs: compile
+    strategy:
+      matrix:
+        java-version: [17]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+          cache: sbt
+      - name: Build and Test
+        run: sbt -v headerCheckAll fmtCheck
+  build-and-test:
+    name: Run Tests and Coverage
+    needs: compile
+    strategy:
+      matrix:
+        java-version: [17]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+          cache: sbt
+      - name: Build and Test
+        run: sbt -v coverage test coverageAggregate
       - name: Unit Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
@@ -66,7 +106,7 @@ jobs:
       tag: ${{ steps.docker_image_tag.outputs.tag }}
     strategy:
       matrix:
-        java-version: [ 17 ]
+        java-version: [17]
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2
@@ -110,15 +150,14 @@ jobs:
           curl -f -u "${JENKINS_BASIC_AUTH_USER}:${JENKINS_BASIC_AUTH_PASS}" \
                -X POST "${JENKINS_DEV_WEBHOOK}" \
                -d "Service=ingest&Version=${IMAGE_TAG}"
- 
-  send-chat-notification:
-      name: Send google chat notification
-      needs: [publish-docker-image]
-      runs-on: ubuntu-latest
-      if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
-      steps:
-        - name: Send notification to google chat room "DSP releases"
-          uses: lakto/google-chat-action@main
-          with:
-            url: ${{ secrets.GOOGLE_CHAT_DSP_RELEASES_WEBHOOK_URL }}
 
+  send-chat-notification:
+    name: Send google chat notification
+    needs: [publish-docker-image]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
+    steps:
+      - name: Send notification to google chat room "DSP releases"
+        uses: lakto/google-chat-action@main
+        with:
+          url: ${{ secrets.GOOGLE_CHAT_DSP_RELEASES_WEBHOOK_URL }}
