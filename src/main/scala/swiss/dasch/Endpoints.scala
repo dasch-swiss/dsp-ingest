@@ -19,11 +19,11 @@ final case class Endpoints(
 
   val endpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] = {
     val api  = monitoring.endpoints ++ projects.endpoints ++ maintenance.endpoints
-    val docs = createDocsEndpoints(api)
+    val docs = createDocs(api)
     api ++ docs
   }
 
-  private def createDocsEndpoints(apiEndpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]])
+  private def createDocs(apiEndpoints: List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]])
       : List[ZServerEndpoint[Any, sttp.capabilities.zio.ZioStreams]] =
     SwaggerInterpreter().fromServerEndpoints[Task](apiEndpoints, BuildInfo.name, BuildInfo.version)
 }
