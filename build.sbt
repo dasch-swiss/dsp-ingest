@@ -10,15 +10,15 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val tapirVersion                = "1.7.5"
-val zioVersion                  = "2.0.16"
+val zioVersion                  = "2.0.18"
 val zioJsonVersion              = "0.6.2"
 val zioConfigVersion            = "3.0.7"
 val zioLoggingVersion           = "2.1.14"
 val testContainersVersion       = "0.40.15"
-val zioMetricsConnectorsVersion = "2.1.0"
+val zioMetricsConnectorsVersion = "2.2.0"
 val zioMockVersion              = "1.0.0-RC11"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC20"
+val zioPreludeVersion           = "1.0.0-RC21"
 val zioHttpVersion              = "3.0.0-RC2"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
@@ -80,7 +80,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
       "dev.zio"              %% "zio-streams"                       % zioVersion,
       "eu.timepit"           %% "refined"                           % "0.11.0",
-      "commons-io"            % "commons-io"                        % "2.13.0",
+      "commons-io"            % "commons-io"                        % "2.14.0",
       "com.github.jwt-scala" %% "jwt-zio-json"                      % "9.4.4",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
