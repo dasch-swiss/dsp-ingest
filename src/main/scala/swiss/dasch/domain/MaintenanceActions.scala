@@ -118,7 +118,11 @@ final case class MaintenanceActionsLive(
           .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
     } yield ()
 
-  case class ProjectWithBakFiles(id: ProjectShortcode, assetIds: Chunk[AssetId])
+  case class ReportAsset(id: AssetId, dimensions: Dimensions)
+  object ReportAsset                {
+    given codec: JsonCodec[ReportAsset] = DeriveJsonCodec.gen[ReportAsset]
+  }
+  case class ProjectWithBakFiles(id: ProjectShortcode, assetIds: Chunk[ReportAsset])
   object ProjectWithBakFiles        {
     given codec: JsonCodec[ProjectWithBakFiles] = DeriveJsonCodec.gen[ProjectWithBakFiles]
   }
@@ -135,34 +139,46 @@ final case class MaintenanceActionsLive(
       projectShortcodes <- projectService.listAllProjects()
       assetsWithBak     <-
         ZIO
-          .foreach(projectShortcodes)(shortcode =>
+          .foreach(projectShortcodes) { shortcode =>
             Files
               .walk(assetDir / shortcode.toString)
               .flatMapPar(8)(hasBeenTopLeftTransformed)
               .runCollect
-              .map(ProjectWithBakFiles(shortcode, _))
-          )
+              .map { assetIdDimensions =>
+                ProjectWithBakFiles(
+                  shortcode,
+                  assetIdDimensions.map { case (id: AssetId, dim: Dimensions) => ReportAsset(id, dim) },
+                )
+              }
+          }
       report             = ProjectsWithBakfilesReport(assetsWithBak.filter(_.assetIds.nonEmpty))
       _                 <- saveReport(tmpDir, "wasTopLeftCorrectionApplied", report)
       _                 <- ZIO.logInfo(s"Created wasTopLeftCorrectionApplied.json")
     } yield ()
 
-  private def hasBeenTopLeftTransformed(path: Path): ZStream[Any, IOException, AssetId] = {
-    def isBakFromImageAsset(path: Path) = {
-      val bakExt   = ".bak"
-      val filename = path.filename.toString
-      if (!filename.endsWith(bakExt)) {
-        false
-      }
-      else {
-        val derivativeFilename = filename.substring(0, filename.length - bakExt.length)
-        val derivativeFileExt  = FilenameUtils.getExtension(derivativeFilename)
-        SipiImageFormat.allExtensions.contains(derivativeFileExt)
-      }
-    }
+  private def hasBeenTopLeftTransformed(path: Path): ZStream[Any, Throwable, (AssetId, Dimensions)] = {
+    val zioTask: ZIO[Any, Option[Throwable], (AssetId, Dimensions)] = for {
+      // must be a .bak file
+      bakFile           <- ZIO.succeed(path).whenZIO(FileFilters.isBakFile(path)).some
+      // must have an AssetId
+      assetId           <- ZIO.fromOption(AssetId.makeFromPath(bakFile))
+      // must have a corresponding Jpeg2000 derivative
+      bakFilename        = bakFile.filename.toString
+      derivativeFilename = bakFilename.substring(0, bakFilename.length - ".bak".length)
+      derivativeFile     = path.parent.map(_ / derivativeFilename).orNull
+      _                 <- ZIO.fail(None).whenZIO(FileFilters.isJpeg2000(derivativeFile).negate.asSomeError)
+      jpxDerivative      = JpxDerivativeFile.unsafeFrom(derivativeFile)
+      // get the dimensions
+      dimensions        <- imageService.getDimensions(jpxDerivative).asSomeError
+    } yield (assetId, dimensions)
 
-    if (isBakFromImageAsset(path)) ZStream.fromIterable(AssetId.makeFromPath(path))
-    else ZStream.empty
+    ZStream.fromZIOOption(
+      zioTask
+        // None.type errors are just a sign that the path should be ignored. Some.type errors are real errors.
+        .tapSomeError { case Some(e) => ZIO.logError(s"Error while processing $path: $e") }
+        // We have logged real errors above, from here on out ignore all errors so that the stream can continue.
+        .orElseFail(None)
+    )
   }
 
   override def applyTopLeftCorrections(projectPath: Path): Task[Int] =
