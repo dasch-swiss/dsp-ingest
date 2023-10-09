@@ -10,16 +10,18 @@ import swiss.dasch.domain
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import zio.*
-import zio.json.{ EncoderOps, JsonEncoder }
+import zio.json.{ DeriveJsonCodec, EncoderOps, JsonCodec, JsonEncoder }
 import zio.nio.file
 import zio.nio.file.{ Files, Path }
 import zio.stream.{ ZSink, ZStream }
 
 import java.io.IOException
 
+import zio.json.interop.refined._
 trait MaintenanceActions {
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
+  def createWasTopLeftCorrectionAppliedReport(): Task[Unit]
   def applyTopLeftCorrections(projectPath: Path): Task[Int]
   def createOriginals(projectPath: Path, mapping: Map[String, String]): Task[Int]
 }
@@ -115,6 +117,53 @@ final case class MaintenanceActionsLive(
           .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))
           .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
     } yield ()
+
+  case class ProjectWithBakFiles(id: ProjectShortcode, assetIds: Chunk[AssetId])
+  object ProjectWithBakFiles        {
+    given codec: JsonCodec[ProjectWithBakFiles] = DeriveJsonCodec.gen[ProjectWithBakFiles]
+  }
+  case class ProjectsWithBakfilesReport(projects: Chunk[ProjectWithBakFiles])
+  object ProjectsWithBakfilesReport {
+    given codec: JsonCodec[ProjectsWithBakfilesReport] = DeriveJsonCodec.gen[ProjectsWithBakfilesReport]
+  }
+
+  override def createWasTopLeftCorrectionAppliedReport(): Task[Unit] =
+    for {
+      _                 <- ZIO.logInfo(s"Checking where top left correction was applied")
+      assetDir          <- storageService.getAssetDirectory()
+      tmpDir            <- storageService.getTempDirectory()
+      projectShortcodes <- projectService.listAllProjects()
+      assetsWithBak     <-
+        ZIO
+          .foreach(projectShortcodes)(shortcode =>
+            Files
+              .walk(assetDir / shortcode.toString)
+              .flatMapPar(8)(hasBeenTopLeftTransformed)
+              .runCollect
+              .map(ProjectWithBakFiles(shortcode, _))
+          )
+      report             = ProjectsWithBakfilesReport(assetsWithBak.filter(_.assetIds.nonEmpty))
+      _                 <- saveReport(tmpDir, "wasTopLeftCorrectionApplied", report)
+      _                 <- ZIO.logInfo(s"Created wasTopLeftCorrectionApplied.json")
+    } yield ()
+
+  private def hasBeenTopLeftTransformed(path: Path): ZStream[Any, IOException, AssetId] = {
+    def isBakFromImageAsset(path: Path) = {
+      val bakExt   = ".bak"
+      val filename = path.filename.toString
+      if (!filename.endsWith(bakExt)) {
+        false
+      }
+      else {
+        val derivativeFilename = filename.substring(0, filename.length - bakExt.length)
+        val derivativeFileExt  = FilenameUtils.getExtension(derivativeFilename)
+        SipiImageFormat.allExtensions.contains(derivativeFileExt)
+      }
+    }
+
+    if (isBakFromImageAsset(path)) ZStream.fromIterable(AssetId.makeFromPath(path))
+    else ZStream.empty
+  }
 
   override def applyTopLeftCorrections(projectPath: Path): Task[Int] =
     ZIO.logInfo(s"Starting top left corrections in $projectPath") *>
