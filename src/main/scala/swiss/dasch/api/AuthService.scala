@@ -35,7 +35,7 @@ object AuthenticationError       {
   def invalidIssuer(jwtConfig: JwtConfig): AuthenticationError   =
     InvalidIssuer(s"Invalid issuer: expected ${jwtConfig.issuer}")
   def subjectMissing(): AuthenticationError                      =
-    SubjectMissing(s"Subject missing")
+    SubjectMissing(s"Subject is missing.")
 }
 
 final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {

@@ -78,7 +78,7 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
         token  <- tokenWithMissingSubject()
         result <- AuthService.authenticate(token).exit
       } yield assertTrue(
-        result == Exit.fail(NonEmptyChunk(SubjectMissing("Subject missing")))
+        result == Exit.fail(NonEmptyChunk(SubjectMissing("Subject is missing.")))
       )
     },
   ).provide(jwtConfigLayer, AuthServiceLive.layer) @@ TestAspect.withLiveClock
