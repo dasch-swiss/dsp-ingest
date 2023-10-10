@@ -94,27 +94,16 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
       .queryImageFile(path)
       .map(out => out.stdOut.split('\n'))
       .flatMap { lines =>
-        val width: Option[Int Refined Positive] = lines
-          .find(_.startsWith("nx"))
-          .flatMap(_.split('=').lastOption.map(_.trim))
-          .flatMap(_.toIntOption)
-          .flatMap { i =>
-            val w: Either[String, Int Refined Positive] = refineV(i)
-            w.toOption
-          }
-        val height: Option[Int Refined Positive] = lines
-          .find(_.startsWith("ny"))
-          .flatMap(_.split('=').lastOption.map(_.trim))
-          .flatMap(_.toIntOption)
-          .flatMap { i =>
-            val w: Either[String, Int Refined Positive] = refineV(i)
-            w.toOption
-          }
+        def getPositiveInt(key: String): Option[Int Refined Positive] =
+          lines
+            .find(_.startsWith(key))
+            .flatMap(_.split('=').lastOption.map(_.trim))
+            .flatMap(_.toIntOption)
+            .flatMap(i => refineV[Positive](i).toOption)
         val dim = for {
-          w <- width
-          h <- height
-        } yield Dimensions(w, h)
-
+          width  <- getPositiveInt("nx")
+          height <- getPositiveInt("ny")
+        } yield Dimensions(width, height)
         dim match {
           case Some(d) => ZIO.succeed(d)
           case None    => ZIO.fail(new IOException(s"Could not get dimensions from '$path'"))
