@@ -36,7 +36,7 @@ val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-json-zio"          % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-refined"           % "1.2.10"
+  "com.softwaremill.sttp.tapir" %% "tapir-refined"           % "1.2.13"
 )
 val metrics = Seq(
   "dev.zio"                     %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
