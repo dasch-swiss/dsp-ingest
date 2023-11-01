@@ -41,7 +41,7 @@ val tapir = Seq(
 val metrics = Seq(
   "dev.zio"                     %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
   "dev.zio"                     %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-metrics"                 % "1.8.1"
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-metrics"                 % "1.8.4"
 )
 
 lazy val root = (project in file("."))
