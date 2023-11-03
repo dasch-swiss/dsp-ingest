@@ -118,7 +118,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       ),
       test("given the Body is empty, return 400")(for {
         response <- postImport(emptyProject, Body.empty, validContentTypeHeaders)
-        status = response.status
+        status    = response.status
       } yield {
         assertTrue(status == Status.BadRequest)
       }),
