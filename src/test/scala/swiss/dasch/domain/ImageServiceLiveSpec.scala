@@ -20,6 +20,8 @@ import zio.nio.file.{Files, Path}
 import zio.test.*
 import zio.test.Assertion.{equalTo, fails, hasMessage, isSubtype}
 
+import DerivativeFile.JpxDerivativeFile
+
 import java.io.IOException
 
 object ImageServiceLiveSpec extends ZIOSpecDefault {
