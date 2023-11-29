@@ -49,11 +49,11 @@ final case class BulkIngestServiceLive(
       total <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum <- StorageService
                .findInPath(importDir, FileFilters.isImage)
-               .mapZIOPar(config.bulkMaxParallel)(image =>
-                 ingestSingleFile(image, project, mappingFile)
+               .mapZIOPar(config.bulkMaxParallel)(file =>
+                 ingestSingleFile(file, project, mappingFile)
                    .catchNonFatalOrDie(e =>
                      ZIO
-                       .logError(s"Error ingesting image $image: ${e.getMessage}")
+                       .logError(s"Error ingesting image $file: ${e.getMessage}")
                        .as(IngestResult.failed)
                    )
                )
@@ -71,26 +71,26 @@ final case class BulkIngestServiceLive(
     } yield sum
 
   private def ingestSingleFile(
-    imageToIngest: Path,
+    fileToIngest: Path,
     project: ProjectShortcode,
     csv: Path
   ): Task[IngestResult] =
     for {
-      _           <- ZIO.logInfo(s"Ingesting image $imageToIngest")
+      _           <- ZIO.logInfo(s"Ingesting image $fileToIngest")
       simpleAsset <- Asset.makeNew(project)
-      original    <- storage.createOriginalFileInAssetDir(imageToIngest, simpleAsset)
+      original    <- storage.createOriginalFileInAssetDir(fileToIngest, simpleAsset)
       asset <- ZIO
-                 .whenCaseZIO(FileTypes.fromPath(imageToIngest)) {
-                   case FileTypes.ImageFileType => handleImageFile(imageToIngest, original, simpleAsset)
+                 .whenCaseZIO(FileTypes.fromPath(fileToIngest)) {
+                   case FileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
                    case FileTypes.VideoFileType => ZIO.fail(new NotImplementedError("Video files are not supported"))
                    case FileTypes.OtherFileType => ZIO.fail(new NotImplementedError("Other files are not supported"))
                  }
                  .someOrFail(new IllegalArgumentException("Unsupported file type"))
 
       _ <- assetInfo.createAssetInfo(asset)
-      _ <- updateMappingCsv(csv, imageToIngest, asset)
-      _ <- Files.delete(imageToIngest)
-      _ <- ZIO.logInfo(s"Finished ingesting image $imageToIngest")
+      _ <- updateMappingCsv(csv, fileToIngest, asset)
+      _ <- Files.delete(fileToIngest)
+      _ <- ZIO.logInfo(s"Finished ingesting image $fileToIngest")
     } yield IngestResult.success
 
   private def handleImageFile(
