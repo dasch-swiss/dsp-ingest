@@ -52,20 +52,38 @@ final case class SimpleAsset(id: AssetId, belongsToProject: ProjectShortcode) ex
     originalFilename: NonEmptyString,
     original: OriginalFile,
     derivative: JpxDerivativeFile
-  ): ImageAsset =
-    ImageAsset(id, belongsToProject, originalFilename, original, derivative)
+  ): ComplexAsset.ImageAsset =
+    ComplexAsset.ImageAsset(id, belongsToProject, originalFilename, original, derivative)
 }
 
-final case class ImageAsset(
-  id: AssetId,
-  belongsToProject: ProjectShortcode,
-  originalFilename: NonEmptyString,
-  original: OriginalFile,
-  derivative: JpxDerivativeFile
-) extends Asset {
-  def originalInternalFilename: String = original.filename
-  def derivativeFilename: String       = derivative.filename
+sealed trait ComplexAsset extends Asset {
+  def originalFilename: NonEmptyString
+  def original: OriginalFile
+  def derivative: JpxDerivativeFile
+  final def originalInternalFilename: String = original.filename
+  final def derivativeFilename: String       = derivative.filename
 }
+object ComplexAsset {
+  final case class ImageAsset(
+    id: AssetId,
+    belongsToProject: ProjectShortcode,
+    originalFilename: NonEmptyString,
+    original: OriginalFile,
+    derivative: JpxDerivativeFile
+  ) extends ComplexAsset
+
+}
+
+// final case class ImageAsset(
+//   id: AssetId,
+//   belongsToProject: ProjectShortcode,
+//   originalFilename: NonEmptyString,
+//   original: OriginalFile,
+//   derivative: JpxDerivativeFile
+// ) extends Asset {
+//   def originalInternalFilename: String = original.filename
+//   def derivativeFilename: String       = derivative.filename
+// }
 
 def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.makeFromPath(file).map(_ => file)
 
