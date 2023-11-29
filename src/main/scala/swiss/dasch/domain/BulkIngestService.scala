@@ -10,6 +10,7 @@ import zio.{Task, ZIO, ZLayer}
 import zio.nio.file.{Files, Path}
 
 import java.nio.file.StandardOpenOption
+import eu.timepit.refined.types.string.NonEmptyString
 
 trait BulkIngestService {
 
@@ -78,14 +79,14 @@ final case class BulkIngestServiceLive(
       _           <- ZIO.logInfo(s"Ingesting image $imageToIngest")
       simpleAsset <- Asset.makeNew(project)
       original    <- storage.createOriginalFileInAssetDir(imageToIngest, simpleAsset)
-      asset <- handleImageFile(imageToIngest, project, csv)
-                 .whenZIO(FileFilters.isImage(imageToIngest))
-                 .someOrFail(new NotImplementedError("Only images are supported at the moment"))
-      // derivative  <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
-      // imageToIngestFilename <- ZIO
-      //                            .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
-      //                            .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
-      // imageAsset = simpleAsset.makeImageAsset(imageToIngestFilename, original, derivative)
+      asset <- ZIO
+                 .whenCaseZIO(FileTypes.fromPath(imageToIngest)) {
+                   case FileTypes.ImageFileType => handleImageFile(imageToIngest, original, simpleAsset)
+                   case FileTypes.VideoFileType => ZIO.fail(new NotImplementedError("Video files are not supported"))
+                   case FileTypes.OtherFileType => ZIO.fail(new NotImplementedError("Other files are not supported"))
+                 }
+                 .someOrFail(new IllegalArgumentException("Unsupported file type"))
+
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, imageToIngest, asset)
       _ <- Files.delete(imageToIngest)
@@ -94,9 +95,15 @@ final case class BulkIngestServiceLive(
 
   private def handleImageFile(
     imageToIngest: Path,
-    project: ProjectShortcode,
-    csv: Path
-  ): Task[ComplexAsset] = ???
+    original: OriginalFile,
+    simpleAsset: SimpleAsset
+  ): Task[ComplexAsset] = for {
+    derivative <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
+    imageToIngestFilename <- ZIO
+                               .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
+                               .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
+    imageAsset = simpleAsset.makeImageAsset(imageToIngestFilename, original, derivative)
+  } yield imageAsset
 
   private def updateMappingCsv(
     mappingFile: Path,
