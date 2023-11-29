@@ -19,9 +19,9 @@ object FileFilters {
 
   val isImage: FileFilter = hasFileExtension(SipiImageFormat.allExtensions)
 
-  val isVideo: FileFilter = ???
+  val isVideo: FileFilter = hasFileExtension(SipiVideoFormat.allExtensions)
 
-  val isOther: FileFilter = ???
+  val isOther: FileFilter = hasFileExtension(SipiOtherFormat.allExtensions)
 
   val isNonHiddenRegularFile: FileFilter = (path: Path) => Files.isRegularFile(path) && Files.isHidden(path).negate
 
