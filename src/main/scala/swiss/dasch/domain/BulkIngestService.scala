@@ -82,8 +82,10 @@ final case class BulkIngestServiceLive(
       asset <- ZIO
                  .whenCaseZIO(FileTypes.fromPath(fileToIngest)) {
                    case FileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
-                   case FileTypes.VideoFileType => ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   case FileTypes.OtherFileType => ZIO.fail(new NotImplementedError("Other files are not supported yet."))
+                   case FileTypes.VideoFileType =>
+                     ZIO.fail(new NotImplementedError("Video files are not supported yet."))
+                   case FileTypes.OtherFileType =>
+                     ZIO.fail(new NotImplementedError("Other files are not supported yet."))
                  }
                  .someOrFail(new IllegalArgumentException("Unsupported file type."))
 
