@@ -76,21 +76,21 @@ final case class BulkIngestServiceLive(
     csv: Path
   ): Task[IngestResult] =
     for {
-      _           <- ZIO.logInfo(s"Ingesting image $fileToIngest")
+      _           <- ZIO.logInfo(s"Ingesting file $fileToIngest")
       simpleAsset <- Asset.makeNew(project)
       original    <- storage.createOriginalFileInAssetDir(fileToIngest, simpleAsset)
       asset <- ZIO
                  .whenCaseZIO(FileTypes.fromPath(fileToIngest)) {
                    case FileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
-                   case FileTypes.VideoFileType => ZIO.fail(new NotImplementedError("Video files are not supported"))
-                   case FileTypes.OtherFileType => ZIO.fail(new NotImplementedError("Other files are not supported"))
+                   case FileTypes.VideoFileType => ZIO.fail(new NotImplementedError("Video files are not supported yet."))
+                   case FileTypes.OtherFileType => ZIO.fail(new NotImplementedError("Other files are not supported yet."))
                  }
-                 .someOrFail(new IllegalArgumentException("Unsupported file type"))
+                 .someOrFail(new IllegalArgumentException("Unsupported file type."))
 
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
       _ <- Files.delete(fileToIngest)
-      _ <- ZIO.logInfo(s"Finished ingesting image $fileToIngest")
+      _ <- ZIO.logInfo(s"Finished ingesting file $fileToIngest")
     } yield IngestResult.success
 
   private def handleImageFile(
