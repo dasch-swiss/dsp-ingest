@@ -9,12 +9,12 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-val tapirVersion                = "1.8.5"
+val tapirVersion                = "1.9.3"
 val testContainersVersion       = "0.40.15"
 val zioConfigVersion            = "3.0.7"
 val zioHttpVersion              = "3.0.0-RC4"
 val zioJsonVersion              = "0.6.2"
-val zioLoggingVersion           = "2.1.15"
+val zioLoggingVersion           = "2.1.16"
 val zioMetricsConnectorsVersion = "2.2.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
@@ -68,8 +68,8 @@ lazy val root = (project in file("."))
       )
     ),
     libraryDependencies ++= tapir ++ metrics ++ Seq(
-      "com.github.jwt-scala" %% "jwt-zio-json"                      % "9.4.4",
-      "commons-io"            % "commons-io"                        % "2.15.0",
+      "com.github.jwt-scala" %% "jwt-zio-json"                      % "9.4.5",
+      "commons-io"            % "commons-io"                        % "2.15.1",
       "dev.zio"              %% "zio"                               % zioVersion,
       "dev.zio"              %% "zio-config"                        % zioConfigVersion,
       "dev.zio"              %% "zio-config-magnolia"               % zioConfigVersion,
