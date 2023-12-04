@@ -49,14 +49,14 @@ final case class AssetInfo(
 trait AssetInfoService {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
   def getInfoFilePath(asset: AssetRef): UIO[Path]
-  def findByAsset(asset: AssetRef): Task[AssetInfo]
+  def findByAssetRef(asset: AssetRef): Task[AssetInfo]
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: ComplexAsset): Task[Unit]
 }
 object AssetInfoService {
-  def findByAsset(asset: AssetRef): ZIO[AssetInfoService, Throwable, AssetInfo] =
-    ZIO.serviceWithZIO[AssetInfoService](_.findByAsset(asset))
+  def findByAssetRef(asset: AssetRef): ZIO[AssetInfoService, Throwable, AssetInfo] =
+    ZIO.serviceWithZIO[AssetInfoService](_.findByAssetRef(asset))
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): ZIO[AssetInfoService, Throwable, AssetInfo] =
     ZIO.serviceWithZIO[AssetInfoService](_.loadFromFilesystem(infoFile, shortcode))
   def updateAssetInfoForDerivative(derivative: Path): ZIO[AssetInfoService, Throwable, Unit] =
@@ -78,7 +78,7 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
                    }
     } yield assetInfo
 
-  override def findByAsset(asset: AssetRef): Task[AssetInfo] =
+  override def findByAssetRef(asset: AssetRef): Task[AssetInfo] =
     getInfoFilePath(asset).flatMap(parseAssetInfoFile(asset, _))
 
   def getInfoFilePath(asset: AssetRef): UIO[Path] =

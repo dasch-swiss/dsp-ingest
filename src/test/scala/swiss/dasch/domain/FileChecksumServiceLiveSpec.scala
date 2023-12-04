@@ -40,7 +40,7 @@ object FileChecksumServiceLiveSpec extends ZIOSpecDefault {
     },
     test("should verify the checksums of an asset's derivative and original") {
       for {
-        assetInfo      <- AssetInfoService.findByAsset(existingAssetRef)
+        assetInfo      <- AssetInfoService.findByAssetRef(existingAssetRef)
         checksumResult <- FileChecksumService.verifyChecksum(assetInfo)
       } yield assertTrue(checksumResult.forall(_.checksumMatches == true))
     }
