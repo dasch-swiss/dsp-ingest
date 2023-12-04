@@ -18,8 +18,8 @@ object SpecConstants {
   object AssetIds {
     val existingAsset: AssetId = "FGiLaT4zzuV-CqwbEDFAFeS".toAssetId
   }
-  object Assets {
-    val existingAsset: AssetRef = AssetRef(AssetIds.existingAsset, existingProject)
+  object AssetRefs {
+    val existingAssetRef: AssetRef = AssetRef(AssetIds.existingAsset, existingProject)
   }
   extension (s: String) {
     def toProjectShortcode: ProjectShortcode = ProjectShortcode
