@@ -66,13 +66,13 @@ object MaintenanceEndpointsSpec extends ZIOSpecDefault {
         )
       },
       test("should return 204 for a project shortcode and create originals for jp2 and jpx assets") {
-        def doesOrigExist(asset: Asset, format: SipiImageFormat) = StorageService.getAssetDirectory(asset).flatMap {
+        def doesOrigExist(asset: AssetRef, format: SipiImageFormat) = StorageService.getAssetDirectory(asset).flatMap {
           // Since the create original maintenance action is forked into the background
           // we need to wait (i.e. `awaitTrue') for the file to be created.
           assetDir => awaitTrue(Files.exists(assetDir / s"${asset.id}.${format.extension}.orig"))
         }
 
-        def loadAssetInfo(asset: Asset) = StorageService.getAssetDirectory(asset).flatMap {
+        def loadAssetInfo(asset: AssetRef) = StorageService.getAssetDirectory(asset).flatMap {
           // Since the create original maintenance action is forked into the background
           // we need to wait (i.e. `awaitTrue') for the file to be created.
           assetDir => awaitTrue(Files.exists(assetDir / s"${asset.id}.info")) *> AssetInfoService.findByAsset(asset)

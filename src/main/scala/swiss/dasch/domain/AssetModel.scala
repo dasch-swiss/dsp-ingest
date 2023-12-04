@@ -39,16 +39,18 @@ object AssetId {
   given codec: JsonCodec[AssetId] = JsonCodec[String].transformOrFail(AssetId.make, _.toString)
 }
 
-sealed trait Asset {
-  def id: AssetId
-  def belongsToProject: ProjectShortcode
-}
-final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode) extends Asset {}
+final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode)
 
 object AssetRef {
   def makeNew(project: ProjectShortcode): UIO[AssetRef] = AssetId.makeNew.map(id => AssetRef(id, project))
 }
 
+sealed trait Asset {
+  def id: AssetId
+  def belongsToProject: ProjectShortcode
+
+  def ref: AssetRef = AssetRef(id, belongsToProject)
+}
 
 sealed trait ComplexAsset extends Asset {
   def originalFilename: NonEmptyString
