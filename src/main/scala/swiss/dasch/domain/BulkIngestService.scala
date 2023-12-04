@@ -78,7 +78,7 @@ final case class BulkIngestServiceLive(
   ): Task[IngestResult] =
     for {
       _           <- ZIO.logInfo(s"Ingesting file $fileToIngest")
-      simpleAsset <- Asset.makeNew(project)
+      simpleAsset <- AssetRef.makeNew(project)
       original    <- storage.createOriginalFileInAssetDir(fileToIngest, simpleAsset)
       asset <- ZIO
                  .whenCaseZIO(FileTypes.fromPath(fileToIngest)) {

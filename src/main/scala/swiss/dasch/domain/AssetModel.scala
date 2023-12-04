@@ -43,12 +43,12 @@ sealed trait Asset {
   def id: AssetId
   def belongsToProject: ProjectShortcode
 }
+final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode) extends Asset {}
 
-object Asset {
+object AssetRef {
   def makeNew(project: ProjectShortcode): UIO[AssetRef] = AssetId.makeNew.map(id => AssetRef(id, project))
 }
 
-final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode) extends Asset {}
 
 sealed trait ComplexAsset extends Asset {
   def originalFilename: NonEmptyString
