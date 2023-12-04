@@ -42,12 +42,11 @@ final case class BulkIngestServiceLive(
 
   override def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
     for {
-      _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
-      importDir  <- storage.getBulkIngestImportFolder(project)
-      mappingFile = importDir.parent.head / s"mapping-$project.csv"
-      _ <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
-             .whenZIO(Files.exists(mappingFile).negate)
-      total <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
+      _           <- ZIO.logInfo(s"Starting bulk ingest for project $project")
+      importDir   <- storage.getBulkIngestImportFolder(project)
+      mappingFile <- storage.createBulkIngestMappingFile(project)
+      _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
+      total       <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum <- StorageService
                .findInPath(importDir, FileFilters.isImage)
                .mapZIOPar(config.bulkMaxParallel)(file =>
