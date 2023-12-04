@@ -23,9 +23,9 @@ final private case class AssetInfoFileContent(
 }
 private object AssetInfoFileContent {
   def make(
-            asset: Asset,
-            originalChecksum: Sha256Hash,
-            derivativeChecksum: Sha256Hash
+    asset: Asset,
+    originalChecksum: Sha256Hash,
+    derivativeChecksum: Sha256Hash
   ): AssetInfoFileContent =
     AssetInfoFileContent(
       asset.derivativeFilename,

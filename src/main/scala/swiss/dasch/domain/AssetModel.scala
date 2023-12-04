@@ -51,7 +51,7 @@ sealed trait Asset {
   def originalFilename: NonEmptyString
   def original: OriginalFile
   def derivative: DerivativeFile
-  final def ref: AssetRef = AssetRef(id, belongsToProject)
+  final def ref: AssetRef                    = AssetRef(id, belongsToProject)
   final def originalInternalFilename: String = original.filename
   final def derivativeFilename: String       = derivative.filename
 }
@@ -70,8 +70,7 @@ object Asset {
     originalFilename: NonEmptyString,
     original: OriginalFile,
     derivative: JpxDerivativeFile
-  ): Asset.ImageAsset =
-    Asset.ImageAsset(assetRef.id, assetRef.belongsToProject, originalFilename, original, derivative)
+  ): ImageAsset = ImageAsset(assetRef.id, assetRef.belongsToProject, originalFilename, original, derivative)
 }
 
 def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.makeFromPath(file).map(_ => file)
