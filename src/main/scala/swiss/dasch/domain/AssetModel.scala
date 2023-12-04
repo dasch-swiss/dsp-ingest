@@ -15,6 +15,7 @@ import swiss.dasch.infrastructure.Base62
 import zio.json.JsonCodec
 import zio.nio.file.Path
 import zio.{Random, UIO}
+import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 
 opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-_]{4,}$"]
 
@@ -51,7 +52,7 @@ final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode) exten
   def makeImageAsset(
     originalFilename: NonEmptyString,
     original: OriginalFile,
-    derivative: DerivativeFile
+    derivative: JpxDerivativeFile
   ): ComplexAsset.ImageAsset =
     ComplexAsset.ImageAsset(id, belongsToProject, originalFilename, original, derivative)
 }
