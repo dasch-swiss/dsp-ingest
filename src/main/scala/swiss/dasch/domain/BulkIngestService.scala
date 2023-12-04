@@ -98,7 +98,7 @@ final case class BulkIngestServiceLive(
   private def handleImageFile(
     imageToIngest: Path,
     original: OriginalFile,
-    simpleAsset: SimpleAsset
+    simpleAsset: AssetRef
   ): Task[ComplexAsset] = for {
     derivative <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
     imageToIngestFilename <- ZIO
