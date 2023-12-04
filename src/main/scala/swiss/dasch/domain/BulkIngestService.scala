@@ -11,6 +11,7 @@ import zio.nio.file.{Files, Path}
 
 import java.nio.file.StandardOpenOption
 import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.ComplexAsset.ImageAsset
 
 trait BulkIngestService {
 
@@ -98,14 +99,13 @@ final case class BulkIngestServiceLive(
   private def handleImageFile(
     imageToIngest: Path,
     original: OriginalFile,
-    simpleAsset: AssetRef
-  ): Task[ComplexAsset] = for {
+    assetRef: AssetRef
+  ): Task[ImageAsset] = for {
     derivative <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
     imageToIngestFilename <- ZIO
                                .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
                                .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
-    imageAsset = simpleAsset.makeImageAsset(imageToIngestFilename, original, derivative)
-  } yield imageAsset
+  } yield ComplexAsset.makeImageAsset(assetRef, imageToIngestFilename, original, derivative)
 
   private def updateMappingCsv(
     mappingFile: Path,
