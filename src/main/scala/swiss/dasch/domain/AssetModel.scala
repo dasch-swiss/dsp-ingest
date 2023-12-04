@@ -62,7 +62,7 @@ object Asset {
     belongsToProject: ProjectShortcode,
     originalFilename: NonEmptyString,
     original: OriginalFile,
-    derivative: DerivativeFile
+    derivative: JpxDerivativeFile
   ) extends Asset
 
   def makeImageAsset(
