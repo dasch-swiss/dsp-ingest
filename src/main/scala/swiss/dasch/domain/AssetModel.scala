@@ -30,10 +30,9 @@ object AssetId {
 
   def makeFromPath(file: Path): Option[AssetId] = {
     val filename = file.filename.toString
-    filename.contains(".") match {
-      case true  => AssetId.make(filename.substring(0, filename.indexOf("."))).toOption
-      case false => None
-    }
+
+    if (filename.contains(".")) AssetId.make(filename.substring(0, filename.indexOf("."))).toOption
+    else None
   }
 
   given codec: JsonCodec[AssetId] = JsonCodec[String].transformOrFail(AssetId.make, _.toString)
@@ -51,6 +50,7 @@ sealed trait Asset {
   def originalFilename: NonEmptyString
   def original: OriginalFile
   def derivative: DerivativeFile
+
   final def ref: AssetRef                    = AssetRef(id, belongsToProject)
   final def originalInternalFilename: String = original.filename
   final def derivativeFilename: String       = derivative.filename
