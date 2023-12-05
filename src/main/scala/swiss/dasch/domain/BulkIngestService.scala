@@ -54,7 +54,7 @@ final case class BulkIngestServiceLive(
       sum <- StorageService
                .findInPath(importDir, FileFilters.isSupported)
                .mapZIOPar(config.bulkMaxParallel)(file =>
-                 ingestSingleFile(file, project, mappingFile).logError
+                 ingestSingleFile(file, project, mappingFile)
                    .catchNonFatalOrDie(e =>
                      ZIO
                        .logError(s"Error ingesting image $file: ${e.getMessage}")
