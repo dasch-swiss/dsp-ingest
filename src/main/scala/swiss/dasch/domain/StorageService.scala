@@ -85,7 +85,6 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
   override def createBulkIngestMappingFile(project: ProjectShortcode): Task[Path] = for {
     mappingDir <- getBulkIngestImportFolder(project).map(_.parent.head)
     mappingFile = mappingDir / s"mapping-$project.csv"
-    _          <- Files.createDirectories(mappingDir).unlessZIO(Files.exists(mappingDir))
     _ <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
            .unlessZIO(Files.exists(mappingFile))
   } yield mappingFile
