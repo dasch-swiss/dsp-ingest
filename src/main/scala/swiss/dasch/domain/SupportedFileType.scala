@@ -24,6 +24,6 @@ object SupportedFileType {
 
   def fromPath(path: Path): Option[SupportedFileType] = {
     val fileExtension = FilenameUtils.getExtension(path.filename.toString)
-    SupportedFileType.values.find(p = it => it.extensions.contains(fileExtension))
+    SupportedFileType.values.find(_.extensions.contains(fileExtension))
   }
 }
