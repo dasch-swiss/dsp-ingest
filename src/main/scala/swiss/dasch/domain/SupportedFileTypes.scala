@@ -1,0 +1,29 @@
+/*
+ * Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package swiss.dasch.domain
+
+import org.apache.commons.io.FilenameUtils
+import zio.*
+import zio.nio.file.Path
+
+private val archiveExt  = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
+private val audioExt    = Seq("mp3", "wav")
+private val documentExt = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx")
+private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
+
+enum SupportedFileTypes(val extensions: Seq[String]) {
+  case ImageFileType extends SupportedFileTypes(SipiImageFormat.allExtensions)
+  case VideoFileType extends SupportedFileTypes(Seq("mp4"))
+  case OtherFileType extends SupportedFileTypes(archiveExt ++ audioExt ++ documentExt ++ textExt)
+}
+
+object SupportedFileTypes {
+
+  def fromPath(path: Path): Option[SupportedFileTypes] = {
+    val fileExtension = FilenameUtils.getExtension(path.filename.toString)
+    SupportedFileTypes.values.find(p = it => it.extensions.contains(fileExtension))
+  }
+}

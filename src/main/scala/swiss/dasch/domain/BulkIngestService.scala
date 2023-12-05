@@ -5,13 +5,13 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.IngestConfig
-import zio.{Task, ZIO, ZLayer}
+import swiss.dasch.domain.Asset.ImageAsset
 import zio.nio.file.{Files, Path}
+import zio.{Task, ZIO, ZLayer}
 
 import java.nio.file.StandardOpenOption
-import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.Asset.ImageAsset
 import java.io.IOException
 
 trait BulkIngestService {
@@ -82,14 +82,15 @@ final case class BulkIngestServiceLive(
       simpleAsset <- AssetRef.makeNew(project)
       original    <- storage.createOriginalFileInAssetDir(fileToIngest, simpleAsset)
       asset <- ZIO
-                 .whenCaseZIO(FileTypes.fromPath(fileToIngest)) {
-                   case FileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
-                   case FileTypes.VideoFileType =>
+                 .fromOption(SupportedFileTypes.fromPath(fileToIngest))
+                 .orElseFail(new IllegalArgumentException("Unsupported file type."))
+                 .flatMap {
+                   case SupportedFileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
+                   case SupportedFileTypes.VideoFileType =>
                      ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   case FileTypes.OtherFileType =>
+                   case SupportedFileTypes.OtherFileType =>
                      ZIO.fail(new NotImplementedError("Other files are not supported yet."))
                  }
-                 .someOrFail(new IllegalArgumentException("Unsupported file type."))
 
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
