@@ -6,10 +6,10 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
-import org.apache.commons.io.FilenameUtils
 import swiss.dasch.config.Configuration.IngestConfig
 import swiss.dasch.domain.Asset.{OtherAsset, StillImageAsset}
 import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
+import swiss.dasch.domain.PathOps.fileExtension
 import zio.nio.file.{Files, Path}
 import zio.{IO, Task, ZIO, ZLayer}
 
@@ -107,7 +107,7 @@ final case class BulkIngestServiceLive(
   private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef): IO[IOException, Original] = for {
     _               <- ZIO.logInfo(s"Creating original for $file, $assetRef")
     assetDir        <- storage.getAssetDirectory(assetRef)
-    originalPath     = assetDir / s"${assetRef.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    originalPath     = assetDir / s"${assetRef.id}.${file.fileExtension}.orig"
     _               <- storage.copyFile(file, originalPath)
     originalFile     = OriginalFile.unsafeFrom(originalPath)
     originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
@@ -121,17 +121,14 @@ final case class BulkIngestServiceLive(
         .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
 
   private def handleOtherFile(original: Original, assetRef: AssetRef): Task[OtherAsset] = {
-    def createDerivative(original: Original) = {
-      val extension          = FilenameUtils.getExtension(original.originalFilename.toString)
-      val derivativeFileName = s"${assetRef.id}.$extension"
+    def createDerivative(original: Original) =
       for {
         folder        <- storage.getAssetDirectory(assetRef)
-        derivativePath = folder / derivativeFileName
+        derivativePath = folder / s"${assetRef.id}.${original.file.toPath.fileExtension}"
         _ <- storage
                .copyFile(original.file.toPath, derivativePath)
                .tapError(_ => Files.delete(original.file.toPath).ignore)
       } yield OtherDerivativeFile.unsafeFrom(derivativePath)
-    }
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *>
       createDerivative(original).map(derivative => Asset.makeOther(assetRef, original, derivative))
   }

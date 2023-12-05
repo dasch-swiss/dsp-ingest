@@ -5,7 +5,7 @@
 
 package swiss.dasch.domain
 
-import org.apache.commons.io.FilenameUtils
+import swiss.dasch.domain.PathOps.fileExtension
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import zio.*
 import zio.nio.file.{Files, Path}
@@ -32,7 +32,5 @@ object FileFilters {
   def hasFileExtension(extension: String): FileFilter = hasFileExtension(List(extension))
 
   def hasFileExtension(extension: Seq[String]): FileFilter = (path: Path) =>
-    isNonHiddenRegularFile(path) &&
-      ZIO.succeed(extension.contains(FilenameUtils.getExtension(path.filename.toString).toLowerCase))
-
+    isNonHiddenRegularFile(path) && ZIO.succeed(extension.exists(_.equalsIgnoreCase(path.fileExtension)))
 }

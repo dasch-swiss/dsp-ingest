@@ -9,8 +9,8 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.refineV
 import eu.timepit.refined.string.MatchesRegex
 import eu.timepit.refined.types.string.NonEmptyString
-import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
+import swiss.dasch.domain.PathOps.fileExtension
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import swiss.dasch.domain.SupportedFileType.Other
 import swiss.dasch.infrastructure.Base62
@@ -107,7 +107,7 @@ object DerivativeFile {
     def from(file: Path): Option[JpxDerivativeFile] =
       file match {
         case hidden if hidden.filename.toString.startsWith(".") => None
-        case derivative if Jpx.acceptsExtension(FilenameUtils.getExtension(file.filename.toString)) =>
+        case derivative if Jpx.acceptsExtension(file.fileExtension) =>
           hasAssetIdInFilename(derivative).map(JpxDerivativeFile(_))
         case _ => None
       }
@@ -118,7 +118,7 @@ object DerivativeFile {
     def from(file: Path): Option[OtherDerivativeFile] =
       file match {
         case hidden if hidden.filename.toString.startsWith(".") => None
-        case other if Other.extensions.contains(FilenameUtils.getExtension(other.filename.toString)) =>
+        case other if Other.extensions.contains(other.filename.fileExtension) =>
           hasAssetIdInFilename(other).map(OtherDerivativeFile(_))
         case _ => None
       }

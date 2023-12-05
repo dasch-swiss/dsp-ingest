@@ -4,8 +4,7 @@
  */
 
 package swiss.dasch.domain
-
-import org.apache.commons.io.FilenameUtils
+import swiss.dasch.domain.PathOps.fileExtension
 import zio.*
 import zio.nio.file.Path
 
@@ -29,8 +28,6 @@ enum SupportedFileType(val extensions: Seq[String]) {
 
 object SupportedFileType {
 
-  def fromPath(path: Path): Option[SupportedFileType] = {
-    val fileExtension = FilenameUtils.getExtension(path.filename.toString)
-    SupportedFileType.values.find(_.extensions.exists(_.equalsIgnoreCase(fileExtension)))
-  }
+  def fromPath(path: Path): Option[SupportedFileType] =
+    SupportedFileType.values.find(_.extensions.exists(path.fileExtension.equalsIgnoreCase(_)))
 }
