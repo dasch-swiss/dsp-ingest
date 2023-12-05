@@ -14,16 +14,16 @@ private val audioExt    = Seq("mp3", "wav")
 private val documentExt = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx")
 private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
 
-enum SupportedFileTypes(val extensions: Seq[String]) {
-  case ImageFileType extends SupportedFileTypes(SipiImageFormat.allExtensions)
-  case VideoFileType extends SupportedFileTypes(Seq("mp4"))
-  case OtherFileType extends SupportedFileTypes(archiveExt ++ audioExt ++ documentExt ++ textExt)
+enum SupportedFileType(val extensions: Seq[String]) {
+  case ImageFileType extends SupportedFileType(SipiImageFormat.allExtensions)
+  case VideoFileType extends SupportedFileType(Seq("mp4"))
+  case OtherFileType extends SupportedFileType(archiveExt ++ audioExt ++ documentExt ++ textExt)
 }
 
-object SupportedFileTypes {
+object SupportedFileType {
 
-  def fromPath(path: Path): Option[SupportedFileTypes] = {
+  def fromPath(path: Path): Option[SupportedFileType] = {
     val fileExtension = FilenameUtils.getExtension(path.filename.toString)
-    SupportedFileTypes.values.find(p = it => it.extensions.contains(fileExtension))
+    SupportedFileType.values.find(p = it => it.extensions.contains(fileExtension))
   }
 }

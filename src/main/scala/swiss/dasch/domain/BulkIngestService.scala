@@ -84,13 +84,13 @@ final case class BulkIngestServiceLive(
       assetRef <- AssetRef.makeNew(project)
       original <- createOriginalFileInAssetDir(fileToIngest, assetRef)
       asset <- ZIO
-                 .fromOption(SupportedFileTypes.fromPath(fileToIngest))
+                 .fromOption(SupportedFileType.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
                  .flatMap {
-                   case SupportedFileTypes.ImageFileType => handleImageFile(original, assetRef)
-                   case SupportedFileTypes.VideoFileType =>
+                   case SupportedFileType.ImageFileType => handleImageFile(original, assetRef)
+                   case SupportedFileType.VideoFileType =>
                      ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   case SupportedFileTypes.OtherFileType => handleOtherFile(original, assetRef)
+                   case SupportedFileType.OtherFileType => handleOtherFile(original, assetRef)
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
