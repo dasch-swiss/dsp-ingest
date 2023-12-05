@@ -11,7 +11,8 @@ import zio.nio.file.{Files, Path}
 
 import java.nio.file.StandardOpenOption
 import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.ComplexAsset.ImageAsset
+import swiss.dasch.domain.Asset.ImageAsset
+import java.io.IOException
 
 trait BulkIngestService {
 
@@ -42,12 +43,12 @@ final case class BulkIngestServiceLive(
 
   override def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
     for {
-      _          <- ZIO.logInfo(s"Starting bulk ingest for project $project")
-      importDir  <- storage.getBulkIngestImportFolder(project)
-      mappingFile = importDir.parent.head / s"mapping-$project.csv"
-      _ <- (Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative")))
-             .whenZIO(Files.exists(mappingFile).negate)
-      total <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
+      _           <- ZIO.logInfo(s"Starting bulk ingest for project $project")
+      importDir   <- storage.getBulkIngestImportFolder(project)
+      _           <- ZIO.fail(new IOException(s"Import directory '$importDir' does not exist")).unlessZIO(Files.exists(importDir))
+      mappingFile <- storage.createBulkIngestMappingFile(project)
+      _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
+      total       <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum <- StorageService
                .findInPath(importDir, FileFilters.isImage)
                .mapZIOPar(config.bulkMaxParallel)(file =>
@@ -105,12 +106,12 @@ final case class BulkIngestServiceLive(
     imageToIngestFilename <- ZIO
                                .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
                                .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
-  } yield ComplexAsset.makeImageAsset(assetRef, imageToIngestFilename, original, derivative)
+  } yield Asset.makeImageAsset(assetRef, imageToIngestFilename, original, derivative)
 
   private def updateMappingCsv(
     mappingFile: Path,
     imageToIngest: Path,
-    asset: ComplexAsset
+    asset: Asset
   ) =
     ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
       for {
