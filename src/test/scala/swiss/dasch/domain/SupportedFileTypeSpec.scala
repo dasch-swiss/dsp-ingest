@@ -15,9 +15,9 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
 
       val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
       val tables  = Seq("csv", "xls", "xslx")
-      val audio   = Seq("mpeg", "mp3", "wav")
-      val office  = Seq("pdf", "doc", "docx", "ppt", "pptx")
-      val archive = Seq("zip", "tar", "gz", "z", "tar.gz", "tgz", "gzip", "7z")
+      val audio   = Seq("mp3", "mpeg", "wav")
+      val office  = Seq("doc", "docx", "pdf", "ppt", "pptx")
+      val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
 
       val otherFileTypeExtensions = text ++ tables ++ audio ++ office ++ archive
 
@@ -38,7 +38,7 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
       }
     },
     test("Unknown file extensions are not supported") {
-      val sampleUnknown = Seq("iff", "xslt", "odf", "m3u", "mob", "epub")
+      val sampleUnknown = Seq("epub", "iff", "m3u", "mob", "odf", "xslt")
       check(Gen.fromIterable(sampleUnknown)) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).isEmpty)
       }

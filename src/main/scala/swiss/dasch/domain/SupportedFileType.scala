@@ -11,9 +11,9 @@ import zio.nio.file.Path
 
 private val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
 private val tables  = Seq("csv", "xls", "xslx")
-private val audio   = Seq("mpeg", "mp3", "wav")
-private val office  = Seq("pdf", "doc", "docx", "ppt", "pptx")
-private val archive = Seq("zip", "tar", "gz", "z", "tar.gz", "tgz", "gzip", "7z")
+private val audio   = Seq("mp3", "mpeg", "wav")
+private val office  = Seq("doc", "docx", "pdf", "ppt", "pptx")
+private val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
 
 /**
  * Enumeration of supported file types.
