@@ -15,9 +15,9 @@ private val documentExt = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx"
 private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
 
 enum SupportedFileType(val extensions: Seq[String]) {
-  case ImageFileType extends SupportedFileType(SipiImageFormat.allExtensions)
-  case VideoFileType extends SupportedFileType(Seq("mp4"))
-  case OtherFileType extends SupportedFileType(archiveExt ++ audioExt ++ documentExt ++ textExt)
+  case StillImage  extends SupportedFileType(SipiImageFormat.allExtensions)
+  case MovingImage extends SupportedFileType(Seq("mp4"))
+  case Other       extends SupportedFileType(archiveExt ++ audioExt ++ documentExt ++ textExt)
 }
 
 object SupportedFileType {

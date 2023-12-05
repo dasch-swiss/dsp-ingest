@@ -8,7 +8,7 @@ package swiss.dasch.domain
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.config.Configuration.IngestConfig
-import swiss.dasch.domain.Asset.{ImageAsset, OtherAsset}
+import swiss.dasch.domain.Asset.{OtherAsset, StillImageAsset}
 import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
 import zio.nio.file.{Files, Path}
 import zio.{IO, Task, ZIO, ZLayer}
@@ -86,12 +86,11 @@ final case class BulkIngestServiceLive(
       asset <- ZIO
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
-                 .flatMap {it => it match {
-                   case SupportedFileType.ImageFileType => handleImageFile(original, assetRef)
-                   case SupportedFileType.VideoFileType =>
+                 .flatMap {
+                   case SupportedFileType.StillImage => handleImageFile(original, assetRef)
+                   case SupportedFileType.Other      => handleOtherFile(original, assetRef)
+                   case SupportedFileType.MovingImage =>
                      ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   case SupportedFileType.OtherFileType => handleOtherFile(original, assetRef)
-                 }
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
@@ -111,11 +110,11 @@ final case class BulkIngestServiceLive(
     originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
   } yield Original(originalFile, originalFileName)
 
-  private def handleImageFile(original: Original, assetRef: AssetRef): Task[ImageAsset] =
+  private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
     imageService
       .createDerivative(original.file)
       .tapError(_ => Files.delete(original.file.toPath).ignore)
-      .map(derivative => Asset.makeImageAsset(assetRef, original, derivative))
+      .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
 
   private def handleOtherFile(original: Original, assetRef: AssetRef): Task[OtherAsset] = {
     def createDerivative(original: Original) = {
@@ -129,7 +128,7 @@ final case class BulkIngestServiceLive(
                .tapError(_ => Files.delete(original.file.toPath).ignore)
       } yield OtherDerivativeFile.unsafeFrom(derivativePath)
     }
-    createDerivative(original).map(derivative => Asset.makeOtherAsset(assetRef, original, derivative))
+    createDerivative(original).map(derivative => Asset.makeOther(assetRef, original, derivative))
   }
 
   private def updateMappingCsv(

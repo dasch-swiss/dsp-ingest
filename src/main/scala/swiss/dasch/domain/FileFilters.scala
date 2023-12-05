@@ -17,11 +17,11 @@ object FileFilters {
 
   val isJpeg2000: FileFilter = hasFileExtension(Jpx.allExtensions)
 
-  val isImage: FileFilter = hasFileExtension(SupportedFileType.ImageFileType.extensions)
+  val isStillImage: FileFilter = hasFileExtension(SupportedFileType.StillImage.extensions)
 
-  val isVideo: FileFilter = hasFileExtension(SupportedFileType.VideoFileType.extensions)
+  val isMovingImage: FileFilter = hasFileExtension(SupportedFileType.MovingImage.extensions)
 
-  val isOther: FileFilter = hasFileExtension(SupportedFileType.OtherFileType.extensions)
+  val isOther: FileFilter = hasFileExtension(SupportedFileType.Other.extensions)
 
   val isSupported: FileFilter = hasFileExtension(SupportedFileType.values.map(_.extensions).reduce(_ ++ _))
 

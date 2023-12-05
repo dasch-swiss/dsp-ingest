@@ -12,7 +12,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 import swiss.dasch.domain.SipiImageFormat.Jpx
-import swiss.dasch.domain.SupportedFileType.OtherFileType
+import swiss.dasch.domain.SupportedFileType.Other
 import swiss.dasch.infrastructure.Base62
 import zio.json.JsonCodec
 import zio.nio.file.Path
@@ -58,13 +58,12 @@ sealed trait Asset {
 }
 
 object Asset {
-  final case class ImageAsset(ref: AssetRef, original: Original, derivative: JpxDerivativeFile) extends Asset
-  final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile)    extends Asset
+  final case class StillImageAsset(ref: AssetRef, original: Original, derivative: JpxDerivativeFile) extends Asset
+  final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile)         extends Asset
 
-  def makeImageAsset(assetRef: AssetRef, original: Original, derivative: JpxDerivativeFile): ImageAsset =
-    ImageAsset(assetRef, original, derivative)
-
-  def makeOtherAsset(assetRef: AssetRef, original: Original, derivative: DerivativeFile): OtherAsset =
+  def makeStillImage(assetRef: AssetRef, original: Original, derivative: JpxDerivativeFile): StillImageAsset =
+    StillImageAsset(assetRef, original, derivative)
+  def makeOther(assetRef: AssetRef, original: Original, derivative: DerivativeFile): OtherAsset =
     OtherAsset(assetRef, original, derivative)
 }
 
@@ -119,8 +118,8 @@ object DerivativeFile {
     def from(file: Path): Option[OtherDerivativeFile] =
       file match {
         case hidden if hidden.filename.toString.startsWith(".") => None
-        case derivative if OtherFileType.extensions.contains(FilenameUtils.getExtension(file.filename.toString)) =>
-          hasAssetIdInFilename(file).map(OtherDerivativeFile(_))
+        case other if Other.extensions.contains(FilenameUtils.getExtension(other.filename.toString)) =>
+          hasAssetIdInFilename(other).map(OtherDerivativeFile(_))
         case _ => None
       }
     def unsafeFrom(file: Path): OtherDerivativeFile = from(file).getOrElse(throw new Exception("Not a derivative file"))
