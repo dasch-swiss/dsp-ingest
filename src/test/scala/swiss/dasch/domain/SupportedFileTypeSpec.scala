@@ -13,11 +13,11 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
   val spec = suite("SupportedFileTypesSpec")(
     test("All valid extensions for Other are supported") {
 
-      val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
-      val tables  = Seq("csv", "xls", "xslx")
+      val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
       val audio   = Seq("mp3", "mpeg", "wav")
       val office  = Seq("doc", "docx", "pdf", "ppt", "pptx")
-      val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
+      val tables  = Seq("csv", "xls", "xslx")
+      val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
 
       val otherFileTypeExtensions = text ++ tables ++ audio ++ office ++ archive
 

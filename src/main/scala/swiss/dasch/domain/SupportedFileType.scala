@@ -9,11 +9,11 @@ import org.apache.commons.io.FilenameUtils
 import zio.*
 import zio.nio.file.Path
 
-private val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
-private val tables  = Seq("csv", "xls", "xslx")
+private val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
 private val audio   = Seq("mp3", "mpeg", "wav")
 private val office  = Seq("doc", "docx", "pdf", "ppt", "pptx")
-private val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
+private val tables  = Seq("csv", "xls", "xslx")
+private val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
 
 /**
  * Enumeration of supported file types.
