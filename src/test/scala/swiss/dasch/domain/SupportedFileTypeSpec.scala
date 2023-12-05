@@ -12,11 +12,14 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
 
   val spec = suite("SupportedFileTypesSpec")(
     test("All valid extensions for Other are supported") {
-      val archiveExt              = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
-      val audioExt                = Seq("mp3", "wav")
-      val documentExt             = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx")
-      val textExt                 = Seq("csv", "txt", "xml", "xsd", "xsl")
-      val otherFileTypeExtensions = archiveExt ++ audioExt ++ documentExt ++ textExt
+
+      val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
+      val tables  = Seq("csv", "xls", "xslx")
+      val audio   = Seq("mpeg", "mp3", "wav")
+      val office  = Seq("pdf", "doc", "docx", "ppt", "pptx")
+      val archive = Seq("zip", "tar", "gz", "z", "tar.gz", "tgz", "gzip", "7z")
+
+      val otherFileTypeExtensions = text ++ tables ++ audio ++ office ++ archive
 
       check(Gen.fromIterable(otherFileTypeExtensions)) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.Other))
@@ -35,8 +38,8 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
       }
     },
     test("Unknown file extensions are not supported") {
-      val unknownExt = Seq("iff", "xslt", "mpg", "mpeg")
-      check(Gen.fromIterable(unknownExt)) { ext =>
+      val sampleUnknown = Seq("iff", "xslt", "odf", "m3u", "mob", "epub")
+      check(Gen.fromIterable(sampleUnknown)) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).isEmpty)
       }
     }

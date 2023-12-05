@@ -9,10 +9,11 @@ import org.apache.commons.io.FilenameUtils
 import zio.*
 import zio.nio.file.Path
 
-private val archiveExt  = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
-private val audioExt    = Seq("mp3", "wav")
-private val documentExt = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx")
-private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
+private val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
+private val tables  = Seq("csv", "xls", "xslx")
+private val audio   = Seq("mpeg", "mp3", "wav")
+private val office  = Seq("pdf", "doc", "docx", "ppt", "pptx")
+private val archive = Seq("zip", "tar", "gz", "z", "tar.gz", "tgz", "gzip", "7z")
 
 /**
  * Enumeration of supported file types.
@@ -23,7 +24,7 @@ private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
 enum SupportedFileType(val extensions: Seq[String]) {
   case StillImage  extends SupportedFileType(SipiImageFormat.allExtensions)
   case MovingImage extends SupportedFileType(Seq("mp4"))
-  case Other       extends SupportedFileType(archiveExt ++ audioExt ++ documentExt ++ textExt)
+  case Other       extends SupportedFileType(text ++ tables ++ audio ++ office ++ archive)
 }
 
 object SupportedFileType {
