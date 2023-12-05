@@ -52,9 +52,9 @@ final case class BulkIngestServiceLive(
       _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
       total       <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
       sum <- StorageService
-               .findInPath(importDir, FileFilters.isImage)
+               .findInPath(importDir, FileFilters.isSupported)
                .mapZIOPar(config.bulkMaxParallel)(file =>
-                 ingestSingleFile(file, project, mappingFile)
+                 ingestSingleFile(file, project, mappingFile).logError
                    .catchNonFatalOrDie(e =>
                      ZIO
                        .logError(s"Error ingesting image $file: ${e.getMessage}")
@@ -63,13 +63,13 @@ final case class BulkIngestServiceLive(
                )
                .runFold(IngestResult())(_ + _)
       _ <- {
-        val countImages  = sum.success + sum.failed
+        val countAssets  = sum.success + sum.failed
         val countSuccess = sum.success
         val countFailed  = sum.failed
         ZIO.logInfo(
           s"Finished bulk ingest for project $project. " +
-            s"Found $countImages images from $total files. " +
-            s"Ingested $countSuccess successfully and failed $countFailed images (See logs above for more details)."
+            s"Found $countAssets assets from $total files. " +
+            s"Ingested $countSuccess successfully and failed $countFailed assets (See logs above for more details)."
         )
       }
     } yield sum
@@ -86,11 +86,12 @@ final case class BulkIngestServiceLive(
       asset <- ZIO
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
-                 .flatMap {
+                 .flatMap {it => it match {
                    case SupportedFileType.ImageFileType => handleImageFile(original, assetRef)
                    case SupportedFileType.VideoFileType =>
                      ZIO.fail(new NotImplementedError("Video files are not supported yet."))
                    case SupportedFileType.OtherFileType => handleOtherFile(original, assetRef)
+                 }
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)

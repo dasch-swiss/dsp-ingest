@@ -17,11 +17,13 @@ object FileFilters {
 
   val isJpeg2000: FileFilter = hasFileExtension(Jpx.allExtensions)
 
-  val isImage: FileFilter = hasFileExtension(SipiImageFormat.allExtensions)
+  val isImage: FileFilter = hasFileExtension(SupportedFileType.ImageFileType.extensions)
 
-  val isVideo: FileFilter = hasFileExtension(SipiVideoFormat.allExtensions)
+  val isVideo: FileFilter = hasFileExtension(SupportedFileType.VideoFileType.extensions)
 
-  val isOther: FileFilter = hasFileExtension(SipiOtherFormat.allExtensions)
+  val isOther: FileFilter = hasFileExtension(SupportedFileType.OtherFileType.extensions)
+
+  val isSupported: FileFilter = hasFileExtension(SupportedFileType.values.map(_.extensions).reduce(_ ++ _))
 
   val isNonHiddenRegularFile: FileFilter = (path: Path) => Files.isRegularFile(path) && Files.isHidden(path).negate
 
@@ -29,7 +31,7 @@ object FileFilters {
 
   def hasFileExtension(extension: String): FileFilter = hasFileExtension(List(extension))
 
-  def hasFileExtension(extension: List[String]): FileFilter = (path: Path) =>
+  def hasFileExtension(extension: Seq[String]): FileFilter = (path: Path) =>
     isNonHiddenRegularFile(path) &&
       ZIO.succeed(extension.contains(FilenameUtils.getExtension(path.filename.toString).toLowerCase))
 
