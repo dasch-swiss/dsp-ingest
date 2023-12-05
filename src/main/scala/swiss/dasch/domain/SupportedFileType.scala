@@ -24,7 +24,7 @@ private val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
 enum SupportedFileType(val extensions: Seq[String]) {
   case StillImage  extends SupportedFileType(SipiImageFormat.allExtensions)
   case MovingImage extends SupportedFileType(Seq("mp4"))
-  case Other       extends SupportedFileType(text ++ tables ++ audio ++ office ++ archive)
+  case Other       extends SupportedFileType(archive ++ audio ++ office ++ tables ++ text)
 }
 
 object SupportedFileType {
