@@ -14,6 +14,12 @@ private val audioExt    = Seq("mp3", "wav")
 private val documentExt = Seq("doc", "docx", "pdf", "ppt", "pptx", "xls", "xlsx")
 private val textExt     = Seq("csv", "txt", "xml", "xsd", "xsl")
 
+/**
+ * Enumeration of supported file types.
+ * See also https://docs.dasch.swiss/2023.11.02/DSP-API/01-introduction/file-formats/
+ *
+ * @param extensions the file extensions of the supported file types.
+ */
 enum SupportedFileType(val extensions: Seq[String]) {
   case StillImage  extends SupportedFileType(SipiImageFormat.allExtensions)
   case MovingImage extends SupportedFileType(Seq("mp4"))
