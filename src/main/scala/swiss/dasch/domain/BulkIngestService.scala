@@ -6,13 +6,15 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import org.apache.commons.io.FilenameUtils
 import swiss.dasch.config.Configuration.IngestConfig
-import swiss.dasch.domain.Asset.ImageAsset
+import swiss.dasch.domain.Asset.{ImageAsset, OtherAsset}
+import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
 import zio.nio.file.{Files, Path}
-import zio.{Task, ZIO, ZLayer}
+import zio.{IO, Task, ZIO, ZLayer}
 
+import java.io.{FileNotFoundException, IOException}
 import java.nio.file.StandardOpenOption
-import java.io.IOException
 
 trait BulkIngestService {
 
@@ -78,36 +80,56 @@ final case class BulkIngestServiceLive(
     csv: Path
   ): Task[IngestResult] =
     for {
-      _           <- ZIO.logInfo(s"Ingesting file $fileToIngest")
-      simpleAsset <- AssetRef.makeNew(project)
-      original    <- storage.createOriginalFileInAssetDir(fileToIngest, simpleAsset)
+      _        <- ZIO.logInfo(s"Ingesting file $fileToIngest")
+      assetRef <- AssetRef.makeNew(project)
+      original <- createOriginalFileInAssetDir(fileToIngest, assetRef)
       asset <- ZIO
                  .fromOption(SupportedFileTypes.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
                  .flatMap {
-                   case SupportedFileTypes.ImageFileType => handleImageFile(fileToIngest, original, simpleAsset)
+                   case SupportedFileTypes.ImageFileType => handleImageFile(original, assetRef)
                    case SupportedFileTypes.VideoFileType =>
                      ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   case SupportedFileTypes.OtherFileType =>
-                     ZIO.fail(new NotImplementedError("Other files are not supported yet."))
+                   case SupportedFileTypes.OtherFileType => handleOtherFile(original, assetRef)
                  }
-
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
       _ <- Files.delete(fileToIngest)
       _ <- ZIO.logInfo(s"Finished ingesting file $fileToIngest")
     } yield IngestResult.success
 
-  private def handleImageFile(
-    imageToIngest: Path,
-    original: OriginalFile,
-    assetRef: AssetRef
-  ): Task[ImageAsset] = for {
-    derivative <- imageService.createDerivative(original).tapError(_ => Files.delete(original.toPath).ignore)
-    imageToIngestFilename <- ZIO
-                               .fromEither(NonEmptyString.from(imageToIngest.filename.toString))
-                               .orElseFail(new IllegalArgumentException("Image filename must not be empty"))
-  } yield Asset.makeImageAsset(assetRef, imageToIngestFilename, original, derivative)
+  private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef): IO[IOException, Original] = for {
+    _ <- ZIO.logInfo(s"Creating original from $file, $assetRef")
+    _ <- ZIO
+           .fail(new FileNotFoundException(s"File $file is not a regular file"))
+           .whenZIO(FileFilters.isNonHiddenRegularFile(file).negate)
+    assetDir        <- storage.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+    originalPath     = assetDir / s"${assetRef.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
+    _               <- storage.copyFile(file, originalPath)
+    originalFile     = OriginalFile.unsafeFrom(originalPath)
+    originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
+  } yield Original(originalFile, originalFileName)
+
+  private def handleImageFile(original: Original, assetRef: AssetRef): Task[ImageAsset] =
+    imageService
+      .createDerivative(original.file)
+      .tapError(_ => Files.delete(original.file.toPath).ignore)
+      .map(derivative => Asset.makeImageAsset(assetRef, original, derivative))
+
+  private def handleOtherFile(original: Original, assetRef: AssetRef): Task[OtherAsset] = {
+    def createDerivative(original: Original) = {
+      val extension          = FilenameUtils.getExtension(original.originalFilename.toString)
+      val derivativeFileName = s"${assetRef.id}.$extension"
+      for {
+        folder        <- storage.getAssetDirectory(assetRef)
+        derivativePath = folder / derivativeFileName
+        _ <- storage
+               .copyFile(original.file.toPath, derivativePath)
+               .tapError(_ => Files.delete(original.file.toPath).ignore)
+      } yield OtherDerivativeFile.unsafeFrom(derivativePath)
+    }
+    createDerivative(original).map(derivative => Asset.makeOtherAsset(assetRef, original, derivative))
+  }
 
   private def updateMappingCsv(
     mappingFile: Path,
@@ -120,7 +142,7 @@ final case class BulkIngestServiceLive(
         imageToIngestRelativePath = importDir.relativize(imageToIngest)
         _ <- Files.writeLines(
                mappingFile,
-               List(s"$imageToIngestRelativePath,${asset.derivativeFilename}"),
+               List(s"$imageToIngestRelativePath,${asset.derivative.filename}"),
                openOptions = Set(StandardOpenOption.APPEND)
              )
       } yield ()
