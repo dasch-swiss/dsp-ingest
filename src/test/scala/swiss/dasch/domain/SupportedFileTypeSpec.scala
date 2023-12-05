@@ -9,6 +9,7 @@ import zio.nio.file.Path
 import zio.test.{Gen, ZIOSpecDefault, assertTrue, check}
 
 object SupportedFileTypeSpec extends ZIOSpecDefault {
+  private def withUpperCase(lower: Seq[String]): Seq[String] = lower ++ lower.map(_.toUpperCase)
 
   val spec = suite("SupportedFileTypesSpec")(
     test("All valid extensions for Other are supported") {
@@ -20,26 +21,25 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
       val text    = Seq("odd", "rng", "txt", "xml", "xsd", "xsl")
 
       val otherFileTypeExtensions = text ++ tables ++ audio ++ office ++ archive
-
-      check(Gen.fromIterable(otherFileTypeExtensions)) { ext =>
+      check(Gen.fromIterable(withUpperCase(otherFileTypeExtensions))) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.Other))
       }
     },
     test("All valid extensions for StillImage are supported") {
       val imageExt = Seq("jp2", "jpeg", "jpg", "jpx", "png", "tif", "tiff")
-      check(Gen.fromIterable(imageExt)) { ext =>
+      check(Gen.fromIterable(withUpperCase(imageExt))) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.StillImage))
       }
     },
     test("All valid extensions for MovingImage are supported") {
       val imageExt = Seq("mp4")
-      check(Gen.fromIterable(imageExt)) { ext =>
+      check(Gen.fromIterable(withUpperCase(imageExt))) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.MovingImage))
       }
     },
     test("Unknown file extensions are not supported") {
       val sampleUnknown = Seq("epub", "iff", "m3u", "mob", "odf", "xslt")
-      check(Gen.fromIterable(sampleUnknown)) { ext =>
+      check(Gen.fromIterable(withUpperCase(sampleUnknown))) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).isEmpty)
       }
     }

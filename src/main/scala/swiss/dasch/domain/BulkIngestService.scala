@@ -54,7 +54,7 @@ final case class BulkIngestServiceLive(
       sum <- StorageService
                .findInPath(importDir, FileFilters.isSupported)
                .mapZIOPar(config.bulkMaxParallel)(file =>
-                 ingestSingleFile(file, project, mappingFile)
+                 ingestSingleFile(file, project, mappingFile).logError
                    .catchNonFatalOrDie(e =>
                      ZIO
                        .logError(s"Error ingesting image $file: ${e.getMessage}")
@@ -90,11 +90,13 @@ final case class BulkIngestServiceLive(
       asset <- ZIO
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
-                 .flatMap {
-                   case SupportedFileType.StillImage => handleImageFile(original, assetRef)
-                   case SupportedFileType.Other      => handleOtherFile(original, assetRef)
-                   case SupportedFileType.MovingImage =>
-                     ZIO.fail(new NotImplementedError("Video files are not supported yet."))
+                 .flatMap { it =>
+                   it match {
+                     case SupportedFileType.StillImage => handleImageFile(original, assetRef)
+                     case SupportedFileType.Other      => handleOtherFile(original, assetRef)
+                     case SupportedFileType.MovingImage =>
+                       ZIO.fail(new NotImplementedError("Video files are not supported yet."))
+                   }
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- updateMappingCsv(csv, fileToIngest, asset)
