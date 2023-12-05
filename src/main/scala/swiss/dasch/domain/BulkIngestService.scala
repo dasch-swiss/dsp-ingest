@@ -82,6 +82,10 @@ final case class BulkIngestServiceLive(
     for {
       _        <- ZIO.logInfo(s"Ingesting file $fileToIngest")
       assetRef <- AssetRef.makeNew(project)
+      _ <- ZIO.whenZIO(FileFilters.isNonHiddenRegularFile(fileToIngest).negate)(
+             ZIO.fail(new FileNotFoundException(s"File $fileToIngest is not a regular file"))
+           )
+      _        <- storage.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
       original <- createOriginalFileInAssetDir(fileToIngest, assetRef)
       asset <- ZIO
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
@@ -99,11 +103,8 @@ final case class BulkIngestServiceLive(
     } yield IngestResult.success
 
   private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef): IO[IOException, Original] = for {
-    _ <- ZIO.logInfo(s"Creating original from $file, $assetRef")
-    _ <- ZIO
-           .fail(new FileNotFoundException(s"File $file is not a regular file"))
-           .whenZIO(FileFilters.isNonHiddenRegularFile(file).negate)
-    assetDir        <- storage.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+    _               <- ZIO.logInfo(s"Creating original for $file, $assetRef")
+    assetDir        <- storage.getAssetDirectory(assetRef)
     originalPath     = assetDir / s"${assetRef.id}.${FilenameUtils.getExtension(file.filename.toString)}.orig"
     _               <- storage.copyFile(file, originalPath)
     originalFile     = OriginalFile.unsafeFrom(originalPath)
@@ -111,10 +112,11 @@ final case class BulkIngestServiceLive(
   } yield Original(originalFile, originalFileName)
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
-    imageService
-      .createDerivative(original.file)
-      .tapError(_ => Files.delete(original.file.toPath).ignore)
-      .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
+    ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *>
+      imageService
+        .createDerivative(original.file)
+        .tapError(_ => Files.delete(original.file.toPath).ignore)
+        .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
 
   private def handleOtherFile(original: Original, assetRef: AssetRef): Task[OtherAsset] = {
     def createDerivative(original: Original) = {
@@ -128,7 +130,8 @@ final case class BulkIngestServiceLive(
                .tapError(_ => Files.delete(original.file.toPath).ignore)
       } yield OtherDerivativeFile.unsafeFrom(derivativePath)
     }
-    createDerivative(original).map(derivative => Asset.makeOther(assetRef, original, derivative))
+    ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *>
+      createDerivative(original).map(derivative => Asset.makeOther(assetRef, original, derivative))
   }
 
   private def updateMappingCsv(
