@@ -47,11 +47,11 @@ object AssetRef {
 sealed trait Asset {
   def id: AssetId
   def belongsToProject: ProjectShortcode
-  def ref: AssetRef = AssetRef(id, belongsToProject)
   def originalFilename: NonEmptyString
   def original: OriginalFile
   def derivative: DerivativeFile
 
+  final def ref: AssetRef = AssetRef(id, belongsToProject)
   final def originalInternalFilename: String = original.filename
   final def derivativeFilename: String       = derivative.filename
 }
@@ -70,8 +70,24 @@ object Asset {
     originalFilename: NonEmptyString,
     original: OriginalFile,
     derivative: JpxDerivativeFile
-  ): Asset.ImageAsset =
-    Asset.ImageAsset(assetRef.id, assetRef.belongsToProject, originalFilename, original, derivative)
+  ): ImageAsset =
+    ImageAsset(assetRef.id, assetRef.belongsToProject, originalFilename, original, derivative)
+
+  final case class OtherAsset(
+    id: AssetId,
+    belongsToProject: ProjectShortcode,
+    originalFilename: NonEmptyString,
+    original: OriginalFile,
+    derivative: DerivativeFile
+  ) extends Asset
+
+  def makeOtherAsset(
+    assetRef: AssetRef,
+    originalFilename: NonEmptyString,
+    original: OriginalFile,
+    derivative: DerivativeFile
+  ): OtherAsset =
+    OtherAsset(assetRef.id, assetRef.belongsToProject, originalFilename, original, derivative)
 }
 
 def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.makeFromPath(file).map(_ => file)
