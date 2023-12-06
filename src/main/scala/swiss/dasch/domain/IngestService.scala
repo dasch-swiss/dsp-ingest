@@ -35,10 +35,9 @@ final case class IngestService(
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
                  .orElseFail(new IllegalArgumentException("Unsupported file type."))
                  .flatMap {
-                   case SupportedFileType.StillImage => handleImageFile(original, assetRef)
-                   case SupportedFileType.Other      => handleOtherFile(original, assetRef, assetDir)
-                   case SupportedFileType.MovingImage =>
-                     ZIO.fail(new NotImplementedError("Video files are not supported yet."))
+                   case SupportedFileType.StillImage  => handleImageFile(original, assetRef)
+                   case SupportedFileType.Other       => handleOtherFile(original, assetRef, assetDir)
+                   case SupportedFileType.MovingImage => handleMovingImageFile(original, assetRef, assetDir)
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- storage.delete(fileToIngest)
@@ -64,6 +63,14 @@ final case class IngestService(
         .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
 
   private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
+    ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
+      val fileExtension  = FilenameUtils.getExtension(original.originalFilename.toString)
+      val derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
+      val derivative     = OtherDerivativeFile.unsafeFrom(derivativePath)
+      storage.copyFile(original.file.toPath, derivativePath).as(Asset.makeOther(assetRef, original, derivative))
+    }
+
+  private def handleMovingImageFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
       val fileExtension  = FilenameUtils.getExtension(original.originalFilename.toString)
       val derivativePath = assetDir / s"${assetRef.id}.$fileExtension"

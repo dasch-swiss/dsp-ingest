@@ -95,9 +95,9 @@ object OriginalFile {
 }
 
 sealed trait DerivativeFile(file: Path) {
-  final def toPath: Path     = file
-  final def filename: String = file.filename.toString
-  final def assetId: AssetId = AssetId.makeFromPath(file).head
+  final def toPath: Path             = file
+  final def filename: NonEmptyString = NonEmptyString.unsafeFrom(file.filename.toString)
+  final def assetId: AssetId         = AssetId.makeFromPath(file).head
 }
 
 object DerivativeFile {

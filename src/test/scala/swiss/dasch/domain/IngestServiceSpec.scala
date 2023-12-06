@@ -37,11 +37,11 @@ object IngestServiceSpec extends ZIOSpecDefault {
         info.originalFilename == asset.original.originalFilename,
         info.asset == asset.ref,
         info.original.checksum == checksum,
-        info.original.file.filename.toString == originalFilename,
-        info.original.file.filename.toString == asset.original.internalFilename.toString,
+        info.original.filename.toString == originalFilename,
+        info.original.filename == asset.original.internalFilename,
         info.derivative.checksum == checksum,
-        info.derivative.file.filename.toString == derivativeFilename,
-        info.derivative.file.filename.toString == asset.derivative.filename,
+        info.derivative.filename.toString == derivativeFilename,
+        info.derivative.filename == asset.derivative.filename,
         originalExists,
         derivativeExists
       )

@@ -11,6 +11,7 @@ import eu.timepit.refined.numeric.*
 import eu.timepit.refined.numeric.Greater.greaterValidate
 import swiss.dasch.api.SipiClientMockMethodInvocation.ApplyTopLeftCorrection
 import swiss.dasch.api.{SipiClientMock, SipiClientMockMethodInvocation}
+import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.RefinedHelper.positiveFrom
 import swiss.dasch.test.SpecConfigurations
@@ -19,8 +20,6 @@ import zio.Exit
 import zio.nio.file.{Files, Path}
 import zio.test.*
 import zio.test.Assertion.{equalTo, fails, hasMessage, isSubtype}
-
-import DerivativeFile.JpxDerivativeFile
 
 import java.io.IOException
 
@@ -42,11 +41,12 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           _ <- StorageService.saveJsonFile[AssetInfoFileContent](
                  infoFile,
                  AssetInfoFileContent(
-                   internalFilename = info.derivative.file.filename.toString,
-                   originalInternalFilename = info.original.file.filename.toString,
-                   originalFilename = info.originalFilename.toString,
-                   checksumOriginal = info.original.checksum.toString,
-                   checksumDerivative = "this-should-be-updated"
+                   internalFilename = info.derivative.filename,
+                   originalInternalFilename = info.original.filename,
+                   originalFilename = info.originalFilename,
+                   checksumOriginal = info.original.checksum,
+                   checksumDerivative = // this should not be updated
+                     Sha256Hash.unsafeFrom("3c9194324cc5921bef9a19fc8f9f7874114904cc25d43801cdb9364cfa363412")
                  )
                )
           _                 <- ImageService.applyTopLeftCorrection(image)

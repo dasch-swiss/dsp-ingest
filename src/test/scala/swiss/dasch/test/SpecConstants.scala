@@ -29,7 +29,7 @@ object SpecConstants {
       .make(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
     def toSha256Hash: Sha256Hash = Sha256Hash
-      .make(s)
+      .from(s)
       .fold(err => throw new IllegalArgumentException(err), identity)
     def toNonEmptyString: NonEmptyString =
       NonEmptyString.unsafeFrom(s)
