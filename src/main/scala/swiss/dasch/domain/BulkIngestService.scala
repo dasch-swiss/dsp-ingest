@@ -7,10 +7,11 @@ package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
 import zio.nio.file.{Files, Path}
-import zio.{IO, Task, ZIO, ZLayer}
+import zio.{Cause, IO, Task, UIO, ZIO, ZLayer}
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.FileAttribute
 
 trait BulkIngestService {
 
@@ -40,49 +41,56 @@ final case class BulkIngestServiceLive(
   override def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
     for {
       _           <- ZIO.logInfo(s"Starting bulk ingest for project $project")
-      importDir   <- storage.getBulkIngestImportFolder(project)
+      importDir   <- getImportFolder(project)
       _           <- ZIO.fail(new IOException(s"Import directory '$importDir' does not exist")).unlessZIO(Files.exists(importDir))
-      mappingFile <- storage.createBulkIngestMappingFile(project)
+      mappingFile <- createMappingFile(project, importDir)
       _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
       total       <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
-      sum <- StorageService
-               .findInPath(importDir, FileFilters.isSupported)
-               .mapZIOPar(config.bulkMaxParallel)(file =>
-                 ingestService
-                   .ingestFile(file, project)
-                   .flatMap(asset => updateMappingCsv(mappingFile, file, asset))
-                   .as(IngestResult.success)
-                   .logError
-                   .catchNonFatalOrDie(e =>
-                     ZIO
-                       .logError(s"Error ingesting image $file: ${e.getMessage}")
-                       .as(IngestResult.failed)
-                   )
-               )
-               .runFold(IngestResult())(_ + _)
+      sum <-
+        StorageService
+          .findInPath(importDir, FileFilters.isSupported)
+          .mapZIOPar(config.bulkMaxParallel)(file => ingestFileAndUpdateMapping(project, importDir, mappingFile, file))
+          .runFold(IngestResult())(_ + _)
       _ <- {
         val countAssets  = sum.success + sum.failed
         val countSuccess = sum.success
         val countFailed  = sum.failed
+        val countSkipped = total - countAssets
         ZIO.logInfo(
           s"Finished bulk ingest for project $project. " +
             s"Found $countAssets assets from $total files. " +
-            s"Ingested $countSuccess successfully and failed $countFailed assets (See logs above for more details)."
+            s"Ingested $countSuccess assets successfully, failed $countFailed and skipped $countSkipped files (See logs above for more details)."
         )
       }
     } yield sum
 
-  private def updateMappingCsv(mappingFile: Path, fileToIngest: Path, asset: Asset): IO[IOException, Unit] =
-    ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
-      for {
-        importDir                <- storage.getBulkIngestImportFolder(asset.belongsToProject)
-        imageToIngestRelativePath = importDir.relativize(fileToIngest)
-        _ <- Files.writeLines(
-               mappingFile,
-               List(s"$imageToIngestRelativePath,${asset.derivative.filename}"),
-               openOptions = Set(StandardOpenOption.APPEND)
-             )
-      } yield ()
+  private def getImportFolder(shortcode: ProjectShortcode): UIO[Path] =
+    storage.getTempDirectory().map(_ / "import" / shortcode.toString)
+
+  private def createMappingFile(project: ProjectShortcode, importDir: Path): IO[IOException, Path] = {
+    val mappingFile = importDir.parent.head / s"mapping-$project.csv"
+    ZIO
+      .unlessZIO(Files.exists(mappingFile))(
+        Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative"))
+      )
+      .as(mappingFile)
+  }
+
+  private def ingestFileAndUpdateMapping(project: ProjectShortcode, importDir: Path, mappingFile: Path, file: Path) =
+    ingestService
+      .ingestFile(file, project)
+      .flatMap(asset => updateMappingCsv(asset, file, importDir, mappingFile))
+      .as(IngestResult.success)
+      .catchNonFatalOrDie(e =>
+        ZIO.logErrorCause(s"Error ingesting file $file: ${e.getMessage}", Cause.fail(e)).as(IngestResult.failed)
+      )
+
+  private def updateMappingCsv(asset: Asset, fileToIngest: Path, importDir: Path, csv: Path) =
+    ZIO.logInfo(s"Updating mapping file $csv, $asset") *> {
+      val ingestedFileRelativePath = s"${importDir.relativize(fileToIngest)}"
+      val derivativeFilename       = asset.derivative.filename
+      val line                     = s"$ingestedFileRelativePath,$derivativeFilename"
+      Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 }
 
