@@ -25,7 +25,7 @@ final case class IngestService(
   def ingestFile(fileToIngest: Path, project: ProjectShortcode): Task[Asset] =
     for {
       _ <- ZIO.logInfo(s"Ingesting file $fileToIngest")
-      _ <- ZIO.whenZIO(FileFilters.isSupported(fileToIngest).negate)(
+      _ <- ZIO.unlessZIO(FileFilters.isSupported(fileToIngest))(
              ZIO.fail(new IllegalArgumentException(s"File $fileToIngest is not a supported file."))
            )
       assetRef <- AssetRef.makeNew(project)
