@@ -4,8 +4,8 @@
  */
 
 package swiss.dasch.domain
+
 import swiss.dasch.domain.PathOps.fileExtension
-import zio.*
 import zio.nio.file.Path
 
 private val archive = Seq("7z", "gz", "gzip", "tar", "tar.gz", "tgz", "z", "zip")
