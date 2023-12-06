@@ -31,5 +31,5 @@ enum SupportedFileType(val extensions: Seq[String]) {
 object SupportedFileType {
 
   def fromPath(path: Path): Option[SupportedFileType] =
-    SupportedFileType.values.find(_.extensions.exists(path.fileExtension.equalsIgnoreCase(_)))
+    SupportedFileType.values.find(_.acceptsExtension(path.fileExtension))
 }
