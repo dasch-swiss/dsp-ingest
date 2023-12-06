@@ -33,7 +33,7 @@ object IngestServiceSpec extends ZIOSpecDefault {
         derivativeExists  <- Files.exists(assetDir / derivativeFilename)
       } yield assertTrue(
         asset.belongsToProject == shortcode,
-        info.originalFilename == fileToIngest.filename,
+        info.originalFilename.toString == fileToIngest.filename.toStrin.toStringg,
         info.originalFilename == asset.original.originalFilename,
         info.asset == asset.ref,
         info.original.checksum == checksum,
