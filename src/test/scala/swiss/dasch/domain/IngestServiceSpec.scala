@@ -1,9 +1,52 @@
 package swiss.dasch.domain
 
-import zio.test.{ZIOSpecDefault, assertCompletes}
+import swiss.dasch.api.SipiClientMock
+import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.test.SpecConfigurations
+import zio.ZIO
+import zio.nio.file.Files
+import zio.test.{Spec, ZIOSpecDefault, assertTrue}
 
 object IngestServiceSpec extends ZIOSpecDefault {
-  val spec = suite("IngestServiceSpec")(test("should") {
-    assertCompletes
-  })
+  val spec: Spec[Any, Any] = suite("IngestServiceSpec")(test("should ingest a simple csv file") {
+    val shortcode = ProjectShortcode.unsafeFrom("0001")
+    ZIO.scoped {
+      for {
+        // given
+        tempDir     <- StorageService.createTempDirectoryScoped("test", None)
+        fileToIngest = tempDir / "test.csv"
+        _           <- Files.createFile(fileToIngest) *> Files.writeLines(fileToIngest, List("one,two", "1,2"))
+        checksum    <- FileChecksumService.createSha256Hash(fileToIngest)
+        // when
+        asset <- IngestService.ingestFile(fileToIngest, shortcode)
+        // then
+        info              <- AssetInfoService.findByAssetRef(asset.ref)
+        assetDir          <- StorageService.getAssetDirectory(asset.ref)
+        originalFilename   = s"${asset.id}.csv.orig"
+        derivativeFilename = s"${asset.id}.csv"
+        originalExists    <- Files.exists(assetDir / originalFilename)
+        derivativeExists  <- Files.exists(assetDir / derivativeFilename)
+      } yield assertTrue(
+        asset.belongsToProject == shortcode,
+        info.originalFilename.toString == "test.csv",
+        info.originalFilename == asset.original.originalFilename,
+        info.asset == asset.ref,
+        info.original.checksum == checksum,
+        info.original.file.filename.toString == originalFilename,
+        info.original.file.filename.toString == asset.original.internalFilename.toString,
+        info.derivative.checksum == checksum,
+        info.derivative.file.filename.toString == derivativeFilename,
+        info.derivative.file.filename.toString == asset.derivative.filename,
+        originalExists,
+        derivativeExists
+      )
+    }
+  }).provide(
+    IngestService.layer,
+    StorageServiceLive.layer,
+    ImageServiceLive.layer,
+    SipiClientMock.layer,
+    AssetInfoServiceLive.layer,
+    SpecConfigurations.storageConfigLayer
+  )
 }

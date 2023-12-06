@@ -73,5 +73,9 @@ final case class IngestService(
 }
 
 object IngestService {
+
+  def ingestFile(fileToIngest: Path, project: ProjectShortcode): ZIO[IngestService, Throwable, Asset] =
+    ZIO.serviceWithZIO[IngestService](_.ingestFile(fileToIngest, project))
+
   def layer = ZLayer.derive[IngestService]
 }
