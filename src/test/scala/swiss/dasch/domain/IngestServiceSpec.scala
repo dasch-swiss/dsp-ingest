@@ -13,7 +13,7 @@ import zio.nio.file.Files
 import zio.test.{Spec, ZIOSpecDefault, assertTrue}
 
 object IngestServiceSpec extends ZIOSpecDefault {
-  val spec: Spec[Any, Any] = suite("IngestServiceSpec")(test("should ingest a simple csv file") {
+  val spec: Spec[Any, Any] = suite("IngestService")(test("should ingest a simple csv file") {
     val shortcode = ProjectShortcode.unsafeFrom("0001")
     ZIO.scoped {
       for {
