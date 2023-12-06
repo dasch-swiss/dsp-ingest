@@ -49,13 +49,13 @@ final case class IngestService(
     storage.getAssetDirectory(assetRef).tap(storage.createDirectories(_))
 
   private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef, assetDir: Path): IO[IOException, Original] =
-    for {
-      _               <- ZIO.logInfo(s"Creating original for $file, $assetRef")
-      originalPath     = assetDir / s"${assetRef.id}.${file.fileExtension}.orig"
-      _               <- storage.copyFile(file, originalPath)
-      originalFile     = OriginalFile.unsafeFrom(originalPath)
-      originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
-    } yield Original(originalFile, originalFileName)
+    ZIO.logInfo(s"Creating original for $file, $assetRef") *> {
+      val fileExtension    = s"${file.fileExtension}.orig"
+      val originalPath     = assetDir / s"${assetRef.id}.$fileExtension"
+      val originalFile     = OriginalFile.unsafeFrom(originalPath)
+      val originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
+      storage.copyFile(file, originalPath).as(Original(originalFile, originalFileName))
+    }
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
     ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *>
