@@ -24,6 +24,8 @@ enum SupportedFileType(val extensions: Seq[String]) {
   case StillImage  extends SupportedFileType(SipiImageFormat.allExtensions)
   case MovingImage extends SupportedFileType(Seq("mp4"))
   case Other       extends SupportedFileType(archive ++ audio ++ office ++ tables ++ text)
+
+  def acceptsExtension(extension: String): Boolean = extensions.exists(extension.equalsIgnoreCase)
 }
 
 object SupportedFileType {

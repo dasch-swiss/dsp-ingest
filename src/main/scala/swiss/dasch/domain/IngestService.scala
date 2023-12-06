@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.Asset.{OtherAsset, StillImageAsset}
 import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
 import swiss.dasch.domain.PathOps.fileExtension
@@ -64,11 +65,10 @@ final case class IngestService(
 
   private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
-      val derivativePath = assetDir / s"${assetRef.id}.${original.file.toPath.fileExtension}"
-      storage
-        .copyFile(original.file.toPath, derivativePath)
-        .as(OtherDerivativeFile.unsafeFrom(derivativePath))
-        .map(derivative => Asset.makeOther(assetRef, original, derivative))
+      val fileExtension  = FilenameUtils.getExtension(original.originalFilename.toString)
+      val derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
+      val derivative     = OtherDerivativeFile.unsafeFrom(derivativePath)
+      storage.copyFile(original.file.toPath, derivativePath).as(Asset.makeOther(assetRef, original, derivative))
     }
 }
 
