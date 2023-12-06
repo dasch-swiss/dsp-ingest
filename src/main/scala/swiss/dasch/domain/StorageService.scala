@@ -14,6 +14,7 @@ import zio.stream.ZStream
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption.*
+import java.nio.file.attribute.FileAttribute
 import java.nio.file.{CopyOption, OpenOption, StandardOpenOption}
 import java.text.ParseException
 import java.time.format.DateTimeFormatter
@@ -29,8 +30,12 @@ trait StorageService {
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
   def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
-  def copyFile(source: Path, target: Path, copyOption: CopyOption*): ZIO[Any, IOException, Unit] =
+  final def copyFile(source: Path, target: Path, copyOption: CopyOption*): IO[IOException, Unit] =
     Files.copy(source, target, copyOption: _*)
+  final def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit] =
+    Files.createDirectories(path, attrs: _*)
+  final def delete(path: Path): IO[IOException, Unit] =
+    Files.delete(path)
 }
 
 object StorageService {

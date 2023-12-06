@@ -5,15 +5,11 @@
 
 package swiss.dasch.domain
 
-import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.config.Configuration.IngestConfig
-import swiss.dasch.domain.Asset.{OtherAsset, StillImageAsset}
-import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
-import swiss.dasch.domain.PathOps.fileExtension
 import zio.nio.file.{Files, Path}
 import zio.{IO, Task, ZIO, ZLayer}
 
-import java.io.{FileNotFoundException, IOException}
+import java.io.IOException
 import java.nio.file.StandardOpenOption
 
 trait BulkIngestService {
@@ -37,9 +33,7 @@ object IngestResult {
 
 final case class BulkIngestServiceLive(
   storage: StorageService,
-  sipiClient: SipiClient,
-  assetInfo: AssetInfoService,
-  imageService: ImageService,
+  ingestService: IngestService,
   config: IngestConfig
 ) extends BulkIngestService {
 
@@ -54,7 +48,11 @@ final case class BulkIngestServiceLive(
       sum <- StorageService
                .findInPath(importDir, FileFilters.isSupported)
                .mapZIOPar(config.bulkMaxParallel)(file =>
-                 ingestSingleFile(file, project, mappingFile).logError
+                 ingestService
+                   .ingestFile(file, project)
+                   .flatMap(asset => updateMappingCsv(mappingFile, file, asset))
+                   .as(IngestResult.success)
+                   .logError
                    .catchNonFatalOrDie(e =>
                      ZIO
                        .logError(s"Error ingesting image $file: ${e.getMessage}")
@@ -74,74 +72,11 @@ final case class BulkIngestServiceLive(
       }
     } yield sum
 
-  private def ingestSingleFile(
-    fileToIngest: Path,
-    project: ProjectShortcode,
-    csv: Path
-  ): Task[IngestResult] =
-    for {
-      _        <- ZIO.logInfo(s"Ingesting file $fileToIngest")
-      assetRef <- AssetRef.makeNew(project)
-      _ <- ZIO.whenZIO(FileFilters.isNonHiddenRegularFile(fileToIngest).negate)(
-             ZIO.fail(new FileNotFoundException(s"File $fileToIngest is not a regular file"))
-           )
-      _        <- storage.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-      original <- createOriginalFileInAssetDir(fileToIngest, assetRef)
-      asset <- ZIO
-                 .fromOption(SupportedFileType.fromPath(fileToIngest))
-                 .orElseFail(new IllegalArgumentException("Unsupported file type."))
-                 .flatMap { it =>
-                   it match {
-                     case SupportedFileType.StillImage => handleImageFile(original, assetRef)
-                     case SupportedFileType.Other      => handleOtherFile(original, assetRef)
-                     case SupportedFileType.MovingImage =>
-                       ZIO.fail(new NotImplementedError("Video files are not supported yet."))
-                   }
-                 }
-      _ <- assetInfo.createAssetInfo(asset)
-      _ <- updateMappingCsv(csv, fileToIngest, asset)
-      _ <- Files.delete(fileToIngest)
-      _ <- ZIO.logInfo(s"Finished ingesting file $fileToIngest")
-    } yield IngestResult.success
-
-  private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef): IO[IOException, Original] = for {
-    _               <- ZIO.logInfo(s"Creating original for $file, $assetRef")
-    assetDir        <- storage.getAssetDirectory(assetRef)
-    originalPath     = assetDir / s"${assetRef.id}.${file.fileExtension}.orig"
-    _               <- storage.copyFile(file, originalPath)
-    originalFile     = OriginalFile.unsafeFrom(originalPath)
-    originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
-  } yield Original(originalFile, originalFileName)
-
-  private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
-    ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *>
-      imageService
-        .createDerivative(original.file)
-        .tapError(_ => Files.delete(original.file.toPath).ignore)
-        .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
-
-  private def handleOtherFile(original: Original, assetRef: AssetRef): Task[OtherAsset] = {
-    def createDerivative(original: Original) =
-      for {
-        folder        <- storage.getAssetDirectory(assetRef)
-        derivativePath = folder / s"${assetRef.id}.${original.file.toPath.fileExtension}"
-        _ <- storage
-               .copyFile(original.file.toPath, derivativePath)
-               .tapError(_ => Files.delete(original.file.toPath).ignore)
-      } yield OtherDerivativeFile.unsafeFrom(derivativePath)
-    ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *>
-      createDerivative(original).map(derivative => Asset.makeOther(assetRef, original, derivative))
-  }
-
-  private def updateMappingCsv(
-    mappingFile: Path,
-    imageToIngest: Path,
-    asset: Asset
-  ) =
+  private def updateMappingCsv(mappingFile: Path, fileToIngest: Path, asset: Asset): IO[IOException, Unit] =
     ZIO.logInfo(s"Updating mapping file $mappingFile, $asset") *> {
       for {
         importDir                <- storage.getBulkIngestImportFolder(asset.belongsToProject)
-        imageToIngestRelativePath = importDir.relativize(imageToIngest)
+        imageToIngestRelativePath = importDir.relativize(fileToIngest)
         _ <- Files.writeLines(
                mappingFile,
                List(s"$imageToIngestRelativePath,${asset.derivative.filename}"),
