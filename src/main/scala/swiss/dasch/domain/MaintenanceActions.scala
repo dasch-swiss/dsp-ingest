@@ -275,13 +275,7 @@ final case class MaintenanceActionsLive(
     for {
       checksumOriginal   <- FileChecksumService.createSha256Hash(c.originalPath)
       checksumDerivative <- FileChecksumService.createSha256Hash(c.jpxPath)
-    } yield AssetInfoFileContent(
-      internalFilename = NonEmptyString.unsafeFrom(c.jpxPath.filename.toString),
-      originalInternalFilename = NonEmptyString.unsafeFrom(c.originalPath.filename.toString),
-      originalFilename = NonEmptyString.unsafeFrom(c.originalFilename),
-      checksumOriginal = checksumOriginal,
-      checksumDerivative = checksumDerivative
-    )
+    } yield AssetInfoFileContent(internalFilename = NonEmptyString.unsafeFrom(c.jpxPath.filename.toString), originalInternalFilename = NonEmptyString.unsafeFrom(c.originalPath.filename.toString), originalFilename = NonEmptyString.unsafeFrom(c.originalFilename), checksumOriginal = checksumOriginal, checksumDerivative = checksumDerivative)
 }
 object MaintenanceActionsLive {
   val layer = ZLayer.derive[MaintenanceActionsLive]

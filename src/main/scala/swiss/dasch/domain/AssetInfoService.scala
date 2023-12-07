@@ -18,9 +18,8 @@ final private case class AssetInfoFileContent(
   originalFilename: NonEmptyString,
   checksumOriginal: Sha256Hash,
   checksumDerivative: Sha256Hash,
-  // these are optional because they are only set for moving images
-  height: Option[Int] = None,
   width: Option[Int] = None,
+  height: Option[Int] = None,
   duration: Option[Double] = None,
   fps: Option[Int] = None
 ) {
@@ -48,11 +47,14 @@ final case class FileAndChecksum(file: Path, checksum: Sha256Hash) {
 }
 
 final case class AssetInfo(
-  asset: AssetRef,
+  assetRef: AssetRef,
   original: FileAndChecksum,
   originalFilename: NonEmptyString,
-  derivative: FileAndChecksum
+  derivative: FileAndChecksum,
+  movingImageMetadata: Option[MovingImageMetadata] = None
 )
+
+final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Int)
 
 trait AssetInfoService {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
@@ -102,13 +104,21 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
     raw: AssetInfoFileContent,
     infoFileDirectory: Path,
     asset: AssetRef
-  ): AssetInfo =
+  ): AssetInfo = {
+    val movingImageMetadata = for {
+      width    <- raw.width
+      height   <- raw.height
+      duration <- raw.duration
+      fps      <- raw.fps
+    } yield MovingImageMetadata(width, height, duration, fps)
     AssetInfo(
-      asset = asset,
+      assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),
       originalFilename = raw.originalFilename,
-      derivative = FileAndChecksum(infoFileDirectory / raw.internalFilename.toString, raw.checksumDerivative)
+      derivative = FileAndChecksum(infoFileDirectory / raw.internalFilename.toString, raw.checksumDerivative),
+      movingImageMetadata = movingImageMetadata
     )
+  }
 
   override def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
     StorageService

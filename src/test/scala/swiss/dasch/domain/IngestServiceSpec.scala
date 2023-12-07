@@ -35,7 +35,7 @@ object IngestServiceSpec extends ZIOSpecDefault {
         asset.belongsToProject == shortcode,
         info.originalFilename.toString == fileToIngest.filename.toString,
         info.originalFilename == asset.original.originalFilename,
-        info.asset == asset.ref,
+        info.assetRef == asset.ref,
         info.original.checksum == checksum,
         info.original.filename.toString == originalFilename,
         info.original.filename == asset.original.internalFilename,
