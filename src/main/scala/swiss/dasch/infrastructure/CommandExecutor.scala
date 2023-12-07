@@ -11,6 +11,7 @@ import zio.{Task, ZIO, ZLayer}
 
 import scala.sys.process.{ProcessLogger, stringToProcess}
 
+case class ProcessOutput(stdOut: String, stdErr: String)
 final case class Command private[infrastructure] (cmd: String)
 final case class CommandExecutor(sipiConfig: SipiConfig, storageService: StorageService) {
 
@@ -23,8 +24,6 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
       } else {
         Command(s"$command $params")
       }
-
-  private case class ProcessOutput(out: String, err: String)
 
   private class InMemoryProcessLogger extends ProcessLogger {
     private val sbOut = new StringBuilder
@@ -39,15 +38,12 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
     def getOutput: ProcessOutput = ProcessOutput(sbOut.toString(), sbErr.toString())
   }
 
-  def execute(command: Command): Task[String] = {
+  def execute(command: Command): Task[ProcessOutput] = {
     val logger = new InMemoryProcessLogger()
     for {
       _   <- ZIO.logInfo(s"Executing command: ${command.cmd}")
       out <- ZIO.attemptBlockingIO(command.cmd ! logger).as(logger.getOutput)
-      _ <- ZIO.when(out.err.nonEmpty)(
-             ZIO.fail(new RuntimeException(s"Failed executing '${command.cmd}' with error '${out.err}''"))
-           )
-    } yield out.out
+    } yield out
   }
 }
 
