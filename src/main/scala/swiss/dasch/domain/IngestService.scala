@@ -7,7 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
-import swiss.dasch.domain.Asset.{OtherAsset, StillImageAsset}
+import swiss.dasch.domain.Asset.{MovingImageAsset, OtherAsset, StillImageAsset}
 import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
 import swiss.dasch.domain.PathOps.fileExtension
 import zio.nio.file.Path
@@ -18,6 +18,7 @@ import java.io.IOException
 final case class IngestService(
   storage: StorageService,
   imageService: ImageService,
+  movingImageService: MovingImageService,
   sipiClient: SipiClient,
   assetInfo: AssetInfoService
 ) {
@@ -37,7 +38,7 @@ final case class IngestService(
                  .flatMap {
                    case SupportedFileType.StillImage  => handleImageFile(original, assetRef)
                    case SupportedFileType.Other       => handleOtherFile(original, assetRef, assetDir)
-                   case SupportedFileType.MovingImage => handleMovingImageFile(original, assetRef, assetDir)
+                   case SupportedFileType.MovingImage => handleMovingImageFile(original, assetRef)
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- storage.delete(fileToIngest)
@@ -70,12 +71,11 @@ final case class IngestService(
       storage.copyFile(original.file.toPath, derivativePath).as(Asset.makeOther(assetRef, original, derivative))
     }
 
-  private def handleMovingImageFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
-    ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
-      val fileExtension  = FilenameUtils.getExtension(original.originalFilename.toString)
-      val derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
-      val derivative     = OtherDerivativeFile.unsafeFrom(derivativePath)
-      storage.copyFile(original.file.toPath, derivativePath).as(Asset.makeOther(assetRef, original, derivative))
+  private def handleMovingImageFile(original: Original, assetRef: AssetRef): Task[MovingImageAsset] =
+    ZIO.logInfo(s"Creating derivative for moving image $original, $assetRef") *> {
+      movingImageService
+        .createDerivative(original, assetRef)
+        .map(derivative => Asset.makeMovingImageAsset(assetRef, original, derivative))
     }
 }
 

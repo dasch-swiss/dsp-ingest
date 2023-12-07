@@ -47,11 +47,12 @@ object IngestServiceSpec extends ZIOSpecDefault {
       )
     }
   }).provide(
-    IngestService.layer,
-    StorageServiceLive.layer,
-    ImageServiceLive.layer,
-    SipiClientMock.layer,
     AssetInfoServiceLive.layer,
-    SpecConfigurations.storageConfigLayer
+    ImageServiceLive.layer,
+    IngestService.layer,
+    MovingImageService.layer,
+    SipiClientMock.layer,
+    SpecConfigurations.storageConfigLayer,
+    StorageServiceLive.layer,
   )
 }
