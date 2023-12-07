@@ -10,7 +10,7 @@ import scala.sys.process.{ProcessLogger, stringToProcess}
 
 final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Int)
 
-case class MovingImageService(storage: StorageService, config: SipiConfig, executor: CommandExecutor) {
+case class MovingImageService(storage: StorageService, executor: CommandExecutor) {
 
   def createDerivative(original: Original, assetRef: AssetRef): Task[MovingImageDerivativeFile] = {
     val fileExtension = FilenameUtils.getExtension(original.originalFilename.toString)
@@ -28,7 +28,7 @@ case class MovingImageService(storage: StorageService, config: SipiConfig, execu
   def extractKeyFrames(file: DerivativeFile, assetRef: AssetRef): Task[Unit] =
     ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
 
-  def extractMetadata(file: DerivativeFile, assetRef: AssetRef): Task[MovingImageMetadata] =
+  def extractMetadata(file: DerivativeFile): Task[MovingImageMetadata] =
     for {
       absPath <- file.toPath.toAbsolutePath
       cmd <-
