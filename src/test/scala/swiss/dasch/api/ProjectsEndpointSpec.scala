@@ -183,6 +183,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     SipiClientMock.layer,
     SpecConfigurations.ingestConfigLayer,
     SpecConfigurations.jwtConfigDisableAuthLayer,
+    SpecConfigurations.sipiConfigLayer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer
   )

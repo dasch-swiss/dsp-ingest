@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.Asset.MovingImageAsset
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.nio.file.{Files, Path}
@@ -29,14 +30,19 @@ private object AssetInfoFileContent {
   def make(
     asset: Asset,
     originalChecksum: Sha256Hash,
-    derivativeChecksum: Sha256Hash
+    derivativeChecksum: Sha256Hash,
+    metadata: Option[MovingImageMetadata]
   ): AssetInfoFileContent =
     AssetInfoFileContent(
       asset.derivative.filename,
       asset.original.internalFilename,
       asset.original.originalFilename,
       originalChecksum,
-      derivativeChecksum
+      derivativeChecksum,
+      metadata.map(_.width),
+      metadata.map(_.height),
+      metadata.map(_.duration),
+      metadata.map(_.fps)
     )
 
   given codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
@@ -53,8 +59,6 @@ final case class AssetInfo(
   derivative: FileAndChecksum,
   movingImageMetadata: Option[MovingImageMetadata] = None
 )
-
-final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Int)
 
 trait AssetInfoService {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
@@ -144,9 +148,13 @@ final case class AssetInfoServiceLive(storageService: StorageService) extends As
     infoFile            = assetDir / infoFilename(asset.ref)
     checksumOriginal   <- FileChecksumService.createSha256Hash(asset.original.file.toPath)
     checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative.toPath)
-    content             = AssetInfoFileContent.make(asset, checksumOriginal, checksumDerivative)
-    _                  <- Files.createFile(infoFile)
-    _                  <- storageService.saveJsonFile(infoFile, content)
+    metadata = asset match {
+                 case mi: MovingImageAsset => Some(mi.metadata)
+                 case _                    => None
+               }
+    content = AssetInfoFileContent.make(asset, checksumOriginal, checksumDerivative, metadata)
+    _      <- Files.createFile(infoFile)
+    _      <- storageService.saveJsonFile(infoFile, content)
   } yield ()
 }
 

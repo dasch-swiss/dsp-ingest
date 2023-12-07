@@ -73,9 +73,11 @@ final case class IngestService(
 
   private def handleMovingImageFile(original: Original, assetRef: AssetRef): Task[MovingImageAsset] =
     ZIO.logInfo(s"Creating derivative for moving image $original, $assetRef") *> {
-      movingImageService
-        .createDerivative(original, assetRef)
-        .map(derivative => Asset.makeMovingImageAsset(assetRef, original, derivative))
+      for {
+        derivative <- movingImageService.createDerivative(original, assetRef)
+        _          <- movingImageService.extractKeyFrames(derivative, assetRef)
+        meta       <- movingImageService.extractMetadata(derivative, assetRef)
+      } yield Asset.makeMovingImageAsset(assetRef, original, derivative, meta)
     }
 }
 

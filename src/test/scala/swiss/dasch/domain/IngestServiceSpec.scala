@@ -52,7 +52,8 @@ object IngestServiceSpec extends ZIOSpecDefault {
     IngestService.layer,
     MovingImageService.layer,
     SipiClientMock.layer,
+    SpecConfigurations.sipiConfigLayer,
     SpecConfigurations.storageConfigLayer,
-    StorageServiceLive.layer,
+    StorageServiceLive.layer
   )
 }

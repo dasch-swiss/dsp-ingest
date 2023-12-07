@@ -59,13 +59,22 @@ sealed trait Asset {
 
 object Asset {
   final case class StillImageAsset(ref: AssetRef, original: Original, derivative: JpxDerivativeFile) extends Asset
-  final case class MovingImageAsset(ref: AssetRef, original: Original, derivative: DerivativeFile)   extends Asset
-  final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile)         extends Asset
+  final case class MovingImageAsset(
+    ref: AssetRef,
+    original: Original,
+    derivative: DerivativeFile,
+    metadata: MovingImageMetadata
+  ) extends Asset
+  final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile) extends Asset
 
   def makeStillImage(assetRef: AssetRef, original: Original, derivative: JpxDerivativeFile): StillImageAsset =
     StillImageAsset(assetRef, original, derivative)
-  def makeMovingImageAsset(assetRef: AssetRef, original: Original, derivative: DerivativeFile): MovingImageAsset =
-    MovingImageAsset(assetRef, original, derivative)
+  def makeMovingImageAsset(
+    assetRef: AssetRef,
+    original: Original,
+    derivative: DerivativeFile,
+    metadata: MovingImageMetadata
+  ): MovingImageAsset = MovingImageAsset(assetRef, original, derivative, metadata)
   def makeOther(assetRef: AssetRef, original: Original, derivative: DerivativeFile): OtherAsset =
     OtherAsset(assetRef, original, derivative)
 }
