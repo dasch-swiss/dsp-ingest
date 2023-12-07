@@ -73,7 +73,7 @@ object MovingImageService {
 }
 
 final case class CommandExecutor() {
-  private case class ProcessOutput(val out: String, val err: String)
+  private case class ProcessOutput(out: String, err: String)
 
   private class InMemoryProcessLogger extends ProcessLogger {
     private val sbOut = new StringBuilder
