@@ -24,7 +24,12 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
   }
 
   def extractKeyFrames(file: DerivativeFile, assetRef: AssetRef): Task[Unit] =
-    ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
+    for {
+      _       <- ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
+      absPath <- file.toPath.toAbsolutePath
+      cmd     <- executor.buildCommand("/sipi/scripts/export-moving-image-frames.sh", s"-i $absPath")
+      _       <- executor.execute(cmd)
+    } yield ()
 
   def extractMetadata(file: DerivativeFile): Task[MovingImageMetadata] =
     for {
