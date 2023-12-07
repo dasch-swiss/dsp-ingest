@@ -76,7 +76,7 @@ final case class IngestService(
       for {
         derivative <- movingImageService.createDerivative(original, assetRef)
         _          <- movingImageService.extractKeyFrames(derivative, assetRef)
-        meta       <- movingImageService.extractMetadata(derivative)
+        meta       <- movingImageService.extractMetadata(derivative, assetRef)
       } yield Asset.makeMovingImageAsset(assetRef, original, derivative, meta)
     }
 }

@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package swiss.dasch.domain
 
 import org.apache.commons.io.FilenameUtils
@@ -28,25 +33,33 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
       _       <- ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
       absPath <- file.toPath.toAbsolutePath
       cmd     <- executor.buildCommand("/sipi/scripts/export-moving-image-frames.sh", s"-i $absPath")
-      _       <- executor.execute(cmd)
+      _ <- executor
+             .execute(cmd)
+             .flatMap(out =>
+               if (out.stdErr.nonEmpty) {
+                 ZIO.fail(new RuntimeException(s"Failed to extract keyframes for $file, $assetRef: ${out.stdErr}"))
+               } else ZIO.succeed(out.stdOut)
+             )
     } yield ()
 
-  def extractMetadata(file: DerivativeFile): Task[MovingImageMetadata] =
+  def extractMetadata(file: DerivativeFile, assetRef: AssetRef): Task[MovingImageMetadata] =
     for {
+      _       <- ZIO.logInfo(s"Extracting metadata for $file, $assetRef")
       absPath <- file.toPath.toAbsolutePath
       cmd <-
         executor.buildCommand(
           "ffprobe",
           s"-v error -select_streams v:0 -show_entries stream=width,height,duration,r_frame_rate -print_format json -i $absPath"
         )
-      metadata <- executor
-                    .execute(cmd)
-                    .flatMap(out =>
-                      if (out.stdErr.nonEmpty) {
-                        ZIO.fail(new RuntimeException(s"Failed to extract metadata: ${out.stdErr}"))
-                      } else ZIO.succeed(out.stdOut)
-                    )
-                    .flatMap(parseMetadata)
+      metadata <-
+        executor
+          .execute(cmd)
+          .flatMap(out =>
+            if (out.stdErr.nonEmpty) {
+              ZIO.fail(new RuntimeException(s"Failed to extract metadata  for $file, $assetRef: ${out.stdErr}"))
+            } else ZIO.succeed(out.stdOut)
+          )
+          .flatMap(parseMetadata)
 
     } yield metadata
 
