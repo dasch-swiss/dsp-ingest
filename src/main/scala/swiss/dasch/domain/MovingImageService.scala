@@ -79,10 +79,9 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
   }
 
   private def parseMetadata(ffprobeJson: String) =
-    ZIO.logInfo(s"Metadata: $ffprobeJson").as(MovingImageMetadata(0, 0, 0, 0)) *>
-      ZIO
-        .fromOption(ffprobeJson.fromJson[FfprobeOut].toOption.flatMap(_.toMetadata))
-        .orElseFail(new RuntimeException(s"Failed parsing metadata: $ffprobeJson"))
+    ZIO
+      .fromOption(ffprobeJson.fromJson[FfprobeOut].toOption.flatMap(_.toMetadata))
+      .orElseFail(new RuntimeException(s"Failed parsing metadata: $ffprobeJson"))
 
 }
 
