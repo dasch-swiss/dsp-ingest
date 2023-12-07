@@ -40,8 +40,14 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
           infoFile <- AssetInfoService.getInfoFilePath(asset)
           _ <- StorageService.saveJsonFile[AssetInfoFileContent](
                  infoFile,
-                 AssetInfoFileContent(internalFilename = info.derivative.filename, originalInternalFilename = info.original.filename, originalFilename = info.originalFilename, checksumOriginal = info.original.checksum, checksumDerivative = // this should not be updated
-                   Sha256Hash.unsafeFrom("3c9194324cc5921bef9a19fc8f9f7874114904cc25d43801cdb9364cfa363412"))
+                 AssetInfoFileContent(
+                   internalFilename = info.derivative.filename,
+                   originalInternalFilename = info.original.filename,
+                   originalFilename = info.originalFilename,
+                   checksumOriginal = info.original.checksum,
+                   checksumDerivative = // this should not be updated
+                     Sha256Hash.unsafeFrom("3c9194324cc5921bef9a19fc8f9f7874114904cc25d43801cdb9364cfa363412")
+                 )
                )
           _                 <- ImageService.applyTopLeftCorrection(image)
           backupExists      <- Files.exists(backup)
