@@ -11,7 +11,7 @@ import swiss.dasch.infrastructure.CommandExecutor
 import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
 import zio.{Task, ZIO, ZLayer}
 
-final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Int)
+final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Double)
 
 case class MovingImageService(storage: StorageService, executor: CommandExecutor) {
 
@@ -70,8 +70,20 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
 
   final case class FfprobeOut(streams: Array[FfprobeStream]) {
     def toMetadata: Option[MovingImageMetadata] =
-      streams.headOption.map { stream =>
-        MovingImageMetadata(stream.width, stream.height, stream.duration, stream.r_frame_rate.split("/")(0).toInt)
+      // Convert the the first present stream stream to [[MovingImageMetadata]].
+      // Assumes only a single stream and ignore other streams if present.
+      streams.headOption.flatMap { stream =>
+        // The frame rate is given as a fraction, e.g. 30000/1001
+        // See ffprobe documentation https://ffmpeg.org/doxygen/1.0/structAVStream.html#d63fb11cc1415e278e09ddc676e8a1ad
+        // Convert this fraction to a double value.
+        val fpsFraction = stream.r_frame_rate.split("/")
+        if (fpsFraction.length == 2) {
+          for {
+            numerator   <- fpsFraction(0).trim.toDoubleOption
+            denominator <- fpsFraction(1).trim.toDoubleOption.filter(_ != 0)
+            fps          = numerator / denominator
+          } yield MovingImageMetadata(stream.width, stream.height, stream.duration, fps)
+        } else { None }
       }
   }
   object FfprobeOut {

@@ -22,7 +22,7 @@ final private case class AssetInfoFileContent(
   width: Option[Int] = None,
   height: Option[Int] = None,
   duration: Option[Double] = None,
-  fps: Option[Int] = None
+  fps: Option[Double] = None
 ) {
   def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum)
 }
