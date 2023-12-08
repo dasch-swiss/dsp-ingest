@@ -6,12 +6,14 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.infrastructure.CommandExecutorLive
+import swiss.dasch.infrastructure.{CommandExecutor, CommandExecutorMock, ProcessOutput}
 import swiss.dasch.test.SpecConfigurations
 import zio.nio.file.Files
 import zio.test.*
 import zio.test.Assertion.*
-import zio.{Exit, ZIO}
+import zio.{Exit, ZIO, ZLayer}
+
+import java.io.IOException
 
 object MovingImageServiceSpec extends ZIOSpecDefault {
 
@@ -54,12 +56,68 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
     }
   )
 
-  val spec = suite("MovingImageService")(createDerivativeSuite)
+  private val extractMetaDataSuite = suite("extractMetaData")(
+    test("given correct metadata it should extract") {
+      for {
+        // given
+        c <- createOriginalFile("mp4")
+        d <- MovingImageService.createDerivative(c.original, c.assetRef)
+        _ <- CommandExecutorMock.setOutput(
+               ProcessOutput(
+                 stdout = s"""
+                             |{
+                             |    "programs": [
+                             |    ],
+                             |    "streams": [
+                             |        {
+                             |            "width": 1280,
+                             |            "height": 720,
+                             |            "r_frame_rate": "25/1",
+                             |            "duration": "170.840000"
+                             |        }
+                             |    ]
+                             |}
+                             |""".stripMargin,
+                 "",
+                 0
+               )
+             )
+        // when
+        metadata <- MovingImageService.extractMetadata(d, c.assetRef)
+        // then
+      } yield assertTrue(metadata == MovingImageMetadata(width = 1280, height = 720, duration = 170.84, fps = 25.0))
+    },
+    test("given invalid metadata it should not extract") {
+      for {
+        // given
+        c <- createOriginalFile("mp4")
+        d <- MovingImageService.createDerivative(c.original, c.assetRef)
+        _ <- CommandExecutorMock.setOutput(
+               ProcessOutput(
+                 stdout = s"""
+                             |{
+                             |    "programs": [
+                             |    ],
+                             |    "streams": [
+                             |    ]
+                             |}
+                             |""".stripMargin,
+                 "",
+                 0
+               )
+             )
+        // when
+        exit <- MovingImageService.extractMetadata(d, c.assetRef).exit
+        // then
+      } yield assertTrue(exit.isFailure)
+    }
+  )
+
+  val spec = suite("MovingImageService")(createDerivativeSuite, extractMetaDataSuite)
     .provide(
       StorageServiceLive.layer,
       SpecConfigurations.storageConfigLayer,
       MovingImageService.layer,
-      CommandExecutorLive.layer,
-      SpecConfigurations.sipiConfigLayer
+      CommandExecutorMock.layer
     )
 }

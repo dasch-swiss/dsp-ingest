@@ -45,7 +45,10 @@ trait CommandExecutor {
    * @param command the command to execute.
    * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
    */
-  def executeOrFail(command: Command): IO[IOException, ProcessOutput]
+  final def executeOrFail(command: Command): IO[IOException, ProcessOutput] =
+    execute(command).filterOrElseWith(_.exitCode == 0)(out =>
+      ZIO.fail(new IOException(s"Command failed: '${command.cmd}' $out"))
+    )
 }
 
 object CommandExecutor {
@@ -85,11 +88,6 @@ final case class CommandExecutorLive(sipiConfig: SipiConfig, storageService: Sto
       _   <- ZIO.logWarning(s"Command '${command.cmd}' stderr output: '${out.stdout}''").when(out.stderr.nonEmpty)
     } yield out
   }
-
-  def executeOrFail(command: Command): IO[IOException, ProcessOutput] =
-    execute(command).filterOrElseWith(_.exitCode == 0)(out =>
-      ZIO.fail(new IOException(s"Command failed: '${command.cmd}' $out"))
-    )
 }
 
 object CommandExecutorLive {

@@ -99,5 +99,11 @@ object MovingImageService {
   def extractKeyFrames(file: MovingImageDerivativeFile, assetRef: AssetRef): ZIO[MovingImageService, Throwable, Unit] =
     ZIO.serviceWithZIO(_.extractKeyFrames(file, assetRef))
 
+  def extractMetadata(
+    file: MovingImageDerivativeFile,
+    assetRef: AssetRef
+  ): ZIO[MovingImageService, Throwable, MovingImageMetadata] =
+    ZIO.serviceWithZIO[MovingImageService](_.extractMetadata(file, assetRef))
+
   val layer = ZLayer.derive[MovingImageService]
 }
