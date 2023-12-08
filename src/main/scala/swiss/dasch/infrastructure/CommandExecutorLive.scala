@@ -48,6 +48,11 @@ trait CommandExecutor {
   def executeOrFail(command: Command): IO[IOException, ProcessOutput]
 }
 
+object CommandExecutor {
+  def buildCommand(command: String, params: String): ZIO[CommandExecutor, Nothing, Command] =
+    ZIO.serviceWithZIO[CommandExecutor](_.buildCommand(command, params))
+}
+
 final case class CommandExecutorLive(sipiConfig: SipiConfig, storageService: StorageService) extends CommandExecutor {
 
   override def buildCommand(command: String, params: String): UIO[Command] =
