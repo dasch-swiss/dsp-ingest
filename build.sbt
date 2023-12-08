@@ -1,8 +1,7 @@
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerRepository}
 import com.typesafe.sbt.packager.docker.Cmd
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerRepository}
 
-import scala.collection.immutable.Seq
-import sys.process.*
+import scala.sys.process.*
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
@@ -36,7 +35,8 @@ val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-json-zio"          % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-refined"           % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"      % tapirVersion
 )
 
 val metrics = Seq(
@@ -118,7 +118,7 @@ lazy val root = (project in file("."))
       "apt-get update && apt-get install -y openjdk-17-jre-headless && apt-get clean"
     ),
     dockerCommands := dockerCommands.value.filterNot {
-      case Cmd("USER", args @ _*) => true
+      case Cmd("USER", args*) => true
       case cmd                    => false
     }
   )
