@@ -19,7 +19,6 @@ final case class IngestService(
   storage: StorageService,
   stillImageService: StillImageService,
   movingImageService: MovingImageService,
-  sipiClient: SipiClient,
   assetInfo: AssetInfoService
 ) {
 
