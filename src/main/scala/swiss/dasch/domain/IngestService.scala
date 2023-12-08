@@ -34,14 +34,6 @@ final case class IngestService(
       asset    <- ingestAsset(fileToIngest, ref, assetDir).tapError(_ => tryCleanup(ref, assetDir).logError.ignore)
     } yield asset
 
-  private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
-    // remove all files and folders which start with the asset id and remove empty assetDir
-    ZIO.logInfo(s"Cleaning up ingest failed for asset $assetRef in directory $assetDir") *>
-      StorageService
-        .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)))
-        .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(storage.deleteRecursive(p).unit, storage.delete(p)))
-        .runDrain *> storage.deleteDirectoryIfEmpty(assetDir) *> storage.deleteDirectoryIfEmpty(assetDir.parent.head)
-
   private def ingestAsset(fileToIngest: Path, assetRef: AssetRef, assetDir: Path) =
     for {
       original <- createOriginalFileInAssetDir(fileToIngest, assetRef, assetDir)
@@ -92,6 +84,14 @@ final case class IngestService(
         meta       <- movingImageService.extractMetadata(derivative, assetRef)
       } yield Asset.makeMovingImageAsset(assetRef, original, derivative, meta)
     }
+
+  private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
+    // remove all files and folders which start with the asset id and remove empty assetDir
+    ZIO.logInfo(s"Cleaning up ingest failed for asset $assetRef in directory $assetDir") *>
+      StorageService
+        .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)))
+        .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(storage.deleteRecursive(p).unit, storage.delete(p)))
+        .runDrain *> storage.deleteDirectoryIfEmpty(assetDir) *> storage.deleteDirectoryIfEmpty(assetDir.parent.head)
 }
 
 object IngestService {
