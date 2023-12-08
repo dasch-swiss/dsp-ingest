@@ -89,7 +89,7 @@ final case class IngestService(
     // remove all files and folders which start with the asset id and remove empty assetDir
     ZIO.logInfo(s"Cleaning up ingest failed for asset $assetRef in directory $assetDir") *>
       StorageService
-        .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)))
+        .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)), maxDepth = 1)
         .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(storage.deleteRecursive(p).unit, storage.delete(p)))
         .runDrain *> storage.deleteDirectoryIfEmpty(assetDir) *> storage.deleteDirectoryIfEmpty(assetDir.parent.head)
 }
