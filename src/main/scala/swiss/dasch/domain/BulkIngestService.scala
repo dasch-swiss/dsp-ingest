@@ -69,13 +69,16 @@ final case class BulkIngestServiceLive(
     storage.getTempDirectory().map(_ / "import" / shortcode.toString)
 
   private def createMappingFile(project: ProjectShortcode, importDir: Path): IO[IOException, Path] = {
-    val mappingFile = importDir.parent.head / s"mapping-$project.csv"
+    val mappingFile = getMappingCsvFile(importDir, project)
     ZIO
       .unlessZIO(Files.exists(mappingFile))(
         Files.createFile(mappingFile) *> Files.writeLines(mappingFile, List("original,derivative"))
       )
       .as(mappingFile)
   }
+
+  private def getMappingCsvFile(importDir: _root_.zio.nio.file.Path, project: ProjectShortcode) =
+    importDir.parent.head / s"mapping-$project.csv"
 
   private def ingestFileAndUpdateMapping(project: ProjectShortcode, importDir: Path, mappingFile: Path, file: Path) =
     ingestService
@@ -97,7 +100,7 @@ final case class BulkIngestServiceLive(
   override def getBulkIngestMappingCsv(shortcode: ProjectShortcode): Task[Option[String]] =
     for {
       importDir <- getImportFolder(shortcode)
-      mappingCsv = importDir.parent.head / s"mapping-$shortcode.csv"
+      mappingCsv = getMappingCsvFile(importDir, shortcode)
       mapping <- ZIO.ifZIO(Files.exists(mappingCsv))(
                    Files.readAllLines(mappingCsv).map(it => Some(it.mkString("\n"))),
                    ZIO.none
