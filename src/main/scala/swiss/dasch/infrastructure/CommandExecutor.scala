@@ -7,7 +7,7 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.SipiConfig
 import swiss.dasch.domain.StorageService
-import zio.{Task, ZIO, ZLayer}
+import zio.{Task, UIO, ZIO, ZLayer}
 
 import scala.sys.process.{ProcessLogger, stringToProcess}
 
@@ -15,15 +15,14 @@ final case class ProcessOutput(stdout: String, stderr: String, exitCode: Int)
 final case class Command private[infrastructure] (cmd: String)
 final case class CommandExecutor(sipiConfig: SipiConfig, storageService: StorageService) {
 
-  def buildCommand(command: String, params: String): Task[Command] =
-    for {
-      assetDir <- storageService.getAssetDirectory().flatMap(_.toAbsolutePath)
-    } yield
-      if (sipiConfig.useLocalDev) {
-        Command(s"docker run --entrypoint $command -v $assetDir:$assetDir daschswiss/knora-sipi:latest $params")
-      } else {
-        Command(s"$command $params")
-      }
+  def buildCommand(command: String, params: String): UIO[Command] =
+    if (sipiConfig.useLocalDev) {
+      for {
+        assetDir <- storageService.getAssetDirectory().flatMap(_.toAbsolutePath).orDie
+      } yield Command(s"docker run --entrypoint $command -v $assetDir:$assetDir daschswiss/knora-sipi:latest $params")
+    } else {
+      ZIO.succeed(Command(s"$command $params"))
+    }
 
   private class InMemoryProcessLogger extends ProcessLogger {
     private val sbOut = new StringBuilder

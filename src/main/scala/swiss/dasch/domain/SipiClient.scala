@@ -103,7 +103,7 @@ final case class SipiClientLive(executor: CommandExecutor) extends SipiClient {
   private def execute(command: SipiCommand) =
     for {
       sipiParams <- command.render()
-      cmd        <- executor.buildCommand(sipiPrefix, sipiParams).orDie
+      cmd        <- executor.buildCommand(sipiPrefix, sipiParams)
       timerTagged = timer.tagged("command", command.flag())
       out        <- executor.execute(cmd).orDie @@ timerTagged.trackDuration
     } yield out
