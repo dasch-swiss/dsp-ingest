@@ -10,7 +10,7 @@ import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.Asset.{MovingImageAsset, OtherAsset, StillImageAsset}
 import swiss.dasch.domain.DerivativeFile.OtherDerivativeFile
 import swiss.dasch.domain.PathOps.fileExtension
-import zio.nio.file.Path
+import zio.nio.file.{Files, Path}
 import zio.{IO, Task, ZIO, ZLayer}
 
 import java.io.IOException
@@ -31,6 +31,19 @@ final case class IngestService(
            )
       assetRef <- AssetRef.makeNew(project)
       assetDir <- ensureAssetDirectoryExists(assetRef)
+      asset    <- ingestAsset(fileToIngest, assetRef, assetDir).tapError(_ => tryCleanup(assetRef, assetDir))
+    } yield asset
+
+  private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
+    // remove all files and folders which start with the asset id and remove empty assetDir
+    ZIO.logInfo(s"Cleaning up ingest failed for asset $assetRef in directory $assetDir") *>
+      StorageService
+        .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)))
+        .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(storage.deleteRecursive(p).unit, storage.delete(p)))
+        .runDrain *> storage.deleteDirectoryIfEmpty(assetDir) *> storage.deleteDirectoryIfEmpty(assetDir.parent.head)
+
+  private def ingestAsset(fileToIngest: Path, assetRef: AssetRef, assetDir: Path) =
+    for {
       original <- createOriginalFileInAssetDir(fileToIngest, assetRef, assetDir)
       asset <- ZIO
                  .fromOption(SupportedFileType.fromPath(fileToIngest))
