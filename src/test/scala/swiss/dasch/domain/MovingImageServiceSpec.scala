@@ -88,28 +88,49 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
       } yield assertTrue(metadata == MovingImageMetadata(width = 1280, height = 720, duration = 170.84, fps = 25.0))
     },
     test("given invalid metadata it should not extract") {
-      for {
-        // given
-        c <- createOriginalFile("mp4")
-        d <- MovingImageService.createDerivative(c.original, c.assetRef)
-        _ <- CommandExecutorMock.setOutput(
-               ProcessOutput(
-                 stdout = s"""
-                             |{
-                             |    "programs": [
-                             |    ],
-                             |    "streams": [
-                             |    ]
-                             |}
-                             |""".stripMargin,
-                 "",
-                 0
-               )
-             )
-        // when
-        exit <- MovingImageService.extractMetadata(d, c.assetRef).exit
-        // then
-      } yield assertTrue(exit.isFailure)
+      val invalidProcessOut = Seq(
+        ProcessOutput("", "there was an error", 1),
+        ProcessOutput("", "", 0),
+        ProcessOutput(
+          stdout = s"""
+                      |{
+                      |    "programs": [
+                      |    ],
+                      |    "streams": [
+                      |    ]
+                      |}
+                      |""".stripMargin,
+          "",
+          0
+        ),
+        ProcessOutput(
+          stdout = s"""
+                      |{
+                      |    "programs": [
+                      |    ],
+                      |    "streams": [
+                      |            "width": 1280,
+                      |            "height": 720,
+                      |            "r_frame_rate": 0,
+                      |            "duration": "170.840000"
+                      |    ]
+                      |}
+                      |""".stripMargin,
+          "",
+          0
+        )
+      )
+      check(Gen.fromIterable(invalidProcessOut)) { processOutput =>
+        for {
+          // given
+          c <- createOriginalFile("mp4")
+          d <- MovingImageService.createDerivative(c.original, c.assetRef)
+          _ <- CommandExecutorMock.setOutput(processOutput)
+          // when
+          exit <- MovingImageService.extractMetadata(d, c.assetRef).exit
+          // then
+        } yield assertTrue(exit.isFailure)
+      }
     }
   )
 
