@@ -9,12 +9,24 @@ import swiss.dasch.config.Configuration.SipiConfig
 import swiss.dasch.domain.StorageService
 import zio.{Task, UIO, ZIO, ZLayer}
 
+import java.io.IOException
 import scala.sys.process.{ProcessLogger, stringToProcess}
 
 final case class ProcessOutput(stdout: String, stderr: String, exitCode: Int)
 final case class Command private[infrastructure] (cmd: String)
 final case class CommandExecutor(sipiConfig: SipiConfig, storageService: StorageService) {
 
+  /**
+   * Builds a command to execute.
+   * The command is built from the given command and parameters.
+   *
+   * In local development mode, the command is executed in a docker container.
+   * Otherwise, the command is executed directly.
+   *
+   * @param command the command to execute.
+   * @param params  the parameters to pass to the command.
+   * @return the command to execute.
+   */
   def buildCommand(command: String, params: String): UIO[Command] =
     if (sipiConfig.useLocalDev) {
       for {
@@ -37,6 +49,11 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
     def buildOutput(exitCode: Int): ProcessOutput = ProcessOutput(sbOut.toString(), sbErr.toString(), exitCode)
   }
 
+  /**
+   * Executes a command and returns the [[ProcessOutput]].
+   * @param command the [[Command]] to execute.
+   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
+   */
   def execute(command: Command): Task[ProcessOutput] = {
     val logger = new InMemoryProcessLogger()
     for {
@@ -47,18 +64,16 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
   }
 
   /**
-   * Executes a command and returns the standard output.
-   * Fails if the command fails wih a non-zero exit code or
-   * if the stderr is not empty.
+   * Executes a command and returns the [[ProcessOutput]].
+   * Fails if the command fails wih a non-zero exit code.
    *
    * @param command the command to execute.
-   * @return the standard output.
+   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
    */
   def executeOrFail(command: Command): Task[ProcessOutput] =
-    execute(command).flatMap { out =>
-      if (out.exitCode != 0) { ZIO.fail(new RuntimeException(s"Command failed: '${command.cmd}' : '${out.stderr}'")) }
-      else { ZIO.succeed(out) }
-    }
+    execute(command).filterOrElseWith(_.exitCode == 0)(out =>
+      ZIO.fail(new IOException(s"Command failed: '${command.cmd}' $out"))
+    )
 }
 
 object CommandExecutor {
