@@ -40,10 +40,10 @@ object MaintenanceActions {
 }
 
 final case class MaintenanceActionsLive(
-  imageService: ImageService,
-  projectService: ProjectService,
-  sipiClient: SipiClient,
-  storageService: StorageService
+                                         imageService: StillImageService,
+                                         projectService: ProjectService,
+                                         sipiClient: SipiClient,
+                                         storageService: StorageService
 ) extends MaintenanceActions {
 
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {

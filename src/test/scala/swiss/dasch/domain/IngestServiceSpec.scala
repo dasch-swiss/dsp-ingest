@@ -50,7 +50,7 @@ object IngestServiceSpec extends ZIOSpecDefault {
   }).provide(
     AssetInfoServiceLive.layer,
     CommandExecutor.layer,
-    ImageServiceLive.layer,
+    StillImageServiceLive.layer,
     IngestService.layer,
     MovingImageService.layer,
     SipiClientMock.layer,

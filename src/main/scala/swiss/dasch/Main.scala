@@ -30,13 +30,12 @@ object Main extends ZIOAppDefault {
         AuthServiceLive.layer,
         BaseEndpoints.layer,
         BulkIngestServiceLive.layer,
-        Configuration.layer,
         CommandExecutor.layer,
+        Configuration.layer,
         Endpoints.layer,
         FileChecksumServiceLive.layer,
         FileSystemCheckLive.layer,
         HealthCheckServiceLive.layer,
-        ImageServiceLive.layer,
         ImportServiceLive.layer,
         IngestApiServer.layer,
         IngestService.layer,
@@ -52,6 +51,7 @@ object Main extends ZIOAppDefault {
         ProjectsEndpointsHandler.layer,
         ReportServiceLive.layer,
         SipiClientLive.layer,
+        StillImageServiceLive.layer,
         StorageServiceLive.layer
 //        ZLayer.Debug.mermaid ,
       )

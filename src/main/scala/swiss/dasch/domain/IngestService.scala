@@ -17,7 +17,7 @@ import java.io.IOException
 
 final case class IngestService(
   storage: StorageService,
-  imageService: ImageService,
+  stillImageService: StillImageService,
   movingImageService: MovingImageService,
   sipiClient: SipiClient,
   assetInfo: AssetInfoService
@@ -64,7 +64,7 @@ final case class IngestService(
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
     ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *>
-      imageService
+      stillImageService
         .createDerivative(original.file)
         .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
 

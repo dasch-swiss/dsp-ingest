@@ -23,7 +23,7 @@ object Dimensions {
   given codec: JsonCodec[Dimensions] = DeriveJsonCodec.gen[Dimensions]
 }
 
-trait ImageService {
+trait StillImageService {
 
   /**
    * Apply top left correction to the image if needed.
@@ -46,18 +46,18 @@ trait ImageService {
   def getDimensions(file: JpxDerivativeFile): Task[Dimensions]
 }
 
-object ImageService {
-  def applyTopLeftCorrection(image: Path): ZIO[ImageService, Throwable, Option[Path]] =
-    ZIO.serviceWithZIO[ImageService](_.applyTopLeftCorrection(image))
-  def needsTopLeftCorrection(image: Path): ZIO[ImageService, IOException, Boolean] =
-    ZIO.serviceWithZIO[ImageService](_.needsTopLeftCorrection(image))
-  def createDerivative(original: OriginalFile): ZIO[ImageService, Throwable, JpxDerivativeFile] =
-    ZIO.serviceWithZIO[ImageService](_.createDerivative(original))
-  def getDimensions(file: JpxDerivativeFile): ZIO[ImageService, Throwable, Dimensions] =
-    ZIO.serviceWithZIO[ImageService](_.getDimensions(file))
+object StillImageService {
+  def applyTopLeftCorrection(image: Path): ZIO[StillImageService, Throwable, Option[Path]] =
+    ZIO.serviceWithZIO[StillImageService](_.applyTopLeftCorrection(image))
+  def needsTopLeftCorrection(image: Path): ZIO[StillImageService, IOException, Boolean] =
+    ZIO.serviceWithZIO[StillImageService](_.needsTopLeftCorrection(image))
+  def createDerivative(original: OriginalFile): ZIO[StillImageService, Throwable, JpxDerivativeFile] =
+    ZIO.serviceWithZIO[StillImageService](_.createDerivative(original))
+  def getDimensions(file: JpxDerivativeFile): ZIO[StillImageService, Throwable, Dimensions] =
+    ZIO.serviceWithZIO[StillImageService](_.getDimensions(file))
 }
 
-final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoService) extends ImageService {
+final case class StillImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoService) extends StillImageService {
 
   override def applyTopLeftCorrection(image: Path): Task[Option[Path]] =
     ZIO.whenZIO(needsTopLeftCorrection(image))(
@@ -114,6 +114,6 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
   }
 }
 
-object ImageServiceLive {
-  val layer = ZLayer.derive[ImageServiceLive]
+object StillImageServiceLive {
+  val layer = ZLayer.derive[StillImageServiceLive]
 }
