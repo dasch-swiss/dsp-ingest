@@ -7,14 +7,15 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.SipiConfig
 import swiss.dasch.domain.StorageService
-import zio.{Task, UIO, ZIO, ZLayer}
+import zio.{IO, UIO, ZIO, ZLayer}
 
 import java.io.IOException
 import scala.sys.process.{ProcessLogger, stringToProcess}
 
 final case class ProcessOutput(stdout: String, stderr: String, exitCode: Int)
 final case class Command private[infrastructure] (cmd: String)
-final case class CommandExecutor(sipiConfig: SipiConfig, storageService: StorageService) {
+
+trait CommandExecutor {
 
   /**
    * Builds a command to execute.
@@ -27,7 +28,29 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
    * @param params  the parameters to pass to the command.
    * @return the command to execute.
    */
-  def buildCommand(command: String, params: String): UIO[Command] =
+  def buildCommand(command: String, params: String): UIO[Command]
+
+  /**
+   * Executes a command and returns the [[ProcessOutput]].
+   *
+   * @param command the [[Command]] to execute.
+   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
+   */
+  def execute(command: Command): IO[IOException, ProcessOutput]
+
+  /**
+   * Executes a command and returns the [[ProcessOutput]].
+   * Fails if the command fails wih a non-zero exit code.
+   *
+   * @param command the command to execute.
+   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
+   */
+  def executeOrFail(command: Command): IO[IOException, ProcessOutput]
+}
+
+final case class CommandExecutorLive(sipiConfig: SipiConfig, storageService: StorageService) extends CommandExecutor {
+
+  override def buildCommand(command: String, params: String): UIO[Command] =
     if (sipiConfig.useLocalDev) {
       for {
         assetDir <- storageService.getAssetDirectory().flatMap(_.toAbsolutePath).orDie
@@ -49,12 +72,7 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
     def buildOutput(exitCode: Int): ProcessOutput = ProcessOutput(sbOut.toString(), sbErr.toString(), exitCode)
   }
 
-  /**
-   * Executes a command and returns the [[ProcessOutput]].
-   * @param command the [[Command]] to execute.
-   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
-   */
-  def execute(command: Command): Task[ProcessOutput] = {
+  override def execute(command: Command): IO[IOException, ProcessOutput] = {
     val logger = new InMemoryProcessLogger()
     for {
       _   <- ZIO.logInfo(s"Executing command: ${command.cmd}")
@@ -63,19 +81,12 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
     } yield out
   }
 
-  /**
-   * Executes a command and returns the [[ProcessOutput]].
-   * Fails if the command fails wih a non-zero exit code.
-   *
-   * @param command the command to execute.
-   * @return the [[ProcessOutput]] containing the standard output and standard error, and the exit code.
-   */
-  def executeOrFail(command: Command): Task[ProcessOutput] =
+  def executeOrFail(command: Command): IO[IOException, ProcessOutput] =
     execute(command).filterOrElseWith(_.exitCode == 0)(out =>
       ZIO.fail(new IOException(s"Command failed: '${command.cmd}' $out"))
     )
 }
 
-object CommandExecutor {
-  val layer = ZLayer.derive[CommandExecutor]
+object CommandExecutorLive {
+  val layer = ZLayer.derive[CommandExecutorLive]
 }

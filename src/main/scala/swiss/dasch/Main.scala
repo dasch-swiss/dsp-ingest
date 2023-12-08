@@ -30,7 +30,7 @@ object Main extends ZIOAppDefault {
         AuthServiceLive.layer,
         BaseEndpoints.layer,
         BulkIngestServiceLive.layer,
-        CommandExecutor.layer,
+        CommandExecutorLive.layer,
         Configuration.layer,
         Endpoints.layer,
         FileChecksumServiceLive.layer,
