@@ -79,9 +79,8 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
     ZIO
       .fromOption(ffprobeJson.fromJson[FfprobeOut].toOption.flatMap(_.toMetadata))
       .orElseFail(new RuntimeException(s"Failed parsing metadata: $ffprobeJson"))
-
 }
 
 object MovingImageService {
-  val layer = CommandExecutor.layer >>> ZLayer.derive[MovingImageService]
+  val layer = ZLayer.derive[MovingImageService]
 }

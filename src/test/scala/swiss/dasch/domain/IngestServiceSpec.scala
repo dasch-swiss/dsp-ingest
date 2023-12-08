@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import swiss.dasch.api.SipiClientMock
 import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.infrastructure.CommandExecutor
 import swiss.dasch.test.SpecConfigurations
 import zio.ZIO
 import zio.nio.file.Files
@@ -48,6 +49,7 @@ object IngestServiceSpec extends ZIOSpecDefault {
     }
   }).provide(
     AssetInfoServiceLive.layer,
+    CommandExecutor.layer,
     ImageServiceLive.layer,
     IngestService.layer,
     MovingImageService.layer,
