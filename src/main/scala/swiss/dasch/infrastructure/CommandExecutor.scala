@@ -11,7 +11,7 @@ import zio.{Task, ZIO, ZLayer}
 
 import scala.sys.process.{ProcessLogger, stringToProcess}
 
-case class ProcessOutput(stdOut: String, stdErr: String)
+final case class ProcessOutput(stdout: String, stderr: String, exitCode: Int)
 final case class Command private[infrastructure] (cmd: String)
 final case class CommandExecutor(sipiConfig: SipiConfig, storageService: StorageService) {
 
@@ -35,16 +35,31 @@ final case class CommandExecutor(sipiConfig: SipiConfig, storageService: Storage
 
     override def buffer[T](f: => T): T = f
 
-    def getOutput: ProcessOutput = ProcessOutput(sbOut.toString(), sbErr.toString())
+    def buildOutput(exitCode: Int): ProcessOutput = ProcessOutput(sbOut.toString(), sbErr.toString(), exitCode)
   }
 
   def execute(command: Command): Task[ProcessOutput] = {
     val logger = new InMemoryProcessLogger()
     for {
       _   <- ZIO.logInfo(s"Executing command: ${command.cmd}")
-      out <- ZIO.attemptBlockingIO(command.cmd ! logger).as(logger.getOutput)
+      out <- ZIO.attemptBlockingIO(command.cmd !< logger).map(logger.buildOutput)
+      _   <- ZIO.logWarning(s"Command '${command.cmd}' stderr output: '${out.stdout}''").when(out.stderr.nonEmpty)
     } yield out
   }
+
+  /**
+   * Executes a command and returns the standard output.
+   * Fails if the command fails wih a non-zero exit code or
+   * if the stderr is not empty.
+   *
+   * @param command the command to execute.
+   * @return the standard output.
+   */
+  def executeOrFail(command: Command): Task[ProcessOutput] =
+    execute(command).flatMap { out =>
+      if (out.exitCode != 0) { ZIO.fail(new RuntimeException(s"Command failed: '${command.cmd}' : '${out.stderr}'")) }
+      else { ZIO.succeed(out) }
+    }
 }
 
 object CommandExecutor {

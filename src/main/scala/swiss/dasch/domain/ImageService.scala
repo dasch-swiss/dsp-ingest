@@ -71,7 +71,7 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
     FileFilters.isStillImage(image) &&
       sipiClient
         .queryImageFile(image)
-        .map(_.stdOut.split('\n'))
+        .map(_.stdout.split('\n'))
         .map { lines =>
           // check if the image has an orientation tag and if it is not horizontal
           lines
@@ -94,7 +94,7 @@ final case class ImageServiceLive(sipiClient: SipiClient, assetInfos: AssetInfoS
     val path = derivative.toPath
     sipiClient
       .queryImageFile(path)
-      .map(out => out.stdOut.split('\n'))
+      .map(out => out.stdout.split('\n'))
       .flatMap { lines =>
         def getPositiveInt(key: String): Option[Int Refined Positive] =
           lines

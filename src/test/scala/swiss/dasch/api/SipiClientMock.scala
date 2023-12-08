@@ -6,8 +6,8 @@
 package swiss.dasch.api
 
 import swiss.dasch.api.SipiClientMockMethodInvocation.*
-import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.*
+import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.infrastructure.ProcessOutput
 import zio.*
 import zio.nio.file.*
@@ -37,18 +37,18 @@ final case class SipiClientMock(
     outputFormat: SipiImageFormat
   ): UIO[ProcessOutput] =
     ZIO.ifZIO(dontTranscode.get)(
-      onTrue = ZIO.succeed(ProcessOutput("", "")),
+      onTrue = ZIO.succeed(ProcessOutput("", "", 0)),
       onFalse = Files.copy(fileIn, fileOut, StandardCopyOption.REPLACE_EXISTING).orDie *>
         invocations
           .update(_.appended(TranscodeImageFile(fileIn, fileOut, outputFormat)))
-          .as(ProcessOutput("", ""))
+          .as(ProcessOutput("", "", 0))
     )
 
   override def applyTopLeftCorrection(fileIn: Path, fileOut: Path): UIO[ProcessOutput] =
     Files.copy(fileIn, fileOut, StandardCopyOption.REPLACE_EXISTING).orDie *>
       invocations
         .update(_.appended(ApplyTopLeftCorrection(fileIn, fileOut)))
-        .as(ProcessOutput("", ""))
+        .as(ProcessOutput("", "", 0))
 
   override def queryImageFile(file: Path): UIO[ProcessOutput] = for {
     response <- queryImageFileReturnValue.get
@@ -63,7 +63,7 @@ final case class SipiClientMock(
   def noInteractions(): UIO[Boolean] = getInvocations().map(_.isEmpty)
 
   def setQueryImageFileOrientation(orientation: OrientationValue): UIO[Unit] = queryImageFileReturnValue.set(
-    ProcessOutput(s"Exif.Image.Orientation                       0x0112 Short       ${orientation.value}", "")
+    ProcessOutput(s"Exif.Image.Orientation                       0x0112 Short       ${orientation.value}", "", 0)
   )
 
   def setQueryImageDimensions(dimension: Dimensions): UIO[Unit] = queryImageFileReturnValue.set(
@@ -74,7 +74,8 @@ final case class SipiClientMock(
          |nx    = ${dimension.width} 
          |ny    = ${dimension.height}
          |""".stripMargin,
-      ""
+      "",
+      0
     )
   )
 
@@ -115,7 +116,7 @@ object SipiClientMock {
 
   val layer: ULayer[SipiClientMock] = ZLayer.fromZIO(for {
     invocations  <- Ref.make(List.empty[SipiClientMockMethodInvocation])
-    querySipiOut <- Ref.make[ProcessOutput](ProcessOutput("", ""))
+    querySipiOut <- Ref.make[ProcessOutput](ProcessOutput("", "", 0))
     failSilently <- Ref.make[Boolean](false)
   } yield SipiClientMock(invocations, querySipiOut, failSilently))
 }

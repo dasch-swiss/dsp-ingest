@@ -33,13 +33,7 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
       _       <- ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
       absPath <- file.toPath.toAbsolutePath
       cmd     <- executor.buildCommand("/sipi/scripts/export-moving-image-frames.sh", s"-i $absPath")
-      _ <- executor
-             .execute(cmd)
-             .flatMap(out =>
-               if (out.stdErr.nonEmpty) {
-                 ZIO.fail(new RuntimeException(s"Failed to extract keyframes for $file, $assetRef: ${out.stdErr}"))
-               } else ZIO.succeed(out.stdOut)
-             )
+      _       <- executor.executeOrFail(cmd)
     } yield ()
 
   def extractMetadata(file: DerivativeFile, assetRef: AssetRef): Task[MovingImageMetadata] =
@@ -51,16 +45,7 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
           "ffprobe",
           s"-v error -select_streams v:0 -show_entries stream=width,height,duration,r_frame_rate -print_format json -i $absPath"
         )
-      metadata <-
-        executor
-          .execute(cmd)
-          .flatMap(out =>
-            if (out.stdErr.nonEmpty) {
-              ZIO.fail(new RuntimeException(s"Failed to extract metadata  for $file, $assetRef: ${out.stdErr}"))
-            } else ZIO.succeed(out.stdOut)
-          )
-          .flatMap(parseMetadata)
-
+      metadata <- executor.executeOrFail(cmd).flatMap(out => parseMetadata(out.stdout))
     } yield metadata
 
   final case class FfprobeStream(width: Int, height: Int, duration: Double, r_frame_rate: String)
