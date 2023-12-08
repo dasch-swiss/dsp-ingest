@@ -9,26 +9,34 @@ import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.DerivativeFile.MovingImageDerivativeFile
 import swiss.dasch.infrastructure.CommandExecutor
 import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
+import zio.nio.file.Path
 import zio.{Task, ZIO, ZLayer}
 
 final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Double)
 
 case class MovingImageService(storage: StorageService, executor: CommandExecutor) {
 
-  def createDerivative(original: Original, assetRef: AssetRef): Task[MovingImageDerivativeFile] = {
-    val fileExtension = FilenameUtils.getExtension(original.originalFilename.toString)
+  def createDerivative(original: Original, assetRef: AssetRef): Task[MovingImageDerivativeFile] =
     for {
-      _ <- ZIO.unless(SupportedFileType.MovingImage.acceptsExtension(fileExtension))(
-             ZIO.die(new IllegalArgumentException(s"File extension $fileExtension is not supported for moving images"))
-           )
+      fileExtension <- ensureSupportedFileType(original.originalFilename.toString)
       assetDir      <- storage.getAssetDirectory(assetRef)
       derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
       derivative     = MovingImageDerivativeFile.unsafeFrom(derivativePath)
       _             <- storage.copyFile(original.file.toPath, derivativePath).as(Asset.makeOther(assetRef, original, derivative))
     } yield derivative
+
+  private def ensureSupportedFileType(file: Path | String) = {
+    val fileExtension = file match {
+      case path: Path  => FilenameUtils.getExtension(path.toString)
+      case str: String => FilenameUtils.getExtension(str)
+    }
+    ZIO
+      .die(new IllegalArgumentException(s"File extension $fileExtension is not supported for moving images"))
+      .unless(SupportedFileType.MovingImage.acceptsExtension(fileExtension))
+      .as(fileExtension)
   }
 
-  def extractKeyFrames(file: DerivativeFile, assetRef: AssetRef): Task[Unit] =
+  def extractKeyFrames(file: MovingImageDerivativeFile, assetRef: AssetRef): Task[Unit] =
     for {
       _       <- ZIO.logInfo(s"Extracting key frames for $file, $assetRef")
       absPath <- file.toPath.toAbsolutePath
@@ -36,7 +44,7 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
       _       <- executor.executeOrFail(cmd)
     } yield ()
 
-  def extractMetadata(file: DerivativeFile, assetRef: AssetRef): Task[MovingImageMetadata] =
+  def extractMetadata(file: MovingImageDerivativeFile, assetRef: AssetRef): Task[MovingImageMetadata] =
     for {
       _       <- ZIO.logInfo(s"Extracting metadata for $file, $assetRef")
       absPath <- file.toPath.toAbsolutePath
@@ -82,5 +90,14 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
 }
 
 object MovingImageService {
+  def createDerivative(
+    original: Original,
+    assetRef: AssetRef
+  ): ZIO[MovingImageService, Throwable, MovingImageDerivativeFile] =
+    ZIO.serviceWithZIO(_.createDerivative(original, assetRef))
+
+  def extractKeyFrames(file: MovingImageDerivativeFile, assetRef: AssetRef): ZIO[MovingImageService, Throwable, Unit] =
+    ZIO.serviceWithZIO(_.extractKeyFrames(file, assetRef))
+
   val layer = ZLayer.derive[MovingImageService]
 }
