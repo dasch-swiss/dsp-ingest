@@ -32,6 +32,7 @@ final case class IngestService(
       ref      <- AssetRef.makeNew(project)
       assetDir <- ensureAssetDirectoryExists(ref)
       asset    <- ingestAsset(fileToIngest, ref, assetDir).tapError(_ => tryCleanup(ref, assetDir).logError.ignore)
+      _        <- ZIO.logInfo(s"Successfully ingesting file $fileToIngest as ${asset.ref}")
     } yield asset
 
   private def ingestAsset(fileToIngest: Path, assetRef: AssetRef, assetDir: Path) =
@@ -47,7 +48,6 @@ final case class IngestService(
                  }
       _ <- assetInfo.createAssetInfo(asset)
       _ <- storage.delete(fileToIngest)
-      _ <- ZIO.logInfo(s"Finished ingesting file $fileToIngest")
     } yield asset
 
   private def ensureAssetDirectoryExists(assetRef: AssetRef): IO[IOException, Path] =
@@ -87,7 +87,7 @@ final case class IngestService(
 
   private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
     // remove all files and folders which start with the asset id and remove empty assetDir
-    ZIO.logInfo(s"Cleaning up ingest failed for asset $assetRef in directory $assetDir") *>
+    ZIO.logInfo(s"Failed ingest for $assetRef cleaning up in directory $assetDir") *>
       StorageService
         .findInPath(assetDir, p => ZIO.succeed(p.filename.toString.startsWith(assetRef.id.toString)), maxDepth = 1)
         .mapZIO(p => ZIO.ifZIO(Files.isDirectory(p))(storage.deleteRecursive(p).unit, storage.delete(p)))
