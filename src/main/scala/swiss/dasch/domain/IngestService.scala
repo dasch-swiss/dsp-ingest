@@ -29,9 +29,9 @@ final case class IngestService(
       _ <- ZIO.unlessZIO(FileFilters.isSupported(fileToIngest))(
              ZIO.fail(new IllegalArgumentException(s"File $fileToIngest is not a supported file."))
            )
-      assetRef <- AssetRef.makeNew(project)
-      assetDir <- ensureAssetDirectoryExists(assetRef)
-      asset    <- ingestAsset(fileToIngest, assetRef, assetDir).tapError(_ => tryCleanup(assetRef, assetDir))
+      ref      <- AssetRef.makeNew(project)
+      assetDir <- ensureAssetDirectoryExists(ref)
+      asset    <- ingestAsset(fileToIngest, ref, assetDir).tapError(_ => tryCleanup(ref, assetDir).logError.ignore)
     } yield asset
 
   private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
