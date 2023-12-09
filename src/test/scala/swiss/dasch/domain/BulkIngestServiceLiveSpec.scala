@@ -31,8 +31,27 @@ object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
     } yield assertTrue(importDirDeleted && mappingFileDeleted)
   })
 
+  private val getBulkIngestMappingCsvSuite = suite("getBulkIngestMappingCsv")(test("return the mapping csv file") {
+    val shortcode = ProjectShortcode.unsafeFrom("0001")
+    for {
+      // given
+      importDir <- StorageService
+                     .getTempDirectory()
+                     .map(_ / "import" / shortcode.value)
+                     .tap(Files.createDirectories(_))
+      mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
+      _             <- Files.createFile(mappingCsvFile)
+      _             <- Files.writeLines(mappingCsvFile, List("1,2,3"))
+      // when
+      mappingCsv <- BulkIngestService.getBulkIngestMappingCsv(shortcode)
+      // then
+      mappingCsvFileExists <- Files.exists(mappingCsvFile)
+    } yield assertTrue(mappingCsvFileExists && mappingCsv.contains("1,2,3"))
+  })
+
   val spec = suite("BulkIngestServiceLive")(
-    finalizeBulkIngestSuite
+    finalizeBulkIngestSuite,
+    getBulkIngestMappingCsvSuite
   ).provide(
     AssetInfoServiceLive.layer,
     BulkIngestServiceLive.layer,

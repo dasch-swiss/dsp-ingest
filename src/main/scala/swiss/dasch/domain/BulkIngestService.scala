@@ -26,6 +26,9 @@ object BulkIngestService {
 
   def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
     ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
+
+  def getBulkIngestMappingCsv(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Option[String]] =
+    ZIO.serviceWithZIO[BulkIngestService](_.getBulkIngestMappingCsv(shortcode))
 }
 
 case class IngestResult(success: Int = 0, failed: Int = 0) {
