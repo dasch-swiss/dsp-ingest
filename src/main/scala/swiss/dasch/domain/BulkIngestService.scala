@@ -23,6 +23,9 @@ trait BulkIngestService {
 object BulkIngestService {
   def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, IngestResult] =
     ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
+
+  def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
+    ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
 }
 
 case class IngestResult(success: Int = 0, failed: Int = 0) {
