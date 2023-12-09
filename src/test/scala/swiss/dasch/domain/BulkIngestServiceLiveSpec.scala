@@ -15,13 +15,14 @@ object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
                      .getTempDirectory()
                      .map(_ / "import" / shortcode.value)
                      .tap(Files.createDirectories(_))
-      _ <- Files.createFile(importDir / "0001.tif")
-      _ <- Files.createFile(importDir.parent.head / s"mapping-$shortcode.csv")
+      _             <- Files.createFile(importDir / "0001.tif")
+      mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
+      _             <- Files.createFile(mappingCsvFile)
       // when
       _ <- BulkIngestService.finalizeBulkIngest(shortcode)
       // then
       importDirDeleted   <- Files.exists(importDir).negate
-      mappingFileDeleted <- Files.exists(importDir.parent.head / s"mapping-$shortcode.csv").negate
+      mappingFileDeleted <- Files.exists(mappingCsvFile).negate
     } yield assertTrue(importDirDeleted && mappingFileDeleted)
   })
 
