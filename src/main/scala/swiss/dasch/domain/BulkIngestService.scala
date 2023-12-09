@@ -102,7 +102,7 @@ final case class BulkIngestServiceLive(
     _         <- ZIO.logInfo(s"Finalizing bulk ingest for project $shortcode")
     importDir <- getImportFolder(shortcode)
     mappingCsv = getMappingCsvFile(importDir, shortcode)
-    _         <- Files.deleteRecursive(importDir)
+    _         <- storage.deleteRecursive(importDir)
     _         <- storage.delete(mappingCsv)
     _         <- ZIO.logInfo(s"Finished finalizing bulk ingest for project $shortcode")
   } yield ()
