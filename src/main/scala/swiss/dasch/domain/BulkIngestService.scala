@@ -16,6 +16,7 @@ import java.nio.file.attribute.FileAttribute
 trait BulkIngestService {
 
   def startBulkIngest(shortcode: ProjectShortcode): Task[IngestResult]
+  def finalizeBulkIngest(shortcode: ProjectShortcode): Task[Unit]
   def getBulkIngestMappingCsv(shortcode: ProjectShortcode): Task[Option[String]]
 }
 
@@ -96,6 +97,15 @@ final case class BulkIngestServiceLive(
       val line                     = s"$ingestedFileRelativePath,$derivativeFilename"
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
+
+  override def finalizeBulkIngest(shortcode: ProjectShortcode): Task[Unit] = for {
+    _         <- ZIO.logInfo(s"Finalizing bulk ingest for project $shortcode")
+    importDir <- getImportFolder(shortcode)
+    mappingCsv = getMappingCsvFile(importDir, shortcode)
+    _         <- Files.deleteRecursive(importDir)
+    _         <- storage.delete(mappingCsv)
+    _         <- ZIO.logInfo(s"Finished finalizing bulk ingest for project $shortcode")
+  } yield ()
 
   override def getBulkIngestMappingCsv(shortcode: ProjectShortcode): Task[Option[String]] =
     for {

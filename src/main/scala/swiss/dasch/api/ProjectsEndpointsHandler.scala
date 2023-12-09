@@ -64,6 +64,11 @@ final case class ProjectsEndpointsHandler(
       code => bulkIngestService.startBulkIngest(code).logError.forkDaemon.as(ProjectResponse.make(code))
     )
 
+  val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize
+    .serverLogic(_ =>
+      code => bulkIngestService.finalizeBulkIngest(code).logError.forkDaemon.as(ProjectResponse.make(code))
+    )
+
   val getBulkIngestMappingCsvEndpoint: ZServerEndpoint[Any, Any] =
     projectEndpoints.getBulkIngestMappingCsv
       .serverLogic(_ =>
@@ -116,6 +121,7 @@ final case class ProjectsEndpointsHandler(
       getProjectByShortcodeEndpoint,
       getProjectChecksumReportEndpoint,
       postBulkIngestEndpoint,
+      postBulkIngestEndpointFinalize,
       getBulkIngestMappingCsvEndpoint,
       postExportEndpoint,
       getImportEndpoint

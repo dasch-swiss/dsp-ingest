@@ -131,6 +131,16 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     )
     .tag(projects)
 
+  val postBulkIngestFinalize = base.secureEndpoint.post
+    .in(projects / shortcodePathVar / "bulk-ingest" / "finalize")
+    .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
+    .description(
+      "Finalizes the bulk ingest. " +
+        "This will remove the files from the `tmp/<project_shortcode>` directory and the directory itself. " +
+        "This will remove also the mapping.csv file."
+    )
+    .tag(projects)
+
   val getBulkIngestMappingCsv = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "bulk-ingest" / "mapping.csv")
     .description(
