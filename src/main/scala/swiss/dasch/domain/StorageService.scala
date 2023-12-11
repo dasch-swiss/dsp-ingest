@@ -47,6 +47,7 @@ trait StorageService {
   def deleteRecursive(directory: Path): IO[IOException, Long]
 
   def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit]
+
 }
 
 object StorageService {
