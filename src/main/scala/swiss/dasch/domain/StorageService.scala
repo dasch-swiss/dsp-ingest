@@ -96,7 +96,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     getProjectDirectory(asset.belongsToProject).map(_ / segments(asset.id))
 
   private def segments(assetId: AssetId): Path = {
-    val assetString = assetId.toString
+    val assetString = assetId.value
     val segment1    = assetString.substring(0, 2)
     val segment2    = assetString.substring(2, 4)
     Path(segment1.toLowerCase, segment2.toLowerCase)

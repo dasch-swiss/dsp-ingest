@@ -55,7 +55,7 @@ object ProjectsEndpointsResponses {
 
     def make(assetInfo: AssetInfo, results: Chunk[ChecksumResult]): AssetCheckResultEntry =
       AssetCheckResultEntry(
-        assetInfo.assetRef.id.toString,
+        assetInfo.assetRef.id.value,
         assetInfo.originalFilename.toString,
         results.map(SingleFileCheckResultResponse.make).toList
       )

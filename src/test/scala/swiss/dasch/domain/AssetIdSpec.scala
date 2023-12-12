@@ -33,7 +33,7 @@ object AssetIdSpec extends ZIOSpecDefault {
       for {
         _  <- Random.setSeed(1977)
         id <- AssetId.makeNew
-      } yield assertTrue(id.toString == uuid)
+      } yield assertTrue(id.value == uuid)
     }
   )
 }
