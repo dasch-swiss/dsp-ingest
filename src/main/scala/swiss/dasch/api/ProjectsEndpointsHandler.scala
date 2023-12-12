@@ -67,17 +67,16 @@ final case class ProjectsEndpointsHandler(
 
   val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
     .serverLogic(_ =>
-      (shortcode, assetId) =>
-        {
-          val ref = AssetRef(assetId, shortcode)
-          assetInfoService
-            .findByAssetRef(ref)
-            .some
-            .mapBoth(
-              assetRefNotFoundOrServerError(_, ref),
-              AssetInfoResponse.from
-            )
-        }
+      (shortcode, assetId) => {
+        val ref = AssetRef(assetId, shortcode)
+        assetInfoService
+          .findByAssetRef(ref)
+          .some
+          .mapBoth(
+            assetRefNotFoundOrServerError(_, ref),
+            AssetInfoResponse.from
+          )
+      }
     )
 
   val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngest
