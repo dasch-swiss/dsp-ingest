@@ -158,7 +158,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
   val getProjectsAssetsInfo = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
     .out(jsonBody[AssetInfoResponse])
-    .tag(projects)
+    .tag(projects ++ "assets")
 
   val postBulkIngest = base.secureEndpoint.post
     .in(projects / shortcodePathVar / "bulk-ingest")

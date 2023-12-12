@@ -53,7 +53,7 @@ final case class ProjectsEndpointsHandler(
           )
     )
 
-  val getProjectChecksumReportEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsChecksumReport
+  private val getProjectChecksumReportEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsChecksumReport
     .serverLogic(_ =>
       shortcode =>
         reportService
@@ -65,7 +65,7 @@ final case class ProjectsEndpointsHandler(
           )
     )
 
-  val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
+  private val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
     .serverLogic(_ =>
       (shortcode, assetId) => {
         val ref = AssetRef(assetId, shortcode)
@@ -79,17 +79,17 @@ final case class ProjectsEndpointsHandler(
       }
     )
 
-  val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngest
+  private val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngest
     .serverLogic(_ =>
       code => bulkIngestService.startBulkIngest(code).logError.forkDaemon.as(ProjectResponse.make(code))
     )
 
-  val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize
+  private val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize
     .serverLogic(_ =>
       code => bulkIngestService.finalizeBulkIngest(code).logError.forkDaemon.as(ProjectResponse.make(code))
     )
 
-  val getBulkIngestMappingCsvEndpoint: ZServerEndpoint[Any, Any] =
+  private val getBulkIngestMappingCsvEndpoint: ZServerEndpoint[Any, Any] =
     projectEndpoints.getBulkIngestMappingCsv
       .serverLogic(_ =>
         code =>
@@ -102,7 +102,7 @@ final case class ProjectsEndpointsHandler(
             )
       )
 
-  val postExportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.postExport
+  private val postExportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.postExport
     .serverLogic(_ =>
       shortcode =>
         projectService
@@ -119,7 +119,7 @@ final case class ProjectsEndpointsHandler(
           )
     )
 
-  val getImportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.getImport
+  private val getImportEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.getImport
     .serverLogic(_ =>
       (shortcode, stream) =>
         importService
