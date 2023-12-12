@@ -73,7 +73,7 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
                      )
                    )
         actual <- AssetInfoService.findByAssetRef(asset)
-      } yield assertTrue(Some(expected) == actual)
+      } yield assertTrue(actual.contains(expected))
     },
     suite("create temp directory scoped")(
       test("should create a temp directory") {
