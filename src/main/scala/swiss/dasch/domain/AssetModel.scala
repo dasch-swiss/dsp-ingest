@@ -18,7 +18,7 @@ import zio.json.JsonCodec
 import zio.nio.file.Path
 import zio.{Random, UIO}
 
-opaque type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-_]{4,}$"]
+type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-_]{4,}$"]
 
 object AssetId {
   def make(id: String): Either[String, AssetId] = refineV(id)

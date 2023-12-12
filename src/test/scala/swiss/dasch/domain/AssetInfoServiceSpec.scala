@@ -39,7 +39,7 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                            |""".stripMargin)
                  )
             // when
-            actual <- AssetInfoService.findByAssetRef(assetRef)
+            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
             // then
           } yield assertTrue(
             actual.assetRef == assetRef,
@@ -79,7 +79,7 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                            |}
                            |""".stripMargin)
                  )
-            actual <- AssetInfoService.findByAssetRef(assetRef)
+            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
           } yield assertTrue(
             actual.assetRef == assetRef,
             actual.originalFilename == NonEmptyString.unsafeFrom("250x250.jp2"),

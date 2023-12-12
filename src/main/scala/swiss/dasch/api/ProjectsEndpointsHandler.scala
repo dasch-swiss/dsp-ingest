@@ -10,7 +10,12 @@ import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
 import swiss.dasch.api.ApiProblem.{BadRequest, InternalServerError}
-import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, ProjectResponse, UploadResponse}
+import swiss.dasch.api.ProjectsEndpointsResponses.{
+  AssetCheckResultResponse,
+  AssetInfoResponse,
+  ProjectResponse,
+  UploadResponse
+}
 import swiss.dasch.domain.*
 import zio.stream.ZStream
 import zio.{ZIO, ZLayer, stream}
@@ -20,7 +25,8 @@ final case class ProjectsEndpointsHandler(
   importService: ImportService,
   projectEndpoints: ProjectsEndpoints,
   projectService: ProjectService,
-  reportService: ReportService
+  reportService: ReportService,
+  assetInfoService: AssetInfoService
 ) extends HandlerFunctions {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsEndpoint
@@ -57,6 +63,20 @@ final case class ProjectsEndpointsHandler(
             projectNotFoundOrServerError(_, shortcode),
             AssetCheckResultResponse.make
           )
+    )
+
+  val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
+    .serverLogic(_ =>
+      (shortcode, assetId) => {
+        val ref = AssetRef(assetId, shortcode)
+        assetInfoService
+          .findByAssetRef(ref)
+          .some
+          .mapBoth(
+            assetRefNotFoundOrServerError(_, ref),
+            AssetInfoResponse.from
+          )
+      }jin
     )
 
   val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngest
@@ -120,6 +140,7 @@ final case class ProjectsEndpointsHandler(
       getProjectsEndpoint,
       getProjectByShortcodeEndpoint,
       getProjectChecksumReportEndpoint,
+      getProjectsAssetsInfoEndpoint,
       postBulkIngestEndpoint,
       postBulkIngestEndpointFinalize,
       getBulkIngestMappingCsvEndpoint,

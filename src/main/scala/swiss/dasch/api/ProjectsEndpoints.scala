@@ -13,8 +13,13 @@ import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import sttp.tapir.{CodecFormat, EndpointInput}
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, ProjectResponse, UploadResponse}
-import swiss.dasch.domain.{AssetInfo, ChecksumResult, ProjectShortcode, Report}
+import swiss.dasch.api.ProjectsEndpointsResponses.{
+  AssetCheckResultResponse,
+  AssetInfoResponse,
+  ProjectResponse,
+  UploadResponse
+}
+import swiss.dasch.domain.*
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.schema.{DeriveSchema, Schema}
 import zio.{Chunk, ZLayer}
@@ -91,6 +96,36 @@ object ProjectsEndpointsResponses {
     }
   }
 
+  final case class AssetInfoResponse(
+    internalFilename: String,
+    originalInternalFilename: String,
+    originalFilename: String,
+    checksumOriginal: String,
+    checksumDerivative: String,
+    width: Option[Int] = None,
+    height: Option[Int] = None,
+    duration: Option[Double] = None,
+    fps: Option[Double] = None
+  )
+  object AssetInfoResponse {
+
+    def from(assetInfo: AssetInfo): AssetInfoResponse =
+      AssetInfoResponse(
+        assetInfo.derivative.filename.toString,
+        assetInfo.original.filename.toString,
+        assetInfo.originalFilename.toString,
+        assetInfo.original.checksum.toString,
+        assetInfo.derivative.checksum.toString,
+        assetInfo.movingImageMetadata.map(_.width),
+        assetInfo.movingImageMetadata.map(_.height),
+        assetInfo.movingImageMetadata.map(_.duration),
+        assetInfo.movingImageMetadata.map(_.fps)
+      )
+
+    given codec: JsonCodec[AssetInfoResponse] = DeriveJsonCodec.gen[AssetInfoResponse]
+    given schema: Schema[AssetInfoResponse]   = DeriveSchema.gen[AssetInfoResponse]
+  }
+
   case class UploadResponse(status: String = "ok")
 
   object UploadResponse {
@@ -118,6 +153,11 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
   val getProjectsChecksumReport = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "checksumreport")
     .out(jsonBody[AssetCheckResultResponse])
+    .tag(projects)
+
+  val getProjectsAssetsInfo = base.secureEndpoint.get
+    .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
+    .out(jsonBody[AssetInfoResponse])
     .tag(projects)
 
   val postBulkIngest = base.secureEndpoint.post
@@ -171,6 +211,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
       getProjectsEndpoint,
       getProjectByShortcodeEndpoint,
       getProjectsChecksumReport,
+      getProjectsAssetsInfo,
       postBulkIngest,
       getBulkIngestMappingCsv,
       postExport,

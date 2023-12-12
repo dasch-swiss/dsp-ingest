@@ -25,6 +25,7 @@ trait StorageService {
   def getAssetDirectory(asset: AssetRef): UIO[Path]
   def getAssetDirectory(): UIO[Path]
   def getTempDirectory(): UIO[Path]
+  def fileExists(path: Path): IO[IOException, Boolean]
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
   def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
@@ -81,6 +82,9 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
 
   override def getTempDirectory(): UIO[Path] =
     ZIO.succeed(config.tempPath)
+
+  override def fileExists(path: Path): IO[IOException, Boolean] =
+    Files.exists(path)
 
   override def getAssetDirectory(): UIO[Path] =
     ZIO.succeed(config.assetPath)
