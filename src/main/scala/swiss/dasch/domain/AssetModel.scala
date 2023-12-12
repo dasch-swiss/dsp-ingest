@@ -27,7 +27,7 @@ object AssetId extends RefinedTypeOps[AssetId, String] {
       AssetId.unsafeFrom(Base62.encode(uuid).value)
     )
 
-  def romPath(file: Path): Option[AssetId] = {
+  def fromPath(file: Path): Option[AssetId] = {
     val filename = file.filename.toString
 
     if (filename.contains(".")) AssetId.from(filename.substring(0, filename.indexOf("."))).toOption
