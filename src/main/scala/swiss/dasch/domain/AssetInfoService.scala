@@ -85,7 +85,7 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
   override def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo] =
     for {
       content   <- storage.loadJsonFile[AssetInfoFileContent](infoFile)
-      assetMaybe = AssetId.makeFromPath(Path(content.internalFilename.toString)).map(id => AssetRef(id, shortcode))
+      assetMaybe = AssetId.fromPath(Path(content.internalFilename.toString)).map(id => AssetRef(id, shortcode))
       assetInfo <- assetMaybe match {
                      case Some(asset) => ZIO.succeed(toAssetInfo(content, infoFile.parent.orNull, asset))
                      case None        => ZIO.fail(IllegalArgumentException(s"Unable to parse asset id from $infoFile"))
@@ -134,7 +134,7 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
 
   override def updateAssetInfoForDerivative(derivative: Path): Task[Unit] = for {
     assetId <- ZIO
-                 .fromOption(AssetId.makeFromPath(derivative))
+                 .fromOption(AssetId.fromPath(derivative))
                  .orElseFail(IllegalArgumentException(s"Unable to parse asset id from $derivative"))
     infoFile = derivative.parent.map(_ / infoFilename(assetId)).orNull
     _       <- ZIO.whenZIO(Files.exists(infoFile))(updateDerivativeChecksum(infoFile, derivative))

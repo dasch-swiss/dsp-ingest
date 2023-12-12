@@ -5,8 +5,7 @@
 
 package swiss.dasch.domain
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.refineV
+import eu.timepit.refined.api.{Refined, RefinedTypeOps}
 import eu.timepit.refined.string.MatchesRegex
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
@@ -20,23 +19,22 @@ import zio.{Random, UIO}
 
 type AssetId = String Refined MatchesRegex["^[a-zA-Z0-9-_]{4,}$"]
 
-object AssetId {
-  def make(id: String): Either[String, AssetId] = refineV(id)
+object AssetId extends RefinedTypeOps[AssetId, String] {
 
   def makeNew: UIO[AssetId] = Random.nextUUID
     .map(uuid =>
-      // the unsafeApply is safe here because the [[Base62EncodedUuid]] is valid subset of AssetId
-      Refined.unsafeApply(Base62.encode(uuid).value)
+      // the unsafeFrom is safe here because the [[Base62EncodedUuid]] is valid subset of AssetId
+      AssetId.unsafeFrom(Base62.encode(uuid).value)
     )
 
-  def makeFromPath(file: Path): Option[AssetId] = {
+  def romPath(file: Path): Option[AssetId] = {
     val filename = file.filename.toString
 
-    if (filename.contains(".")) AssetId.make(filename.substring(0, filename.indexOf("."))).toOption
+    if (filename.contains(".")) AssetId.from(filename.substring(0, filename.indexOf("."))).toOption
     else None
   }
 
-  given codec: JsonCodec[AssetId] = JsonCodec[String].transformOrFail(AssetId.make, _.toString)
+  given codec: JsonCodec[AssetId] = JsonCodec[String].transformOrFail(AssetId.from, _.toString)
 }
 
 final case class AssetRef(id: AssetId, belongsToProject: ProjectShortcode)
@@ -79,7 +77,7 @@ object Asset {
     OtherAsset(assetRef, original, derivative)
 }
 
-def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.makeFromPath(file).map(_ => file)
+def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.fromPath(file).map(_ => file)
 
 opaque type OriginalFile = Path
 
@@ -102,14 +100,14 @@ object OriginalFile {
   }
 
   extension (file: OriginalFile) {
-    def assetId: AssetId = AssetId.makeFromPath(file).head
+    def assetId: AssetId = AssetId.fromPath(file).head
   }
 }
 
 sealed trait DerivativeFile(file: Path) {
   final def toPath: Path             = file
   final def filename: NonEmptyString = NonEmptyString.unsafeFrom(file.filename.toString)
-  final def assetId: AssetId         = AssetId.makeFromPath(file).head
+  final def assetId: AssetId         = AssetId.fromPath(file).head
 }
 
 object DerivativeFile {
