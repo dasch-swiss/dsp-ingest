@@ -6,7 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.Asset.MovingImageAsset
+import swiss.dasch.domain.Asset.{MovingImageAsset, StillImageAsset}
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.nio.file.{Files, Path}
@@ -31,19 +31,32 @@ private object AssetInfoFileContent {
     asset: Asset,
     originalChecksum: Sha256Hash,
     derivativeChecksum: Sha256Hash,
-    metadata: Option[MovingImageMetadata]
-  ): AssetInfoFileContent =
+    metadata: Option[MovingImageMetadata | Dimensions]
+  ): AssetInfoFileContent = {
+    val dim = metadata.map {
+      case MovingImageMetadata(d, _, _) => d
+      case d: Dimensions                => d
+    }
+    val duration = metadata.flatMap {
+      case MovingImageMetadata(_, duration, _) => Some(duration)
+      case _                                   => None
+    }
+    val fps = metadata.flatMap {
+      case MovingImageMetadata(_, _, fps) => Some(fps)
+      case _                              => None
+    }
     AssetInfoFileContent(
       asset.derivative.filename,
       asset.original.internalFilename,
       asset.original.originalFilename,
       originalChecksum,
       derivativeChecksum,
-      metadata.map(_.width),
-      metadata.map(_.height),
-      metadata.map(_.duration),
-      metadata.map(_.fps)
+      dim.map(_.width.value),
+      dim.map(_.height.value),
+      duration,
+      fps
     )
+  }
 
   given codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
 }
@@ -57,7 +70,7 @@ final case class AssetInfo(
   original: FileAndChecksum,
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
-  movingImageMetadata: Option[MovingImageMetadata] = None
+  metadata: Option[MovingImageMetadata] = None
 )
 
 trait AssetInfoService {
@@ -115,15 +128,16 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     val movingImageMetadata = for {
       width    <- raw.width
       height   <- raw.height
+      dim      <- Dimensions.from(width, height).toOption
       duration <- raw.duration
       fps      <- raw.fps
-    } yield MovingImageMetadata(width, height, duration, fps)
+    } yield MovingImageMetadata(dim, duration, fps)
     AssetInfo(
       assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),
       originalFilename = raw.originalFilename,
       derivative = FileAndChecksum(infoFileDirectory / raw.internalFilename.toString, raw.checksumDerivative),
-      movingImageMetadata = movingImageMetadata
+      metadata = movingImageMetadata
     )
   }
 
@@ -153,6 +167,7 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative.toPath)
     metadata = asset match {
                  case mi: MovingImageAsset => Some(mi.metadata)
+                 case si: StillImageAsset  => Some(si.metadata)
                  case _                    => None
                }
     content = AssetInfoFileContent.make(asset, checksumOriginal, checksumDerivative, metadata)

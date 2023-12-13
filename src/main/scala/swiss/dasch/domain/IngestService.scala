@@ -5,6 +5,7 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.Asset.{MovingImageAsset, OtherAsset, StillImageAsset}
@@ -62,10 +63,12 @@ final case class IngestService(
     }
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
-    ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *>
-      stillImageService
-        .createDerivative(original.file)
-        .map(derivative => Asset.makeStillImage(assetRef, original, derivative))
+    ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *> {
+      for {
+        derivative <- stillImageService.createDerivative(original.file)
+        dim        <- stillImageService.getDimensions(derivative)
+      } yield Asset.makeStillImage(assetRef, original, derivative, dim)
+    }
 
   private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {

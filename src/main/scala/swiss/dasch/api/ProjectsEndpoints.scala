@@ -116,10 +116,10 @@ object ProjectsEndpointsResponses {
         assetInfo.originalFilename.toString,
         assetInfo.original.checksum.toString,
         assetInfo.derivative.checksum.toString,
-        assetInfo.movingImageMetadata.map(_.width),
-        assetInfo.movingImageMetadata.map(_.height),
-        assetInfo.movingImageMetadata.map(_.duration),
-        assetInfo.movingImageMetadata.map(_.fps)
+        assetInfo.metadata.map(_.dimensions.width.value),
+        assetInfo.metadata.map(_.dimensions.height.value),
+        assetInfo.metadata.map(_.duration),
+        assetInfo.metadata.map(_.fps)
       )
 
     given codec: JsonCodec[AssetInfoResponse] = DeriveJsonCodec.gen[AssetInfoResponse]

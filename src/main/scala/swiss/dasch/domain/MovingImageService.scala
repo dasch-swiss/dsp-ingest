@@ -12,7 +12,7 @@ import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
 import zio.nio.file.Path
 import zio.{Task, ZIO, ZLayer}
 
-final case class MovingImageMetadata(width: Int, height: Int, duration: Double, fps: Double)
+final case class MovingImageMetadata(dimensions: Dimensions, duration: Double, fps: Double)
 
 case class MovingImageService(storage: StorageService, executor: CommandExecutor) {
 
@@ -75,7 +75,8 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
             numerator   <- fpsFraction(0).trim.toDoubleOption
             denominator <- fpsFraction(1).trim.toDoubleOption.filter(_ != 0)
             fps          = numerator / denominator
-          } yield MovingImageMetadata(stream.width, stream.height, stream.duration, fps)
+            dim         <- Dimensions.from(stream.width, stream.height).toOption
+          } yield MovingImageMetadata(dim, stream.duration, fps)
         } else { None }
       }
   }

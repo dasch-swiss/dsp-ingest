@@ -56,7 +56,13 @@ sealed trait Asset {
 }
 
 object Asset {
-  final case class StillImageAsset(ref: AssetRef, original: Original, derivative: JpxDerivativeFile) extends Asset
+  final case class StillImageAsset(
+    ref: AssetRef,
+    original: Original,
+    derivative: JpxDerivativeFile,
+    metadata: Dimensions
+  ) extends Asset
+
   final case class MovingImageAsset(
     ref: AssetRef,
     original: Original,
@@ -65,8 +71,14 @@ object Asset {
   ) extends Asset
   final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile) extends Asset
 
-  def makeStillImage(assetRef: AssetRef, original: Original, derivative: JpxDerivativeFile): StillImageAsset =
-    StillImageAsset(assetRef, original, derivative)
+  def makeStillImage(
+    assetRef: AssetRef,
+    original: Original,
+    derivative: JpxDerivativeFile,
+    metadata: Dimensions
+  ): StillImageAsset =
+    StillImageAsset(assetRef, original, derivative, metadata)
+
   def makeMovingImageAsset(
     assetRef: AssetRef,
     original: Original,
