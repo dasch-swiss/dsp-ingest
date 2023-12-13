@@ -33,9 +33,9 @@ private object AssetInfoFileContent {
     metadata: AssetMetadata
   ): AssetInfoFileContent = {
     val dim = metadata match {
-      case MovingImageMetadata(dim, _, _) => Some(dim)
-      case d: Dimensions                  => Some(d)
-      case _                              => None
+      case MovingImageMetadata(d, _, _) => Some(d)
+      case d: Dimensions                => Some(d)
+      case _                            => None
     }
     val duration = metadata match {
       case MovingImageMetadata(_, duration, _) => Some(duration)
