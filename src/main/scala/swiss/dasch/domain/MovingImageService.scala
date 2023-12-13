@@ -12,8 +12,6 @@ import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
 import zio.nio.file.Path
 import zio.{Task, ZIO, ZLayer}
 
-final case class MovingImageMetadata(dimensions: Dimensions, duration: Double, fps: Double)
-
 case class MovingImageService(storage: StorageService, executor: CommandExecutor) {
 
   def createDerivative(original: Original, assetRef: AssetRef): Task[MovingImageDerivativeFile] =

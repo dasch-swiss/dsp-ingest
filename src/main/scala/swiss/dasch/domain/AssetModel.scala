@@ -51,6 +51,7 @@ sealed trait Asset {
   def ref: AssetRef
   def original: Original
   def derivative: DerivativeFile
+  def metadata: AssetMetadata
   final def id: AssetId                        = ref.id
   final def belongsToProject: ProjectShortcode = ref.belongsToProject
 }
@@ -69,7 +70,12 @@ object Asset {
     derivative: DerivativeFile,
     metadata: MovingImageMetadata
   ) extends Asset
-  final case class OtherAsset(ref: AssetRef, original: Original, derivative: DerivativeFile) extends Asset
+
+  final case class OtherAsset(
+    ref: AssetRef,
+    original: Original,
+    derivative: DerivativeFile
+  ) extends Asset { override val metadata: AssetMetadata = EmptyMetadata }
 
   def makeStillImage(
     assetRef: AssetRef,

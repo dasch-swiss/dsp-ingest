@@ -11,24 +11,9 @@ import eu.timepit.refined.refineV
 import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import zio.*
-import zio.json.interop.refined.*
-import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.nio.file.{Files, Path}
 
 import java.io.IOException
-
-final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive)
-object Dimensions {
-  given codec: JsonCodec[Dimensions] = DeriveJsonCodec.gen[Dimensions]
-
-  def unsafeFrom(width: Int, height: Int): Dimensions =
-    Dimensions.from(width, height).fold(msg => throw new IllegalArgumentException(msg), identity)
-  def from(width: Int, height: Int): Either[String, Dimensions] =
-    for {
-      w <- refineV[Positive](width)
-      h <- refineV[Positive](height)
-    } yield Dimensions(w, h)
-}
 
 trait StillImageService {
 
