@@ -70,7 +70,7 @@ final case class AssetInfo(
   original: FileAndChecksum,
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
-  metadata: Option[MovingImageMetadata] = None
+  metadata: AssetMetadata = EmptyMetadata
 )
 
 trait AssetInfoService {
@@ -125,19 +125,23 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     infoFileDirectory: Path,
     asset: AssetRef
   ): AssetInfo = {
+    val dimensions = for {
+      width  <- raw.width
+      height <- raw.height
+      dim    <- Dimensions.from(width, height).toOption
+    } yield dim
     val movingImageMetadata = for {
-      width    <- raw.width
-      height   <- raw.height
-      dim      <- Dimensions.from(width, height).toOption
+      dim      <- dimensions
       duration <- raw.duration
       fps      <- raw.fps
     } yield MovingImageMetadata(dim, duration, fps)
+    val metadata = movingImageMetadata.orElse(dimensions).getOrElse(EmptyMetadata)
     AssetInfo(
       assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),
       originalFilename = raw.originalFilename,
       derivative = FileAndChecksum(infoFileDirectory / raw.internalFilename.toString, raw.checksumDerivative),
-      metadata = movingImageMetadata
+      metadata = metadata
     )
   }
 

@@ -109,18 +109,28 @@ object ProjectsEndpointsResponses {
   )
   object AssetInfoResponse {
 
-    def from(assetInfo: AssetInfo): AssetInfoResponse =
+    def from(assetInfo: AssetInfo): AssetInfoResponse = {
+      val dim = assetInfo.metadata match {
+        case MovingImageMetadata(d, _, _) => Some(d)
+        case d: Dimensions                => Some(d)
+        case _                            => None
+      }
+      val movingImageMeta = assetInfo.metadata match {
+        case m: MovingImageMetadata => Some(m)
+        case _                      => None
+      }
       AssetInfoResponse(
         assetInfo.derivative.filename.toString,
         assetInfo.original.filename.toString,
         assetInfo.originalFilename.toString,
         assetInfo.original.checksum.toString,
         assetInfo.derivative.checksum.toString,
-        assetInfo.metadata.map(_.dimensions.width.value),
-        assetInfo.metadata.map(_.dimensions.height.value),
-        assetInfo.metadata.map(_.duration),
-        assetInfo.metadata.map(_.fps)
+        dim.map(_.width.value),
+        dim.map(_.height.value),
+        movingImageMeta.map(_.duration),
+        movingImageMeta.map(_.fps)
       )
+    }
 
     given codec: JsonCodec[AssetInfoResponse] = DeriveJsonCodec.gen[AssetInfoResponse]
     given schema: Schema[AssetInfoResponse]   = DeriveSchema.gen[AssetInfoResponse]

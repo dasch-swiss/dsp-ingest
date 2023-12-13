@@ -48,7 +48,7 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             actual.original.checksum == checksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
             actual.derivative.checksum == checksumDerivative,
-            actual.metadata.isEmpty
+            actual.metadata == EmptyMetadata
           )
         }
       },
@@ -87,9 +87,8 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             actual.original.checksum == checksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
             actual.derivative.checksum == checksumDerivative,
-            actual.metadata.contains(
+            actual.metadata ==
               MovingImageMetadata(Dimensions.unsafeFrom(640, 480), duration = 3.14, fps = 60)
-            )
           )
         }
       }
