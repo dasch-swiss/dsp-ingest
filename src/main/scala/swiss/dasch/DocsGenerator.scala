@@ -1,26 +1,31 @@
 package swiss.dasch
 
 import sttp.apispec.openapi.circe.yaml.*
+import sttp.tapir.AnyEndpoint
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.version.BuildInfo
-import zio.{ZIO, ZIOAppDefault}
+import zio.nio.file.{Files, Path}
+import zio.{Chunk, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 object DocsGenerator extends ZIOAppDefault {
+  private val interp: OpenAPIDocsInterpreter = OpenAPIDocsInterpreter()
 
   override def run = {
-    val interp = OpenAPIDocsInterpreter()
     for {
-      _   <- ZIO.logInfo("Generating OpenAPI docs")
-      mon <- ZIO.serviceWith[MonitoringEndpoints](_.endpoints)
-      prj <- ZIO.serviceWith[ProjectsEndpoints](_.endpoints)
-      mtn <- ZIO.serviceWith[MaintenanceEndpoints](_.endpoints)
-      apis = mon ++ (prj ++ mtn).map(_.endpoint)
-      docs = interp.toOpenAPI(apis, BuildInfo.name, BuildInfo.version)
-      _   <- ZIO.logInfo(s"Found ${docs.toYaml}")
+      _    <- ZIO.logInfo("Generating OpenAPI docs")
+      args <- getArgs
+      mon  <- ZIO.serviceWith[MonitoringEndpoints](_.endpoints)
+      prj  <- ZIO.serviceWith[ProjectsEndpoints](_.endpoints.map(_.endpoint))
+      mtn  <- ZIO.serviceWith[MaintenanceEndpoints](_.endpoints.map(_.endpoint))
+      path  = Path(args.head)
+      _    <- safeToFile(mon, path, "monitoring")
+      _    <- safeToFile(prj, path, "projects")
+      _    <- safeToFile(mtn, path, "maintenance")
+      _    <- ZIO.logInfo(s"Found $args")
     } yield 0
-  }.provide(
+  }.provideSome[ZIOAppArgs](
     AuthServiceLive.layer,
     BaseEndpoints.layer,
     Configuration.layer,
@@ -29,4 +34,14 @@ object DocsGenerator extends ZIOAppDefault {
     ProjectsEndpoints.layer
     //        ZLayer.Debug.mermaid ,
   )
+
+  private def safeToFile(endpoints: Seq[AnyEndpoint], path: Path, name: String) = {
+    val content = interp.toOpenAPI(endpoints, BuildInfo.name + "-monitoring", BuildInfo.version)
+    for {
+      _     <- ZIO.logInfo(s"Writing to $path")
+      target = path / s"openapi-$name.yaml"
+      _     <- Files.createFile(target)
+      _     <- Files.writeBytes(target, Chunk.fromArray(content.toYaml.getBytes))
+    } yield ()
+  }
 }
