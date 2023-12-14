@@ -36,10 +36,10 @@ object DocsGenerator extends ZIOAppDefault {
   )
 
   private def safeToFile(endpoints: Seq[AnyEndpoint], path: Path, name: String) = {
-    val content = interp.toOpenAPI(endpoints, BuildInfo.name + "-monitoring", BuildInfo.version)
+    val content = interp.toOpenAPI(endpoints, s"${BuildInfo.name}-$name", BuildInfo.version)
     for {
       _     <- ZIO.logInfo(s"Writing to $path")
-      target = path / s"openapi-$name.yaml"
+      target = path / s"openapi-$name.yml"
       _     <- Files.createFile(target)
       _     <- Files.writeBytes(target, Chunk.fromArray(content.toYaml.getBytes))
     } yield ()

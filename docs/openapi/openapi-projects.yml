@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
-  title: dsp-ingest-monitoring
-  version: v0.4.0-41-gbf58e5e-dirty
+  title: dsp-ingest-projects
+  version: v0.4.0-42-g01d3b97-dirty
 paths:
   /projects:
     get:

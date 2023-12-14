@@ -1,1 +1,1 @@
-[OAD(./docs/openapi/openapi-projects.yml)]
+[OAD(./docs/openapi/openapi-maintenance.yml)]

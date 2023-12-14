@@ -1,27 +1,26 @@
 openapi: 3.1.0
 info:
-  title: dsp-ingest-monitoring
-  version: v0.4.0-41-gbf58e5e-dirty
+  title: dsp-ingest-maintenance
+  version: v0.4.0-42-g01d3b97-dirty
 paths:
-  /info:
-    get:
+  /maintenance/apply-top-left-correction/{shortcode}:
+    post:
       tags:
-      - monitoring
-      operationId: getInfo
+      - maintenance
+      operationId: postMaintenanceApply-top-left-correctionShortcode
+      parameters:
+      - name: shortcode
+        in: path
+        description: The shortcode of the project must be an exactly 4 characters
+          long hexadecimal string.
+        required: true
+        schema:
+          type: string
+          pattern: ^\p{XDigit}{4,4}$
+        example: '0001'
       responses:
-        '200':
+        '202':
           description: ''
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InfoEndpointResponse'
-              example:
-                name: dsp-ingest
-                version: v0.4.0-41-gbf58e5e-dirty
-                scalaVersion: 3.3.1
-                sbtVersion: 1.9.7
-                buildTime: 2023-12-14 20:44:49.037+0100
-                gitCommit: bf58e5e07202ace0cfea76defb8c78a2bd8b57ff
         '400':
           description: ''
           content:
@@ -52,20 +51,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Unhealthy'
-  /health:
-    get:
+      security:
+      - httpAuth: []
+  /maintenance/create-originals/{shortcode}:
+    post:
       tags:
-      - monitoring
-      operationId: getHealth
+      - maintenance
+      operationId: postMaintenanceCreate-originalsShortcode
+      parameters:
+      - name: shortcode
+        in: path
+        description: The shortcode of the project must be an exactly 4 characters
+          long hexadecimal string.
+        required: true
+        schema:
+          type: string
+          pattern: ^\p{XDigit}{4,4}$
+        example: '0001'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/MappingEntry'
+        required: false
       responses:
-        '200':
+        '202':
           description: ''
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Health'
-              example:
-                status: UP
         '400':
           description: ''
           content:
@@ -96,13 +109,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Unhealthy'
-  /metrics:
+      security:
+      - httpAuth: []
+  /maintenance/needs-top-left-correction:
     get:
       tags:
-      - monitoring
-      operationId: getMetrics
+      - maintenance
+      operationId: getMaintenanceNeeds-top-left-correction
       responses:
-        '200':
+        '202':
           description: ''
           content:
             text/plain:
@@ -138,6 +153,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Unhealthy'
+      security:
+      - httpAuth: []
+  /maintenance/needs-originals:
+    get:
+      tags:
+      - maintenance
+      operationId: getMaintenanceNeeds-originals
+      parameters:
+      - name: imagesOnly
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '202':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unauthorized'
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        '503':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unhealthy'
+      security:
+      - httpAuth: []
 components:
   schemas:
     Argument:
@@ -159,41 +226,22 @@ components:
             $ref: '#/components/schemas/Argument'
     DOWN:
       type: object
-    Health:
-      required:
-      - status
-      type: object
-      properties:
-        status:
-          $ref: '#/components/schemas/Status'
-    InfoEndpointResponse:
-      required:
-      - name
-      - version
-      - scalaVersion
-      - sbtVersion
-      - buildTime
-      - gitCommit
-      type: object
-      properties:
-        name:
-          type: string
-        version:
-          type: string
-        scalaVersion:
-          type: string
-        sbtVersion:
-          type: string
-        buildTime:
-          type: string
-        gitCommit:
-          type: string
     InternalServerError:
       required:
       - errorMessage
       type: object
       properties:
         errorMessage:
+          type: string
+    MappingEntry:
+      required:
+      - internalFilename
+      - originalFilename
+      type: object
+      properties:
+        internalFilename:
+          type: string
+        originalFilename:
           type: string
     NotFound:
       required:
@@ -225,3 +273,7 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/Status'
+  securitySchemes:
+    httpAuth:
+      type: http
+      scheme: bearer
