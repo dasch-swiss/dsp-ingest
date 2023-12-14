@@ -118,7 +118,7 @@ lazy val root = (project in file("."))
       "apt-get update && apt-get install -y openjdk-17-jre-headless && apt-get clean"
     ),
     dockerCommands := dockerCommands.value.filterNot {
-      case Cmd("USER", args*) => true
+      case Cmd("USER",  args @ _*) => true
       case cmd                    => false
     }
   )
