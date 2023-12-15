@@ -5,6 +5,7 @@
 
 package swiss.dasch
 
+import sttp.apispec.openapi.Server
 import sttp.apispec.openapi.circe.yaml.*
 import sttp.tapir.AnyEndpoint
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
@@ -41,7 +42,14 @@ object DocsGenerator extends ZIOAppDefault {
   )
 
   private def safeToFile(endpoints: Seq[AnyEndpoint], path: Path, name: String) = {
-    val content = interp.toOpenAPI(endpoints, s"${BuildInfo.name}-$name", BuildInfo.version)
+    val content = interp
+      .toOpenAPI(endpoints, s"${BuildInfo.name}-$name", BuildInfo.version)
+      .servers(
+        List(
+          Server(url = "http://localhost:3340", description = Some("Local development server")),
+          Server(url = "https://ingest.dev.dasch.swiss", description = Some("Production server"))
+        )
+      )
     for {
       _     <- ZIO.logInfo(s"Writing to $path")
       target = path / s"openapi-$name.yml"

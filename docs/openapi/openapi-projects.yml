@@ -1,7 +1,12 @@
 openapi: 3.1.0
 info:
   title: dsp-ingest-projects
-  version: v0.4.0-54-g7bc87a1-dirty
+  version: v0.4.0-48-g798b45c-dirty
+servers:
+- url: http://localhost:3340
+  description: Local development server
+- url: https://ingest.dev.dasch.swiss
+  description: Production server
 paths:
   /projects:
     get:
