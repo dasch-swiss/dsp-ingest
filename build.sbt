@@ -1,8 +1,7 @@
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerRepository}
 import com.typesafe.sbt.packager.docker.Cmd
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerRepository}
 
-import scala.collection.immutable.Seq
-import sys.process.*
+import scala.sys.process.*
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
@@ -15,7 +14,7 @@ val zioConfigVersion            = "3.0.7"
 val zioHttpVersion              = "3.0.0-RC4"
 val zioJsonVersion              = "0.6.2"
 val zioLoggingVersion           = "2.1.16"
-val zioMetricsConnectorsVersion = "2.2.1"
+val zioMetricsConnectorsVersion = "2.3.0"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC21"
@@ -36,7 +35,8 @@ val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-json-zio"          % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-refined"           % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"      % tapirVersion
 )
 
 val metrics = Seq(
@@ -56,7 +56,8 @@ lazy val root = (project in file("."))
       BuildInfoKey.action("gitCommit")(gitCommit)
     ),
     buildInfoOptions += BuildInfoOption.BuildTime,
-    buildInfoPackage := "swiss.dasch.version"
+    buildInfoPackage    := "swiss.dasch.version",
+    Compile / mainClass := Some("swiss.dasch.Main")
   )
   .settings(
     name := "dsp-ingest",
