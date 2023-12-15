@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: dsp-ingest-projects
-  version: v0.4.0-42-g01d3b97-dirty
+  version: v0.4.0-54-g7bc87a1-dirty
 paths:
   /projects:
     get:
@@ -162,10 +162,70 @@ paths:
                 $ref: '#/components/schemas/Unhealthy'
       security:
       - httpAuth: []
+  /projects/{shortcode}/assets/{assetId}:
+    get:
+      tags:
+      - assets
+      operationId: getProjectsShortcodeAssetsAssetid
+      parameters:
+      - name: shortcode
+        in: path
+        description: The shortcode of the project must be an exactly 4 characters
+          long hexadecimal string.
+        required: true
+        schema:
+          type: string
+          pattern: ^\p{XDigit}{4,4}$
+        example: '0001'
+      - name: assetId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9-_]{4,}$
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetInfoResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unauthorized'
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        '503':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unhealthy'
+      security:
+      - httpAuth: []
   /projects/{shortcode}/bulk-ingest:
     post:
       tags:
-      - projects
+      - bulk-ingest
       description: Triggers an ingest on the project with the given shortcode. Currently
         only supports ingest of images. The files are expected to be in the `tmp/<project_shortcode>`
         directory.
@@ -221,10 +281,130 @@ paths:
                 $ref: '#/components/schemas/Unhealthy'
       security:
       - httpAuth: []
+  /projects/{shortcode}/bulk-ingest/finalize:
+    post:
+      tags:
+      - bulk-ingest
+      description: Finalizes the bulk ingest. This will remove the files from the
+        `tmp/<project_shortcode>` directory and the directory itself. This will remove
+        also the mapping.csv file.
+      operationId: postProjectsShortcodeBulk-ingestFinalize
+      parameters:
+      - name: shortcode
+        in: path
+        description: The shortcode of the project must be an exactly 4 characters
+          long hexadecimal string.
+        required: true
+        schema:
+          type: string
+          pattern: ^\p{XDigit}{4,4}$
+        example: '0001'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+              example:
+                id: '0001'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unauthorized'
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        '503':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unhealthy'
+      security:
+      - httpAuth: []
+  /projects/{shortcode}/bulk-ingest/mapping.csv:
+    get:
+      tags:
+      - bulk-ingest
+      description: 'Get the current result of the bulk ingest, may be incomplete.
+        The result is a csv with the following structure: original,derivative'
+      operationId: getProjectsShortcodeBulk-ingestMapping.csv
+      parameters:
+      - name: shortcode
+        in: path
+        description: The shortcode of the project must be an exactly 4 characters
+          long hexadecimal string.
+        required: true
+        schema:
+          type: string
+          pattern: ^\p{XDigit}{4,4}$
+        example: '0001'
+      responses:
+        '200':
+          description: ''
+          headers:
+            Content-Type:
+              required: true
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '401':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unauthorized'
+        '404':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+        '503':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unhealthy'
+      security:
+      - httpAuth: []
   /projects/{shortcode}/export:
     post:
       tags:
-      - projects
+      - import/export
       operationId: postProjectsShortcodeExport
       parameters:
       - name: shortcode
@@ -288,7 +468,7 @@ paths:
   /projects/{shortcode}/import:
     get:
       tags:
-      - projects
+      - import/export
       operationId: getProjectsShortcodeImport
       parameters:
       - name: shortcode
@@ -405,6 +585,37 @@ components:
         numberOfChecksumMatches:
           type: integer
           format: int32
+    AssetInfoResponse:
+      required:
+      - internalFilename
+      - originalInternalFilename
+      - originalFilename
+      - checksumOriginal
+      - checksumDerivative
+      type: object
+      properties:
+        internalFilename:
+          type: string
+        originalInternalFilename:
+          type: string
+        originalFilename:
+          type: string
+        checksumOriginal:
+          type: string
+        checksumDerivative:
+          type: string
+        width:
+          type: integer
+          format: int32
+        height:
+          type: integer
+          format: int32
+        duration:
+          type: number
+          format: double
+        fps:
+          type: number
+          format: double
     BadRequest:
       type: object
       properties:
