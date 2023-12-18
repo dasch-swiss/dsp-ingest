@@ -38,7 +38,7 @@ final case class MaintenanceActionsLive(
 ) extends MaintenanceActions {
 
   override def extractImageMetadataAndAddToInfoFile(): Task[Unit] = {
-    def updateSingleFile(shortcode: ProjectShortcode, path: Path): Task[Unit] =
+    def updateSingleFile(path: Path, shortcode: ProjectShortcode): Task[Unit] =
       for {
         jpx <- ZIO
                  .fromOption(JpxDerivativeFile.from(path))
@@ -55,12 +55,12 @@ final case class MaintenanceActionsLive(
       assetDir          <- storageService.getAssetDirectory()
       _ <- ZIO.foreachDiscard(projectShortcodes) { shortcode =>
              Files
-               .walk(assetDir / shortcode.toString)
+               .walk(assetDir / s"$shortcode")
                .filterZIO(FileFilters.isJpeg2000)
-               .mapZIOPar(8)(path => updateSingleFile(shortcode, path).logError.ignore)
-               .runCollect
+               .mapZIOPar(8)(updateSingleFile(_, shortcode).logError)
+               .runDrain
            }
-      _ <- ZIO.logInfo(s"Finished extract StillImage metadata ")
+      _ <- ZIO.logInfo(s"Finished extract StillImage metadata")
     } yield ()
   }
 

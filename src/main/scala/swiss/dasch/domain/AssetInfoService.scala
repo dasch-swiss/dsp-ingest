@@ -200,10 +200,10 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
 
   override def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit] = for {
     info <- findByAssetRef(assetRef).someOrFail(IllegalArgumentException(s"AssetInfo for $assetRef not found"))
-    _ <- ZIO
-           .fail(IllegalArgumentException(s"Asset $assetRef seems to be a moving image"))
-           .when(info.metadata == MovingImageMetadata)
-    _ <- save(info.copy(metadata = metadata))
+    _ <- ZIO.when(info.metadata.isInstanceOf[MovingImageMetadata])(
+           ZIO.fail(IllegalArgumentException(s"Asset $assetRef seems to be a moving image"))
+         )
+    _ <- ZIO.when(info.metadata != metadata)(save(info.copy(metadata = metadata))).unit
   } yield ()
 
   override def createAssetInfo(asset: Asset): Task[Unit] = for {
