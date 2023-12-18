@@ -60,6 +60,7 @@ final case class MaintenanceActionsLive(
                .mapZIOPar(8)(path => updateSingleFile(shortcode, path).logError.ignore)
                .runCollect
            }
+      _ <- ZIO.logInfo(s"Finished extract StillImage metadata ")
     } yield ()
   }
 
