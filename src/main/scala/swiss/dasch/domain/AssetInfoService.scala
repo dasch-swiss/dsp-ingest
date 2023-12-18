@@ -24,7 +24,10 @@ final private case class AssetInfoFileContent(
   fps: Option[Double] = None
 ) {
   def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum)
+  def withStillImageMetadata(metadata: StillImageMetadata): AssetInfoFileContent =
+    copy(width = Some(metadata.width.value), height = Some(metadata.height.value))
 }
+
 private object AssetInfoFileContent {
   def make(
     asset: Asset,
@@ -80,7 +83,9 @@ trait AssetInfoService {
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: Asset): Task[Unit]
+  def updateStillImageMetadata(assetRef: AssetRef, metadata: Dimensions): Task[Unit]
 }
+
 object AssetInfoService {
   def findByAssetRef(asset: AssetRef): ZIO[AssetInfoService, Throwable, Option[AssetInfo]] =
     ZIO.serviceWithZIO[AssetInfoService](_.findByAssetRef(asset))
@@ -162,6 +167,15 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     content     <- storage.loadJsonFile[AssetInfoFileContent](infoFile)
     newChecksum <- FileChecksumService.createSha256Hash(derivative)
     _           <- storage.saveJsonFile(infoFile, content.withDerivativeChecksum(newChecksum))
+  } yield ()
+
+  override def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit] = for {
+    infoFile <- getInfoFilePath(assetRef)
+    info     <- storage.loadJsonFile[AssetInfoFileContent](infoFile)
+    _ <- ZIO.when(info.fps.isDefined || info.duration.isDefined)(
+           ZIO.fail(IllegalArgumentException(s"Asset $assetRef seems to be a moving image"))
+         )
+    _ <- storage.saveJsonFile(infoFile, info.withStillImageMetadata(metadata))
   } yield ()
 
   override def createAssetInfo(asset: Asset): Task[Unit] = for {
