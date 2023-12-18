@@ -109,7 +109,7 @@ trait AssetInfoService {
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: Asset): Task[Unit]
-  def updateStillImageMetadata(assetRef: AssetRef, metadata: Dimensions): Task[Unit]
+  def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit]
 }
 
 object AssetInfoService {
