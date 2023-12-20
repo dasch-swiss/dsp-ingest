@@ -7,9 +7,9 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.test.SpecConfigurations
+import zio.Scope
 import zio.nio.file.Files
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
-import zio.{Scope, ZIO}
 
 object AssetInfoServiceSpec extends ZIOSpecDefault {
 
@@ -23,163 +23,155 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
     suite("AssetInfoService")(
       test("parsing a simple file info works") {
         // given
-        ZIO.scoped {
-          for {
-            assetRef      <- AssetRef.makeNew(testProject)
-            assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-            simpleInfoFile = assetDir / s"${assetRef.id}.info"
-            _             <- Files.createFile(simpleInfoFile)
-            _ <- Files.writeLines(
-                   simpleInfoFile,
-                   List(s"""{
-                           |    "internalFilename" : "${assetRef.id}.jp2",
-                           |    "originalInternalFilename" : "${assetRef.id}.jp2.orig",
-                           |    "originalFilename" : "test.jp2",
-                           |    "checksumOriginal" : "$testChecksumOriginal",
-                           |    "checksumDerivative" : "$testChecksumDerivative"
-                           |}
-                           |""".stripMargin)
-                 )
-            // when
-            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
-            // then
-          } yield assertTrue(
-            actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("test.jp2"),
-            actual.original.file == assetDir / s"${assetRef.id}.jp2.orig",
-            actual.original.checksum == testChecksumOriginal,
-            actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
-            actual.derivative.checksum == testChecksumDerivative,
-            actual.metadata == OtherMetadata(None, None)
-          )
-        }
+        for {
+          assetRef      <- AssetRef.makeNew(testProject)
+          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+          simpleInfoFile = assetDir / s"${assetRef.id}.info"
+          _             <- Files.createFile(simpleInfoFile)
+          _ <- Files.writeLines(
+                 simpleInfoFile,
+                 List(s"""{
+                         |    "internalFilename" : "${assetRef.id}.jp2",
+                         |    "originalInternalFilename" : "${assetRef.id}.jp2.orig",
+                         |    "originalFilename" : "test.jp2",
+                         |    "checksumOriginal" : "$testChecksumOriginal",
+                         |    "checksumDerivative" : "$testChecksumDerivative"
+                         |}
+                         |""".stripMargin)
+               )
+          // when
+          actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
+          // then
+        } yield assertTrue(
+          actual.assetRef == assetRef,
+          actual.originalFilename == NonEmptyString.unsafeFrom("test.jp2"),
+          actual.original.file == assetDir / s"${assetRef.id}.jp2.orig",
+          actual.original.checksum == testChecksumOriginal,
+          actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
+          actual.derivative.checksum == testChecksumDerivative,
+          actual.metadata == OtherMetadata(None, None)
+        )
       },
       test("parsing an info file for a moving image with complete metadata info works") {
         // given
-        ZIO.scoped {
-          for {
-            assetRef      <- AssetRef.makeNew(testProject)
-            assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-            simpleInfoFile = assetDir / s"${assetRef.id}.info"
-            _             <- Files.createFile(simpleInfoFile)
-            _ <- Files.writeLines(
-                   simpleInfoFile,
-                   List(s"""{
-                           |    "internalFilename" : "${assetRef.id}.mp4",
-                           |    "originalInternalFilename" : "${assetRef.id}.mp4.orig",
-                           |    "originalFilename" : "test.mp4",
-                           |    "checksumOriginal" : "$testChecksumOriginal",
-                           |    "checksumDerivative" : "$testChecksumDerivative",
-                           |    "width": 640,
-                           |    "height": 480,
-                           |    "fps": 60,
-                           |    "duration": 3.14,
-                           |    "internalMimeType": "video/mp4",
-                           |    "originalMimeType": "video/mp4"
-                           |}
-                           |""".stripMargin)
-                 )
-            // when
-            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
-            // then
-          } yield assertTrue(
-            actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("test.mp4"),
-            actual.original.file == assetDir / s"${assetRef.id}.mp4.orig",
-            actual.original.checksum == testChecksumOriginal,
-            actual.derivative.file == assetDir / s"${assetRef.id}.mp4",
-            actual.derivative.checksum == testChecksumDerivative,
-            actual.metadata ==
-              MovingImageMetadata(
-                Dimensions.unsafeFrom(640, 480),
-                duration = 3.14,
-                fps = 60,
-                internalMimeType = Some(MimeType.unsafeFrom("video/mp4")),
-                originalMimeType = Some(MimeType.unsafeFrom("video/mp4"))
-              )
-          )
-        }
+        for {
+          assetRef      <- AssetRef.makeNew(testProject)
+          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+          simpleInfoFile = assetDir / s"${assetRef.id}.info"
+          _             <- Files.createFile(simpleInfoFile)
+          _ <- Files.writeLines(
+                 simpleInfoFile,
+                 List(s"""{
+                         |    "internalFilename" : "${assetRef.id}.mp4",
+                         |    "originalInternalFilename" : "${assetRef.id}.mp4.orig",
+                         |    "originalFilename" : "test.mp4",
+                         |    "checksumOriginal" : "$testChecksumOriginal",
+                         |    "checksumDerivative" : "$testChecksumDerivative",
+                         |    "width": 640,
+                         |    "height": 480,
+                         |    "fps": 60,
+                         |    "duration": 3.14,
+                         |    "internalMimeType": "video/mp4",
+                         |    "originalMimeType": "video/mp4"
+                         |}
+                         |""".stripMargin)
+               )
+          // when
+          actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
+          // then
+        } yield assertTrue(
+          actual.assetRef == assetRef,
+          actual.originalFilename == NonEmptyString.unsafeFrom("test.mp4"),
+          actual.original.file == assetDir / s"${assetRef.id}.mp4.orig",
+          actual.original.checksum == testChecksumOriginal,
+          actual.derivative.file == assetDir / s"${assetRef.id}.mp4",
+          actual.derivative.checksum == testChecksumDerivative,
+          actual.metadata ==
+            MovingImageMetadata(
+              Dimensions.unsafeFrom(640, 480),
+              duration = 3.14,
+              fps = 60,
+              internalMimeType = Some(MimeType.unsafeFrom("video/mp4")),
+              originalMimeType = Some(MimeType.unsafeFrom("video/mp4"))
+            )
+        )
       },
       test("parsing an info file for a still image with complete metadata info works") {
         // given
-        ZIO.scoped {
-          for {
-            assetRef      <- AssetRef.makeNew(testProject)
-            assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-            simpleInfoFile = assetDir / s"${assetRef.id}.info"
-            _             <- Files.createFile(simpleInfoFile)
-            _ <- Files.writeLines(
-                   simpleInfoFile,
-                   List(s"""{
-                           |    "internalFilename" : "${assetRef.id}.jpx",
-                           |    "originalInternalFilename" : "${assetRef.id}.png.orig",
-                           |    "originalFilename" : "test.png",
-                           |    "checksumOriginal" : "$testChecksumOriginal",
-                           |    "checksumDerivative" : "$testChecksumDerivative",
-                           |    "width": 640,
-                           |    "height": 480,
-                           |    "internalMimeType": "image/jpx",
-                           |    "originalMimeType": "image/png"
-                           |}
-                           |""".stripMargin)
-                 )
-            // when
-            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
-            // then
-          } yield assertTrue(
-            actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("test.png"),
-            actual.original.file == assetDir / s"${assetRef.id}.png.orig",
-            actual.original.checksum == testChecksumOriginal,
-            actual.derivative.file == assetDir / s"${assetRef.id}.jpx",
-            actual.derivative.checksum == testChecksumDerivative,
-            actual.metadata ==
-              StillImageMetadata(
-                Dimensions.unsafeFrom(640, 480),
-                internalMimeType = Some(MimeType.unsafeFrom("image/jpx")),
-                originalMimeType = Some(MimeType.unsafeFrom("image/png"))
-              )
-          )
-        }
+        for {
+          assetRef      <- AssetRef.makeNew(testProject)
+          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+          simpleInfoFile = assetDir / s"${assetRef.id}.info"
+          _             <- Files.createFile(simpleInfoFile)
+          _ <- Files.writeLines(
+                 simpleInfoFile,
+                 List(s"""{
+                         |    "internalFilename" : "${assetRef.id}.jpx",
+                         |    "originalInternalFilename" : "${assetRef.id}.png.orig",
+                         |    "originalFilename" : "test.png",
+                         |    "checksumOriginal" : "$testChecksumOriginal",
+                         |    "checksumDerivative" : "$testChecksumDerivative",
+                         |    "width": 640,
+                         |    "height": 480,
+                         |    "internalMimeType": "image/jpx",
+                         |    "originalMimeType": "image/png"
+                         |}
+                         |""".stripMargin)
+               )
+          // when
+          actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
+          // then
+        } yield assertTrue(
+          actual.assetRef == assetRef,
+          actual.originalFilename == NonEmptyString.unsafeFrom("test.png"),
+          actual.original.file == assetDir / s"${assetRef.id}.png.orig",
+          actual.original.checksum == testChecksumOriginal,
+          actual.derivative.file == assetDir / s"${assetRef.id}.jpx",
+          actual.derivative.checksum == testChecksumDerivative,
+          actual.metadata ==
+            StillImageMetadata(
+              Dimensions.unsafeFrom(640, 480),
+              internalMimeType = Some(MimeType.unsafeFrom("image/jpx")),
+              originalMimeType = Some(MimeType.unsafeFrom("image/png"))
+            )
+        )
       },
       test("parsing an info file for a other file type with complete metadata info works") {
         // given
-        ZIO.scoped {
-          for {
-            assetRef      <- AssetRef.makeNew(testProject)
-            assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-            simpleInfoFile = assetDir / s"${assetRef.id}.info"
-            _             <- Files.createFile(simpleInfoFile)
-            _ <- Files.writeLines(
-                   simpleInfoFile,
-                   List(s"""{
-                           |    "internalFilename" : "${assetRef.id}.pdf",
-                           |    "originalInternalFilename" : "${assetRef.id}.pdf.orig",
-                           |    "originalFilename" : "test.pdf",
-                           |    "checksumOriginal" : "$testChecksumOriginal",
-                           |    "checksumDerivative" : "$testChecksumDerivative",
-                           |    "internalMimeType": "application/pdf",
-                           |    "originalMimeType": "application/pdf"
-                           |}
-                           |""".stripMargin)
-                 )
-            // when
-            actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
-            // then
-          } yield assertTrue(
-            actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("test.pdf"),
-            actual.original.file == assetDir / s"${assetRef.id}.pdf.orig",
-            actual.original.checksum == testChecksumOriginal,
-            actual.derivative.file == assetDir / s"${assetRef.id}.pdf",
-            actual.derivative.checksum == testChecksumDerivative,
-            actual.metadata ==
-              OtherMetadata(
-                internalMimeType = Some(MimeType.unsafeFrom("application/pdf")),
-                originalMimeType = Some(MimeType.unsafeFrom("application/pdf"))
-              )
-          )
-        }
+        for {
+          assetRef      <- AssetRef.makeNew(testProject)
+          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+          simpleInfoFile = assetDir / s"${assetRef.id}.info"
+          _             <- Files.createFile(simpleInfoFile)
+          _ <- Files.writeLines(
+                 simpleInfoFile,
+                 List(s"""{
+                         |    "internalFilename" : "${assetRef.id}.pdf",
+                         |    "originalInternalFilename" : "${assetRef.id}.pdf.orig",
+                         |    "originalFilename" : "test.pdf",
+                         |    "checksumOriginal" : "$testChecksumOriginal",
+                         |    "checksumDerivative" : "$testChecksumDerivative",
+                         |    "internalMimeType": "application/pdf",
+                         |    "originalMimeType": "application/pdf"
+                         |}
+                         |""".stripMargin)
+               )
+          // when
+          actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
+          // then
+        } yield assertTrue(
+          actual.assetRef == assetRef,
+          actual.originalFilename == NonEmptyString.unsafeFrom("test.pdf"),
+          actual.original.file == assetDir / s"${assetRef.id}.pdf.orig",
+          actual.original.checksum == testChecksumOriginal,
+          actual.derivative.file == assetDir / s"${assetRef.id}.pdf",
+          actual.derivative.checksum == testChecksumDerivative,
+          actual.metadata ==
+            OtherMetadata(
+              internalMimeType = Some(MimeType.unsafeFrom("application/pdf")),
+              originalMimeType = Some(MimeType.unsafeFrom("application/pdf"))
+            )
+        )
       }
     ).provide(AssetInfoServiceLive.layer, StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
 }
