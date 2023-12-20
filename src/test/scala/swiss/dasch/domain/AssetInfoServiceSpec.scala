@@ -19,32 +19,32 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
   private val testChecksumDerivative =
     Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
 
-  private def createInfoFile(
-    originalFileExt: String,
-    derivativeFileExt: String,
-    customJsonProps: Option[String] = None
-  ) =
-    for {
-      assetRef      <- AssetRef.makeNew(testProject)
-      assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-      simpleInfoFile = assetDir / s"${assetRef.id}.info"
-      _             <- Files.createFile(simpleInfoFile)
-      _ <- Files.writeLines(
-             simpleInfoFile,
-             List(s"""{
-                     |    ${customJsonProps.map(_ + ",").getOrElse("")}
-                     |    "internalFilename" : "${assetRef.id}.$derivativeFileExt",
-                     |    "originalInternalFilename" : "${assetRef.id}.$originalFileExt.orig",
-                     |    "originalFilename" : "test.$originalFileExt",
-                     |    "checksumOriginal" : "$testChecksumOriginal",
-                     |    "checksumDerivative" : "$testChecksumDerivative"
-                     |}
-                     |""".stripMargin)
-           )
-    } yield (assetRef, assetDir)
+  private val findByAssetRefSuite = {
+    def createInfoFile(
+      originalFileExt: String,
+      derivativeFileExt: String,
+      customJsonProps: Option[String] = None
+    ) =
+      for {
+        assetRef      <- AssetRef.makeNew(testProject)
+        assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+        simpleInfoFile = assetDir / s"${assetRef.id}.info"
+        _             <- Files.createFile(simpleInfoFile)
+        _ <- Files.writeLines(
+               simpleInfoFile,
+               List(s"""{
+                       |    ${customJsonProps.map(_ + ",").getOrElse("")}
+                       |    "internalFilename" : "${assetRef.id}.$derivativeFileExt",
+                       |    "originalInternalFilename" : "${assetRef.id}.$originalFileExt.orig",
+                       |    "originalFilename" : "test.$originalFileExt",
+                       |    "checksumOriginal" : "$testChecksumOriginal",
+                       |    "checksumDerivative" : "$testChecksumDerivative"
+                       |}
+                       |""".stripMargin)
+             )
+      } yield (assetRef, assetDir)
 
-  override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("AssetInfoService")(
+    suite("findByAssetRef")(
       test("parsing a simple file info works") {
         // given
         for {
@@ -160,5 +160,13 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             )
         )
       }
-    ).provide(AssetInfoServiceLive.layer, StorageServiceLive.layer, SpecConfigurations.storageConfigLayer)
+    )
+  }
+
+  override def spec: Spec[TestEnvironment with Scope, Any] =
+    suite("AssetInfoServiceSpec")(findByAssetRefSuite).provide(
+      AssetInfoServiceLive.layer,
+      StorageServiceLive.layer,
+      SpecConfigurations.storageConfigLayer
+    )
 }
