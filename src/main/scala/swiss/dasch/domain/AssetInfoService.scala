@@ -87,7 +87,6 @@ trait AssetInfoService {
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo]
-  def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit]
 }
 
 object AssetInfoService {
@@ -176,14 +175,6 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     content     <- storage.loadJsonFile[AssetInfoFileContent](infoFile)
     newChecksum <- FileChecksumService.createSha256Hash(derivative)
     _           <- storage.saveJsonFile(infoFile, content.withDerivativeChecksum(newChecksum))
-  } yield ()
-
-  override def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit] = for {
-    info <- findByAssetRef(assetRef).someOrFail(IllegalArgumentException(s"AssetInfo for $assetRef not found"))
-    _ <- ZIO.when(info.metadata.isInstanceOf[MovingImageMetadata])(
-           ZIO.fail(IllegalArgumentException(s"Asset $assetRef seems to be a moving image"))
-         )
-    _ <- ZIO.when(info.metadata != metadata)(save(info.copy(metadata = metadata))).unit
   } yield ()
 
   override def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo] = for {
