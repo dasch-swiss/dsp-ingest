@@ -74,8 +74,9 @@ object Asset {
   final case class OtherAsset(
     ref: AssetRef,
     original: Original,
-    derivative: DerivativeFile
-  ) extends Asset { override val metadata: AssetMetadata = OtherMetadata(None, None) }
+    derivative: DerivativeFile,
+    metadata: OtherMetadata
+  ) extends Asset
 
   def makeStillImage(
     assetRef: AssetRef,
@@ -92,8 +93,14 @@ object Asset {
     metadata: MovingImageMetadata
   ): MovingImageAsset = MovingImageAsset(assetRef, original, derivative, metadata)
 
-  def makeOther(assetRef: AssetRef, original: Original, derivative: DerivativeFile): OtherAsset =
-    OtherAsset(assetRef, original, derivative)
+  def makeOther(
+    assetRef: AssetRef,
+    original: Original,
+    derivative: DerivativeFile,
+    internalMimeType: Option[MimeType],
+    originalMimeType: Option[MimeType]
+  ): OtherAsset =
+    OtherAsset(assetRef, original, derivative, OtherMetadata(internalMimeType, originalMimeType))
 }
 
 def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.fromPath(file).map(_ => file)

@@ -104,7 +104,8 @@ object ImageServiceLiveSpec extends ZIOSpecDefault {
     ).provide(
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,
-      StillImageServiceLive.layer,
+      MimeTypeGuesser.layer,
+      StillImageService.layer,
       SipiClientMock.layer,
       SpecConfigurations.storageConfigLayer,
       StorageServiceLive.layer

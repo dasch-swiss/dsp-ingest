@@ -50,7 +50,7 @@ private object AssetInfoFileContent {
   }
 
   private def getDuration(metadata: AssetMetadata) = metadata match {
-    case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
+    case MovingImageMetadata(_, duration, _, _, _) => Some(duration.value)
     case _                                         => None
   }
 
@@ -60,7 +60,7 @@ private object AssetInfoFileContent {
   }
 
   private def getFps(metadata: AssetMetadata) = metadata match {
-    case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
+    case MovingImageMetadata(_, _, fps, _, _) => Some(fps.value)
     case _                                    => None
   }
 
@@ -145,8 +145,11 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     val originalMimeType = raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
     val metadata = typ match {
       case StillImage if dim.isDefined => StillImageMetadata(dim.get, internalMimeType, originalMimeType)
-      case MovingImage if dim.isDefined && raw.duration.exists(_ > 0) && raw.fps.exists(_ > 0) =>
-        MovingImageMetadata(dim.get, raw.duration.get, raw.fps.get, internalMimeType, originalMimeType)
+      case MovingImage if dim.isDefined && raw.duration.exists(_ > 0) && raw.fps.exists(_ > 0) => {
+        val fps      = Fps.unsafeFrom(raw.fps.get)
+        val duration = DurationSecs.unsafeFrom(raw.duration.get)
+        MovingImageMetadata(dim.get, duration, fps, internalMimeType, originalMimeType)
+      }
       case _ => OtherMetadata(internalMimeType, originalMimeType)
     }
     AssetInfo(

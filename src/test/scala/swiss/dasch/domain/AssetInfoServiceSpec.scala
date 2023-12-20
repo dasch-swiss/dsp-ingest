@@ -92,8 +92,8 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
           actual.metadata ==
             MovingImageMetadata(
               Dimensions.unsafeFrom(640, 480),
-              duration = 3.14,
-              fps = 60,
+              duration = DurationSecs.unsafeFrom(3.14),
+              fps = Fps.unsafeFrom(60),
               internalMimeType = Some(MimeType.unsafeFrom("video/mp4")),
               originalMimeType = Some(MimeType.unsafeFrom("video/mp4"))
             )

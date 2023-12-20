@@ -126,8 +126,8 @@ object ProjectsEndpointsResponses {
         assetInfo.derivative.checksum.toString,
         dim.map(_.width.value),
         dim.map(_.height.value),
-        movingImageMeta.map(_.duration),
-        movingImageMeta.map(_.fps)
+        movingImageMeta.map(_.duration.value),
+        movingImageMeta.map(_.fps.value)
       )
     }
 

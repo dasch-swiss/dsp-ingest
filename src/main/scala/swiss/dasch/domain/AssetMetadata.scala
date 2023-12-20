@@ -25,8 +25,8 @@ final case class StillImageMetadata(
 
 final case class MovingImageMetadata(
   dimensions: Dimensions,
-  duration: Double,
-  fps: Double,
+  duration: DurationSecs,
+  fps: Fps,
   internalMimeType: Option[MimeType],
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
@@ -37,6 +37,20 @@ final case class OtherMetadata(internalMimeType: Option[MimeType], originalMimeT
 
 trait HasDimensions {
   def dimensions: Dimensions
+}
+
+type DurationSecs = Double Refined Positive
+object DurationSecs {
+  def unsafeFrom(value: Double): DurationSecs =
+    DurationSecs.from(value).fold(msg => throw new IllegalArgumentException(msg), identity)
+  def from(value: Double): Either[String, DurationSecs] = refineV[Positive](value)
+}
+
+type Fps = Double Refined Positive
+object Fps {
+  def unsafeFrom(value: Double): Fps =
+    Fps.from(value).fold(msg => throw new IllegalArgumentException(msg), identity)
+  def from(value: Double): Either[String, Fps] = refineV[Positive](value)
 }
 
 final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive)
