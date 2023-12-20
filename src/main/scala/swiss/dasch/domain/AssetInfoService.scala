@@ -11,7 +11,9 @@ import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.nio.file.{Files, Path}
 import zio.stream.ZStream
-import zio.{Task, UIO, ZIO, ZLayer}
+import zio.{IO, Task, UIO, ZIO, ZLayer}
+
+import java.io.FileNotFoundException
 
 final private case class AssetInfoFileContent(
   internalFilename: NonEmptyString,
@@ -31,18 +33,7 @@ final private case class AssetInfoFileContent(
 
 private object AssetInfoFileContent {
   def from(assetInfo: AssetInfo): AssetInfoFileContent = {
-    val dim = assetInfo.metadata match {
-      case it: HasDimensions => Some(it.dimensions)
-      case _                 => None
-    }
-    val duration = assetInfo.metadata match {
-      case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
-      case _                                         => None
-    }
-    val fps = assetInfo.metadata match {
-      case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
-      case _                                    => None
-    }
+    val dim = getDimensions(assetInfo.metadata)
     AssetInfoFileContent(
       assetInfo.derivative.filename,
       assetInfo.original.filename,
@@ -51,44 +42,26 @@ private object AssetInfoFileContent {
       assetInfo.derivative.checksum,
       dim.map(_.width.value),
       dim.map(_.height.value),
-      duration,
-      fps,
-      None,
-      None
+      getDuration(assetInfo.metadata),
+      getFps(assetInfo.metadata),
+      assetInfo.metadata.internalMimeType.map(_.value),
+      assetInfo.metadata.originalMimeType.map(_.value)
     )
   }
 
-  def from(
-    asset: Asset,
-    originalChecksum: Sha256Hash,
-    derivativeChecksum: Sha256Hash,
-    metadata: AssetMetadata
-  ): AssetInfoFileContent = {
-    val dim = metadata match {
-      case it: HasDimensions => Some(it.dimensions)
-      case _                 => None
-    }
-    val duration = metadata match {
-      case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
-      case _                                         => None
-    }
-    val fps = metadata match {
-      case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
-      case _                                    => None
-    }
-    AssetInfoFileContent(
-      asset.derivative.filename,
-      asset.original.internalFilename,
-      asset.original.originalFilename,
-      originalChecksum,
-      derivativeChecksum,
-      dim.map(_.width.value),
-      dim.map(_.height.value),
-      duration,
-      fps,
-      None,
-      None
-    )
+  private def getDuration(metadata: AssetMetadata) = metadata match {
+    case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
+    case _                                         => None
+  }
+
+  private def getDimensions(metadata: AssetMetadata) = metadata match {
+    case it: HasDimensions => Some(it.dimensions)
+    case _                 => None
+  }
+
+  private def getFps(metadata: AssetMetadata) = metadata match {
+    case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
+    case _                                    => None
   }
 
   given codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
@@ -113,7 +86,7 @@ trait AssetInfoService {
   def save(assetInfo: AssetInfo): Task[Unit]
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
-  def createAssetInfo(asset: Asset): Task[Unit]
+  def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo]
   def updateStillImageMetadata(assetRef: AssetRef, metadata: StillImageMetadata): Task[Unit]
 }
 
@@ -126,7 +99,7 @@ object AssetInfoService {
     ZIO.serviceWithZIO[AssetInfoService](_.updateAssetInfoForDerivative(derivative))
   def getInfoFilePath(asset: AssetRef): ZIO[AssetInfoService, Nothing, Path] =
     ZIO.serviceWithZIO[AssetInfoService](_.getInfoFilePath(asset))
-  def createAssetInfo(asset: Asset): ZIO[AssetInfoService, Throwable, Unit] =
+  def createAssetInfo(asset: Asset): ZIO[AssetInfoService, FileNotFoundException, AssetInfo] =
     ZIO.serviceWithZIO[AssetInfoService](_.createAssetInfo(asset))
 }
 
@@ -148,7 +121,10 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     } yield info
 
   override def save(assetInfo: AssetInfo): Task[Unit] =
-    getInfoFilePath(assetInfo.assetRef).flatMap(storage.saveJsonFile(_, AssetInfoFileContent.from(assetInfo)))
+    getInfoFilePath(assetInfo.assetRef).flatMap { path =>
+      Files.createFile(path).whenZIO(Files.notExists(path)) *>
+        storage.saveJsonFile(path, AssetInfoFileContent.from(assetInfo))
+    }
 
   def getInfoFilePath(asset: AssetRef): UIO[Path] =
     storage.getAssetDirectory(asset).map(_ / infoFilename(asset))
@@ -210,15 +186,12 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     _ <- ZIO.when(info.metadata != metadata)(save(info.copy(metadata = metadata))).unit
   } yield ()
 
-  override def createAssetInfo(asset: Asset): Task[Unit] = for {
-    assetDir           <- storage.getAssetDirectory(asset.ref)
-    infoFile            = assetDir / infoFilename(asset.ref)
+  override def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo] = for {
     checksumOriginal   <- FileChecksumService.createSha256Hash(asset.original.file.toPath)
+    original            = FileAndChecksum(asset.original.file.toPath, checksumOriginal)
     checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative.toPath)
-    content             = AssetInfoFileContent.from(asset, checksumOriginal, checksumDerivative, asset.metadata)
-    _                  <- Files.createFile(infoFile)
-    _                  <- storage.saveJsonFile(infoFile, content)
-  } yield ()
+    derivative          = FileAndChecksum(asset.derivative.toPath, checksumDerivative)
+  } yield AssetInfo(asset.ref, original, asset.original.originalFilename, derivative, asset.metadata)
 }
 
 object AssetInfoServiceLive {

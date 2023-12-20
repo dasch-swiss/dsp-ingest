@@ -43,7 +43,7 @@ object AssetRef {
   def makeNew(project: ProjectShortcode): UIO[AssetRef] = AssetId.makeNew.map(id => AssetRef(id, project))
 }
 
-private final case class Original(file: OriginalFile, originalFilename: NonEmptyString) {
+final case class Original(file: OriginalFile, originalFilename: NonEmptyString) {
   def internalFilename: NonEmptyString = file.filename
 }
 

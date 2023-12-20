@@ -46,7 +46,7 @@ final case class IngestService(
                    case SupportedFileType.Other       => handleOtherFile(original, assetRef, assetDir)
                    case SupportedFileType.MovingImage => handleMovingImageFile(original, assetRef)
                  }
-      _ <- assetInfo.createAssetInfo(asset)
+      _ <- assetInfo.createAssetInfo(asset).tap(assetInfo.save)
       _ <- storage.delete(fileToIngest)
     } yield asset
 
