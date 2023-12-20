@@ -13,12 +13,7 @@ import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import sttp.tapir.{CodecFormat, EndpointInput}
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.ProjectsEndpointsResponses.{
-  AssetCheckResultResponse,
-  AssetInfoResponse,
-  ProjectResponse,
-  UploadResponse
-}
+import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.domain.*
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.schema.{DeriveSchema, Schema}
@@ -111,9 +106,9 @@ object ProjectsEndpointsResponses {
 
     def from(assetInfo: AssetInfo): AssetInfoResponse = {
       val dim = assetInfo.metadata match {
-        case MovingImageMetadata(d, _, _) => Some(d)
-        case d: Dimensions                => Some(d)
-        case _                            => None
+        case MovingImageMetadata(d, _, _, _, _) => Some(d)
+        case StillImageMetadata(d, _, _)        => Some(d)
+        case _                                  => None
       }
       val movingImageMeta = assetInfo.metadata match {
         case m: MovingImageMetadata => Some(m)

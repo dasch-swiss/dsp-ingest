@@ -20,9 +20,9 @@ object MimeType {
 
   def from(str: String): Either[String, MimeType] =
     Option(str)
-      .flatMap(it => NonEmptyString.from(it).toOption)
+      .toRight("Mime type cannot be null")
+      .flatMap(it => NonEmptyString.from(it).left.map(_ => "Mime type cannot be empty"))
       .map(MimeType.apply)
-      .toRight(s"Unsupported mime type: $str")
 }
 
 final case class MimeTypeGuesser() {

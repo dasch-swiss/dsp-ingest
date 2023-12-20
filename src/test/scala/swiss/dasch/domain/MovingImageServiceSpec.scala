@@ -86,7 +86,7 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
         metadata <- MovingImageService.extractMetadata(d, c.assetRef)
         // then
       } yield assertTrue(
-        metadata == MovingImageMetadata(Dimensions.unsafeFrom(1280, 720), duration = 170.84, fps = 25.0)
+        metadata == MovingImageMetadata(Dimensions.unsafeFrom(1280, 720), duration = 170.84, fps = 25.0, None, None)
       )
     },
     test("given invalid metadata it should not extract") {

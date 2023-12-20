@@ -46,8 +46,8 @@ final case class MaintenanceActionsLive(
         id <- ZIO
                 .fromOption(AssetId.fromPath(path))
                 .orElseFail(new Exception(s"Could not get asset id from path $path"))
-        dim <- imageService.getDimensions(jpx)
-        _   <- assetInfoService.updateStillImageMetadata(AssetRef(id, shortcode), dim)
+        metadata <- imageService.getDimensions(jpx).map(StillImageMetadata(_, None, None))
+        _        <- assetInfoService.updateStillImageMetadata(AssetRef(id, shortcode), metadata)
       } yield ()
 
     for {

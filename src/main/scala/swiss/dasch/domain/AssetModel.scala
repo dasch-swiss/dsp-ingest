@@ -61,7 +61,7 @@ object Asset {
     ref: AssetRef,
     original: Original,
     derivative: JpxDerivativeFile,
-    metadata: Dimensions
+    metadata: StillImageMetadata
   ) extends Asset
 
   final case class MovingImageAsset(
@@ -81,7 +81,7 @@ object Asset {
     assetRef: AssetRef,
     original: Original,
     derivative: JpxDerivativeFile,
-    metadata: Dimensions
+    metadata: StillImageMetadata
   ): StillImageAsset =
     StillImageAsset(assetRef, original, derivative, metadata)
 

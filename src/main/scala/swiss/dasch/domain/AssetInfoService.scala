@@ -21,7 +21,9 @@ final private case class AssetInfoFileContent(
   width: Option[Int] = None,
   height: Option[Int] = None,
   duration: Option[Double] = None,
-  fps: Option[Double] = None
+  fps: Option[Double] = None,
+  internalMimeType: Option[NonEmptyString] = None,
+  originalMimeType: Option[NonEmptyString] = None
 ) {
   def withDerivativeChecksum(checksum: Sha256Hash): AssetInfoFileContent = copy(checksumDerivative = checksum)
 }
@@ -29,17 +31,17 @@ final private case class AssetInfoFileContent(
 private object AssetInfoFileContent {
   def from(assetInfo: AssetInfo): AssetInfoFileContent = {
     val dim = assetInfo.metadata match {
-      case MovingImageMetadata(d, _, _) => Some(d)
-      case d: Dimensions                => Some(d)
-      case _                            => None
+      case MovingImageMetadata(d, _, _, _, _) => Some(d)
+      case StillImageMetadata(d, _, _)        => Some(d)
+      case _                                  => None
     }
     val duration = assetInfo.metadata match {
-      case MovingImageMetadata(_, duration, _) => Some(duration)
-      case _                                   => None
+      case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
+      case _                                         => None
     }
     val fps = assetInfo.metadata match {
-      case MovingImageMetadata(_, _, fps) => Some(fps)
-      case _                              => None
+      case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
+      case _                                    => None
     }
     AssetInfoFileContent(
       assetInfo.derivative.filename,
@@ -50,7 +52,9 @@ private object AssetInfoFileContent {
       dim.map(_.width.value),
       dim.map(_.height.value),
       duration,
-      fps
+      fps,
+      None,
+      None
     )
   }
 
@@ -61,17 +65,17 @@ private object AssetInfoFileContent {
     metadata: AssetMetadata
   ): AssetInfoFileContent = {
     val dim = metadata match {
-      case MovingImageMetadata(d, _, _) => Some(d)
-      case d: Dimensions                => Some(d)
-      case _                            => None
+      case MovingImageMetadata(d, _, _, _, _) => Some(d)
+      case StillImageMetadata(d, _, _)        => Some(d)
+      case _                                  => None
     }
     val duration = metadata match {
-      case MovingImageMetadata(_, duration, _) => Some(duration)
-      case _                                   => None
+      case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
+      case _                                         => None
     }
     val fps = metadata match {
-      case MovingImageMetadata(_, _, fps) => Some(fps)
-      case _                              => None
+      case MovingImageMetadata(_, _, fps, _, _) => Some(fps)
+      case _                                    => None
     }
     AssetInfoFileContent(
       asset.derivative.filename,
@@ -82,7 +86,9 @@ private object AssetInfoFileContent {
       dim.map(_.width.value),
       dim.map(_.height.value),
       duration,
-      fps
+      fps,
+      None,
+      None
     )
   }
 
@@ -168,8 +174,21 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
       dim      <- dimensions
       duration <- raw.duration
       fps      <- raw.fps
-    } yield MovingImageMetadata(dim, duration, fps)
-    val metadata = movingImageMetadata.orElse(dimensions).getOrElse(EmptyMetadata)
+    } yield MovingImageMetadata(
+      dim,
+      duration,
+      fps,
+      raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption),
+      raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
+    )
+    val stillImageMetadata = for {
+      dim <- dimensions
+    } yield StillImageMetadata(
+      dim,
+      raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption),
+      raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
+    )
+    val metadata = movingImageMetadata.orElse(stillImageMetadata).getOrElse(EmptyMetadata)
     AssetInfo(
       assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),

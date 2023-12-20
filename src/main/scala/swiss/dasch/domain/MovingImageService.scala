@@ -74,7 +74,7 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
             denominator <- fpsFraction(1).trim.toDoubleOption.filter(_ != 0)
             fps          = numerator / denominator
             dim         <- Dimensions.from(stream.width, stream.height).toOption
-          } yield MovingImageMetadata(dim, stream.duration, fps)
+          } yield MovingImageMetadata(dim, stream.duration, fps, None, None)
         } else { None }
       }
   }

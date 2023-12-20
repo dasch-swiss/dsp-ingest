@@ -13,8 +13,23 @@ import zio.json.{DeriveJsonCodec, JsonCodec}
 
 sealed trait AssetMetadata
 
-type StillImageMetadata = Dimensions
-final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive) extends AssetMetadata
+final case class StillImageMetadata(
+  dimensions: Dimensions,
+  internalMimeType: Option[MimeType],
+  originalMimeType: Option[MimeType]
+) extends AssetMetadata
+
+final case class MovingImageMetadata(
+  dimensions: Dimensions,
+  duration: Double,
+  fps: Double,
+  internalMimeType: Option[MimeType],
+  originalMimeType: Option[MimeType]
+) extends AssetMetadata
+
+case object EmptyMetadata extends AssetMetadata
+
+final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive)
 object Dimensions {
   given codec: JsonCodec[Dimensions] = DeriveJsonCodec.gen[Dimensions]
 
@@ -26,7 +41,3 @@ object Dimensions {
       h <- refineV[Positive](height)
     } yield Dimensions(w, h)
 }
-
-final case class MovingImageMetadata(dimensions: Dimensions, duration: Double, fps: Double) extends AssetMetadata
-
-case object EmptyMetadata extends AssetMetadata

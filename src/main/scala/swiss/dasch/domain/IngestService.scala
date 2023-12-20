@@ -66,7 +66,7 @@ final case class IngestService(
     ZIO.logInfo(s"Creating derivative for image $original, $assetRef") *> {
       for {
         derivative <- stillImageService.createDerivative(original.file)
-        dim        <- stillImageService.getDimensions(derivative)
+        dim        <- stillImageService.getDimensions(derivative).map(StillImageMetadata(_, None, None))
       } yield Asset.makeStillImage(assetRef, original, derivative, dim)
     }
 
