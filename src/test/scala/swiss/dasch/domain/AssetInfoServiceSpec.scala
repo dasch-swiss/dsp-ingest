@@ -13,17 +13,19 @@ import zio.{Scope, ZIO}
 
 object AssetInfoServiceSpec extends ZIOSpecDefault {
 
+  private val testProject = ProjectShortcode.unsafeFrom("0001")
+  private val testChecksumOriginal =
+    Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
+  private val testChecksumDerivative =
+    Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
+
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("AssetInfoService")(
       test("parsing a simple file info works") {
         // given
-        val shortcode        = ProjectShortcode.unsafeFrom("0001")
-        val checksumOriginal = Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
-        val checksumDerivative =
-          Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
         ZIO.scoped {
           for {
-            assetRef      <- AssetRef.makeNew(shortcode)
+            assetRef      <- AssetRef.makeNew(testProject)
             assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
             simpleInfoFile = assetDir / s"${assetRef.id}.info"
             _             <- Files.createFile(simpleInfoFile)
@@ -32,9 +34,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                    List(s"""{
                            |    "internalFilename" : "${assetRef.id}.jp2",
                            |    "originalInternalFilename" : "${assetRef.id}.jp2.orig",
-                           |    "originalFilename" : "250x250.jp2",
-                           |    "checksumOriginal" : "$checksumOriginal",
-                           |    "checksumDerivative" : "$checksumDerivative"
+                           |    "originalFilename" : "test.jp2",
+                           |    "checksumOriginal" : "$testChecksumOriginal",
+                           |    "checksumDerivative" : "$testChecksumDerivative"
                            |}
                            |""".stripMargin)
                  )
@@ -43,24 +45,20 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             // then
           } yield assertTrue(
             actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("250x250.jp2"),
+            actual.originalFilename == NonEmptyString.unsafeFrom("test.jp2"),
             actual.original.file == assetDir / s"${assetRef.id}.jp2.orig",
-            actual.original.checksum == checksumOriginal,
+            actual.original.checksum == testChecksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
-            actual.derivative.checksum == checksumDerivative,
+            actual.derivative.checksum == testChecksumDerivative,
             actual.metadata == OtherMetadata(None, None)
           )
         }
       },
       test("parsing an info file for a moving image with complete metadata info works") {
         // given
-        val shortcode        = ProjectShortcode.unsafeFrom("0001")
-        val checksumOriginal = Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
-        val checksumDerivative =
-          Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
         ZIO.scoped {
           for {
-            assetRef      <- AssetRef.makeNew(shortcode)
+            assetRef      <- AssetRef.makeNew(testProject)
             assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
             simpleInfoFile = assetDir / s"${assetRef.id}.info"
             _             <- Files.createFile(simpleInfoFile)
@@ -69,9 +67,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                    List(s"""{
                            |    "internalFilename" : "${assetRef.id}.mp4",
                            |    "originalInternalFilename" : "${assetRef.id}.mp4.orig",
-                           |    "originalFilename" : "some-video.mp4",
-                           |    "checksumOriginal" : "$checksumOriginal",
-                           |    "checksumDerivative" : "$checksumDerivative",
+                           |    "originalFilename" : "test.mp4",
+                           |    "checksumOriginal" : "$testChecksumOriginal",
+                           |    "checksumDerivative" : "$testChecksumDerivative",
                            |    "width": 640,
                            |    "height": 480,
                            |    "fps": 60,
@@ -86,11 +84,11 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             // then
           } yield assertTrue(
             actual.assetRef == assetRef,
-            actual.originalFilename == NonEmptyString.unsafeFrom("some-video.mp4"),
+            actual.originalFilename == NonEmptyString.unsafeFrom("test.mp4"),
             actual.original.file == assetDir / s"${assetRef.id}.mp4.orig",
-            actual.original.checksum == checksumOriginal,
+            actual.original.checksum == testChecksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.mp4",
-            actual.derivative.checksum == checksumDerivative,
+            actual.derivative.checksum == testChecksumDerivative,
             actual.metadata ==
               MovingImageMetadata(
                 Dimensions.unsafeFrom(640, 480),
@@ -104,13 +102,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
       },
       test("parsing an info file for a still image with complete metadata info works") {
         // given
-        val shortcode        = ProjectShortcode.unsafeFrom("0001")
-        val checksumOriginal = Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
-        val checksumDerivative =
-          Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
         ZIO.scoped {
           for {
-            assetRef      <- AssetRef.makeNew(shortcode)
+            assetRef      <- AssetRef.makeNew(testProject)
             assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
             simpleInfoFile = assetDir / s"${assetRef.id}.info"
             _             <- Files.createFile(simpleInfoFile)
@@ -120,8 +114,8 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                            |    "internalFilename" : "${assetRef.id}.jpx",
                            |    "originalInternalFilename" : "${assetRef.id}.png.orig",
                            |    "originalFilename" : "test.png",
-                           |    "checksumOriginal" : "$checksumOriginal",
-                           |    "checksumDerivative" : "$checksumDerivative",
+                           |    "checksumOriginal" : "$testChecksumOriginal",
+                           |    "checksumDerivative" : "$testChecksumDerivative",
                            |    "width": 640,
                            |    "height": 480,
                            |    "internalMimeType": "image/jpx",
@@ -136,9 +130,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             actual.assetRef == assetRef,
             actual.originalFilename == NonEmptyString.unsafeFrom("test.png"),
             actual.original.file == assetDir / s"${assetRef.id}.png.orig",
-            actual.original.checksum == checksumOriginal,
+            actual.original.checksum == testChecksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.jpx",
-            actual.derivative.checksum == checksumDerivative,
+            actual.derivative.checksum == testChecksumDerivative,
             actual.metadata ==
               StillImageMetadata(
                 Dimensions.unsafeFrom(640, 480),
@@ -150,13 +144,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
       },
       test("parsing an info file for a other file type with complete metadata info works") {
         // given
-        val shortcode        = ProjectShortcode.unsafeFrom("0001")
-        val checksumOriginal = Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
-        val checksumDerivative =
-          Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
         ZIO.scoped {
           for {
-            assetRef      <- AssetRef.makeNew(shortcode)
+            assetRef      <- AssetRef.makeNew(testProject)
             assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
             simpleInfoFile = assetDir / s"${assetRef.id}.info"
             _             <- Files.createFile(simpleInfoFile)
@@ -166,8 +156,8 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
                            |    "internalFilename" : "${assetRef.id}.pdf",
                            |    "originalInternalFilename" : "${assetRef.id}.pdf.orig",
                            |    "originalFilename" : "test.pdf",
-                           |    "checksumOriginal" : "$checksumOriginal",
-                           |    "checksumDerivative" : "$checksumDerivative",
+                           |    "checksumOriginal" : "$testChecksumOriginal",
+                           |    "checksumDerivative" : "$testChecksumDerivative",
                            |    "internalMimeType": "application/pdf",
                            |    "originalMimeType": "application/pdf"
                            |}
@@ -180,9 +170,9 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
             actual.assetRef == assetRef,
             actual.originalFilename == NonEmptyString.unsafeFrom("test.pdf"),
             actual.original.file == assetDir / s"${assetRef.id}.pdf.orig",
-            actual.original.checksum == checksumOriginal,
+            actual.original.checksum == testChecksumOriginal,
             actual.derivative.file == assetDir / s"${assetRef.id}.pdf",
-            actual.derivative.checksum == checksumDerivative,
+            actual.derivative.checksum == testChecksumDerivative,
             actual.metadata ==
               OtherMetadata(
                 internalMimeType = Some(MimeType.unsafeFrom("application/pdf")),
