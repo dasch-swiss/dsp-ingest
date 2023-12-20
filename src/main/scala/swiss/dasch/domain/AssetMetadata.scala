@@ -11,13 +11,17 @@ import eu.timepit.refined.refineV
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
 
-sealed trait AssetMetadata
+sealed trait AssetMetadata {
+  def internalMimeType: Option[MimeType]
+  def originalMimeType: Option[MimeType]
+}
 
 final case class StillImageMetadata(
   dimensions: Dimensions,
   internalMimeType: Option[MimeType],
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
+    with HasDimensions
 
 final case class MovingImageMetadata(
   dimensions: Dimensions,
@@ -26,9 +30,14 @@ final case class MovingImageMetadata(
   internalMimeType: Option[MimeType],
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
+    with HasDimensions
 
 final case class OtherMetadata(internalMimeType: Option[MimeType], originalMimeType: Option[MimeType])
     extends AssetMetadata
+
+trait HasDimensions {
+  def dimensions: Dimensions
+}
 
 final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive)
 object Dimensions {

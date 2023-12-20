@@ -106,9 +106,8 @@ object ProjectsEndpointsResponses {
 
     def from(assetInfo: AssetInfo): AssetInfoResponse = {
       val dim = assetInfo.metadata match {
-        case MovingImageMetadata(d, _, _, _, _) => Some(d)
-        case StillImageMetadata(d, _, _)        => Some(d)
-        case _                                  => None
+        case it: HasDimensions => Some(it.dimensions)
+        case _                 => None
       }
       val movingImageMeta = assetInfo.metadata match {
         case m: MovingImageMetadata => Some(m)

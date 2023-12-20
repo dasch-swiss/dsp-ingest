@@ -31,9 +31,8 @@ final private case class AssetInfoFileContent(
 private object AssetInfoFileContent {
   def from(assetInfo: AssetInfo): AssetInfoFileContent = {
     val dim = assetInfo.metadata match {
-      case MovingImageMetadata(d, _, _, _, _) => Some(d)
-      case StillImageMetadata(d, _, _)        => Some(d)
-      case _                                  => None
+      case it: HasDimensions => Some(it.dimensions)
+      case _                 => None
     }
     val duration = assetInfo.metadata match {
       case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
@@ -65,9 +64,8 @@ private object AssetInfoFileContent {
     metadata: AssetMetadata
   ): AssetInfoFileContent = {
     val dim = metadata match {
-      case MovingImageMetadata(d, _, _, _, _) => Some(d)
-      case StillImageMetadata(d, _, _)        => Some(d)
-      case _                                  => None
+      case it: HasDimensions => Some(it.dimensions)
+      case _                 => None
     }
     val duration = metadata match {
       case MovingImageMetadata(_, duration, _, _, _) => Some(duration)
