@@ -27,7 +27,8 @@ final case class MovingImageMetadata(
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
 
-case object EmptyMetadata extends AssetMetadata
+final case class OtherMetadata(internalMimeType: Option[MimeType], originalMimeType: Option[MimeType])
+    extends AssetMetadata
 
 final case class Dimensions(width: Int Refined Positive, height: Int Refined Positive)
 object Dimensions {

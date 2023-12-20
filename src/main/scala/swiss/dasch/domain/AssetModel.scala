@@ -75,7 +75,7 @@ object Asset {
     ref: AssetRef,
     original: Original,
     derivative: DerivativeFile
-  ) extends Asset { override val metadata: AssetMetadata = EmptyMetadata }
+  ) extends Asset { override val metadata: AssetMetadata = OtherMetadata(None, None) }
 
   def makeStillImage(
     assetRef: AssetRef,

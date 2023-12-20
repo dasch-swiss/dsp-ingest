@@ -104,7 +104,7 @@ final case class AssetInfo(
   original: FileAndChecksum,
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
-  metadata: AssetMetadata = EmptyMetadata
+  metadata: AssetMetadata = OtherMetadata(None, None)
 )
 
 trait AssetInfoService {
@@ -165,6 +165,8 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     infoFileDirectory: Path,
     asset: AssetRef
   ): AssetInfo = {
+    val internalMimeType = raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption)
+    val originalMimeType = raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
     val dimensions = for {
       width  <- raw.width
       height <- raw.height
@@ -178,17 +180,18 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
       dim,
       duration,
       fps,
-      raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption),
-      raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
+      internalMimeType,
+      originalMimeType
     )
     val stillImageMetadata = for {
       dim <- dimensions
     } yield StillImageMetadata(
       dim,
-      raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption),
-      raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
+      internalMimeType,
+      originalMimeType
     )
-    val metadata = movingImageMetadata.orElse(stillImageMetadata).getOrElse(EmptyMetadata)
+    val metadata =
+      movingImageMetadata.orElse(stillImageMetadata).getOrElse(OtherMetadata(internalMimeType, originalMimeType))
     AssetInfo(
       assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),
