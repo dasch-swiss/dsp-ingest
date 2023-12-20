@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.SupportedFileType.{MovingImage, Other, StillImage}
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.nio.file.{Files, Path}
@@ -163,33 +164,16 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     infoFileDirectory: Path,
     asset: AssetRef
   ): AssetInfo = {
+    val typ              = SupportedFileType.fromPath(Path(raw.originalFilename.value)).getOrElse(Other)
+    val dim              = raw.width.flatMap(w => raw.height.flatMap(h => Dimensions.from(w, h).toOption))
     val internalMimeType = raw.internalMimeType.flatMap(it => MimeType.from(it.value).toOption)
     val originalMimeType = raw.originalMimeType.flatMap(it => MimeType.from(it.value).toOption)
-    val dimensions = for {
-      width  <- raw.width
-      height <- raw.height
-      dim    <- Dimensions.from(width, height).toOption
-    } yield dim
-    val movingImageMetadata = for {
-      dim      <- dimensions
-      duration <- raw.duration
-      fps      <- raw.fps
-    } yield MovingImageMetadata(
-      dim,
-      duration,
-      fps,
-      internalMimeType,
-      originalMimeType
-    )
-    val stillImageMetadata = for {
-      dim <- dimensions
-    } yield StillImageMetadata(
-      dim,
-      internalMimeType,
-      originalMimeType
-    )
-    val metadata =
-      movingImageMetadata.orElse(stillImageMetadata).getOrElse(OtherMetadata(internalMimeType, originalMimeType))
+    val metadata = typ match {
+      case StillImage if dim.isDefined => StillImageMetadata(dim.get, internalMimeType, originalMimeType)
+      case MovingImage if dim.isDefined && raw.duration.exists(_ > 0) && raw.fps.exists(_ > 0) =>
+        MovingImageMetadata(dim.get, raw.duration.get, raw.fps.get, internalMimeType, originalMimeType)
+      case _ => OtherMetadata(internalMimeType, originalMimeType)
+    }
     AssetInfo(
       assetRef = asset,
       original = FileAndChecksum(infoFileDirectory / raw.originalInternalFilename.toString, raw.checksumOriginal),
