@@ -19,35 +19,46 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
   private val testChecksumDerivative =
     Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
 
+  private def createInfoFile(
+    originalFileExt: String,
+    derivativeFileExt: String,
+    customJsonProps: Option[String] = None
+  ) =
+    for {
+      assetRef      <- AssetRef.makeNew(testProject)
+      assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+      simpleInfoFile = assetDir / s"${assetRef.id}.info"
+      _             <- Files.createFile(simpleInfoFile)
+      _ <- Files.writeLines(
+             simpleInfoFile,
+             List(s"""{
+                     |    ${customJsonProps.map(_ + ",").getOrElse("")}
+                     |    "internalFilename" : "${assetRef.id}.$derivativeFileExt",
+                     |    "originalInternalFilename" : "${assetRef.id}.$originalFileExt.orig",
+                     |    "originalFilename" : "test.$originalFileExt",
+                     |    "checksumOriginal" : "$testChecksumOriginal",
+                     |    "checksumDerivative" : "$testChecksumDerivative"
+                     |}
+                     |""".stripMargin)
+           )
+    } yield (assetRef, assetDir)
+
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("AssetInfoService")(
       test("parsing a simple file info works") {
         // given
         for {
-          assetRef      <- AssetRef.makeNew(testProject)
-          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-          simpleInfoFile = assetDir / s"${assetRef.id}.info"
-          _             <- Files.createFile(simpleInfoFile)
-          _ <- Files.writeLines(
-                 simpleInfoFile,
-                 List(s"""{
-                         |    "internalFilename" : "${assetRef.id}.jp2",
-                         |    "originalInternalFilename" : "${assetRef.id}.jp2.orig",
-                         |    "originalFilename" : "test.jp2",
-                         |    "checksumOriginal" : "$testChecksumOriginal",
-                         |    "checksumDerivative" : "$testChecksumDerivative"
-                         |}
-                         |""".stripMargin)
-               )
+          refAndDir           <- createInfoFile(originalFileExt = "pdf", derivativeFileExt = "pdf")
+          (assetRef, assetDir) = refAndDir
           // when
           actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
           // then
         } yield assertTrue(
           actual.assetRef == assetRef,
-          actual.originalFilename == NonEmptyString.unsafeFrom("test.jp2"),
-          actual.original.file == assetDir / s"${assetRef.id}.jp2.orig",
+          actual.originalFilename == NonEmptyString.unsafeFrom("test.pdf"),
+          actual.original.file == assetDir / s"${assetRef.id}.pdf.orig",
           actual.original.checksum == testChecksumOriginal,
-          actual.derivative.file == assetDir / s"${assetRef.id}.jp2",
+          actual.derivative.file == assetDir / s"${assetRef.id}.pdf",
           actual.derivative.checksum == testChecksumDerivative,
           actual.metadata == OtherMetadata(None, None)
         )
@@ -55,27 +66,19 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
       test("parsing an info file for a moving image with complete metadata info works") {
         // given
         for {
-          assetRef      <- AssetRef.makeNew(testProject)
-          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-          simpleInfoFile = assetDir / s"${assetRef.id}.info"
-          _             <- Files.createFile(simpleInfoFile)
-          _ <- Files.writeLines(
-                 simpleInfoFile,
-                 List(s"""{
-                         |    "internalFilename" : "${assetRef.id}.mp4",
-                         |    "originalInternalFilename" : "${assetRef.id}.mp4.orig",
-                         |    "originalFilename" : "test.mp4",
-                         |    "checksumOriginal" : "$testChecksumOriginal",
-                         |    "checksumDerivative" : "$testChecksumDerivative",
-                         |    "width": 640,
-                         |    "height": 480,
-                         |    "fps": 60,
-                         |    "duration": 3.14,
-                         |    "internalMimeType": "video/mp4",
-                         |    "originalMimeType": "video/mp4"
-                         |}
-                         |""".stripMargin)
-               )
+          refAndDir <- createInfoFile(
+                         originalFileExt = "mp4",
+                         derivativeFileExt = "mp4",
+                         customJsonProps = Some("""
+                                                  |"width": 640,
+                                                  |"height": 480,
+                                                  |"fps": 60,
+                                                  |"duration": 3.14,
+                                                  |"internalMimeType": "video/mp4",
+                                                  |"originalMimeType": "video/mp4"
+                                                  |""".stripMargin)
+                       )
+          (assetRef, assetDir) = refAndDir
           // when
           actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
           // then
@@ -99,25 +102,17 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
       test("parsing an info file for a still image with complete metadata info works") {
         // given
         for {
-          assetRef      <- AssetRef.makeNew(testProject)
-          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-          simpleInfoFile = assetDir / s"${assetRef.id}.info"
-          _             <- Files.createFile(simpleInfoFile)
-          _ <- Files.writeLines(
-                 simpleInfoFile,
-                 List(s"""{
-                         |    "internalFilename" : "${assetRef.id}.jpx",
-                         |    "originalInternalFilename" : "${assetRef.id}.png.orig",
-                         |    "originalFilename" : "test.png",
-                         |    "checksumOriginal" : "$testChecksumOriginal",
-                         |    "checksumDerivative" : "$testChecksumDerivative",
-                         |    "width": 640,
-                         |    "height": 480,
-                         |    "internalMimeType": "image/jpx",
-                         |    "originalMimeType": "image/png"
-                         |}
-                         |""".stripMargin)
-               )
+          refAndDir <- createInfoFile(
+                         originalFileExt = "png",
+                         derivativeFileExt = "jpx",
+                         customJsonProps = Some("""
+                                                  |"width": 640,
+                                                  |"height": 480,
+                                                  |"internalMimeType": "image/jpx",
+                                                  |"originalMimeType": "image/png"
+                                                  |""".stripMargin)
+                       )
+          (assetRef, assetDir) = refAndDir
           // when
           actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
           // then
@@ -139,23 +134,15 @@ object AssetInfoServiceSpec extends ZIOSpecDefault {
       test("parsing an info file for a other file type with complete metadata info works") {
         // given
         for {
-          assetRef      <- AssetRef.makeNew(testProject)
-          assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-          simpleInfoFile = assetDir / s"${assetRef.id}.info"
-          _             <- Files.createFile(simpleInfoFile)
-          _ <- Files.writeLines(
-                 simpleInfoFile,
-                 List(s"""{
-                         |    "internalFilename" : "${assetRef.id}.pdf",
-                         |    "originalInternalFilename" : "${assetRef.id}.pdf.orig",
-                         |    "originalFilename" : "test.pdf",
-                         |    "checksumOriginal" : "$testChecksumOriginal",
-                         |    "checksumDerivative" : "$testChecksumDerivative",
-                         |    "internalMimeType": "application/pdf",
-                         |    "originalMimeType": "application/pdf"
-                         |}
-                         |""".stripMargin)
-               )
+          refAndDir <- createInfoFile(
+                         originalFileExt = "pdf",
+                         derivativeFileExt = "pdf",
+                         customJsonProps = Some("""
+                                                  |"internalMimeType": "application/pdf",
+                                                  |"originalMimeType": "application/pdf"
+                                                  |""".stripMargin)
+                       )
+          (assetRef, assetDir) = refAndDir
           // when
           actual <- AssetInfoService.findByAssetRef(assetRef).map(_.head)
           // then
