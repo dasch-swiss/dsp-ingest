@@ -5,10 +5,11 @@ import zio.json.DecoderOps
 import zio.nio.file.{Files, Path}
 
 object AssetInfoFileTestHelper {
-  val testProject = ProjectShortcode.unsafeFrom("0001")
-  val testChecksumOriginal =
+  val testProject: ProjectShortcode =
+    ProjectShortcode.unsafeFrom("0001")
+  val testChecksumOriginal: Sha256Hash =
     Sha256Hash.unsafeFrom("fb252a4fb3d90ce4ebc7e123d54a4112398a7994541b11aab5e4230eac01a61c")
-  val testChecksumDerivative =
+  val testChecksumDerivative: Sha256Hash =
     Sha256Hash.unsafeFrom("0ce405c9b183fb0d0a9998e9a49e39c93b699e0f8e2a9ac3496c349e5cea09cc")
 
   def createInfoFile(
