@@ -62,7 +62,7 @@ final case class AssetInfo(
   original: FileAndChecksum,
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
-  metadata: AssetMetadata = OtherMetadata(None, None)
+  metadata: AssetMetadata
 )
 
 trait AssetInfoService {
