@@ -16,6 +16,25 @@ sealed trait AssetMetadata {
   def originalMimeType: Option[MimeType]
 }
 
+object AssetMetadata {
+  extension (m: AssetMetadata) {
+    def dimensionsOpt: Option[Dimensions] = m match {
+      case hd: HasDimensions => Some(hd.dimensions)
+      case _                 => None
+    }
+
+    def durationOpt: Option[DurationSecs] = m match {
+      case mi: MovingImageMetadata => Some(mi.duration)
+      case _                       => None
+    }
+
+    def fpsOpt: Option[Fps] = m match {
+      case mi: MovingImageMetadata => Some(mi.fps)
+      case _                       => None
+    }
+  }
+}
+
 final case class StillImageMetadata(
   dimensions: Dimensions,
   internalMimeType: Option[MimeType],

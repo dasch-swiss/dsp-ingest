@@ -33,7 +33,8 @@ final private case class AssetInfoFileContent(
 
 private object AssetInfoFileContent {
   def from(assetInfo: AssetInfo): AssetInfoFileContent = {
-    val dim = getDimensions(assetInfo.metadata)
+    val metadata = assetInfo.metadata
+    val dim      = metadata.dimensionsOpt
     AssetInfoFileContent(
       assetInfo.derivative.filename,
       assetInfo.original.filename,
@@ -42,26 +43,11 @@ private object AssetInfoFileContent {
       assetInfo.derivative.checksum,
       dim.map(_.width.value),
       dim.map(_.height.value),
-      getDuration(assetInfo.metadata),
-      getFps(assetInfo.metadata),
-      assetInfo.metadata.internalMimeType.map(_.value),
-      assetInfo.metadata.originalMimeType.map(_.value)
+      metadata.durationOpt.map(_.value),
+      metadata.fpsOpt.map(_.value),
+      metadata.internalMimeType.map(_.value),
+      metadata.originalMimeType.map(_.value)
     )
-  }
-
-  private def getDuration(metadata: AssetMetadata) = metadata match {
-    case MovingImageMetadata(_, duration, _, _, _) => Some(duration.value)
-    case _                                         => None
-  }
-
-  private def getDimensions(metadata: AssetMetadata) = metadata match {
-    case it: HasDimensions => Some(it.dimensions)
-    case _                 => None
-  }
-
-  private def getFps(metadata: AssetMetadata) = metadata match {
-    case MovingImageMetadata(_, _, fps, _, _) => Some(fps.value)
-    case _                                    => None
   }
 
   given codec: JsonCodec[AssetInfoFileContent] = DeriveJsonCodec.gen[AssetInfoFileContent]
