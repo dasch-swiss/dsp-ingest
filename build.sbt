@@ -54,6 +54,7 @@ lazy val root = (project in file("."))
       version,
       scalaVersion,
       sbtVersion,
+      BuildInfoKey("sipiVersion", sipiVersion),
       BuildInfoKey.action("gitCommit")(gitCommit)
     ),
     buildInfoOptions += BuildInfoOption.BuildTime,
