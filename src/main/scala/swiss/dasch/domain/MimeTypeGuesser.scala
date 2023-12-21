@@ -12,7 +12,9 @@ import zio.{IO, ZIO, ZLayer}
 
 import java.io.IOException
 
-final case class MimeType private (value: NonEmptyString) extends AnyVal
+final case class MimeType private (value: NonEmptyString) extends AnyVal {
+  def stringValue: String = value.value
+}
 object MimeType {
 
   def unsafeFrom(str: String): MimeType =

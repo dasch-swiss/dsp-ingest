@@ -13,12 +13,7 @@ import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import sttp.tapir.{CodecFormat, EndpointInput}
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.ProjectsEndpointsResponses.{
-  AssetCheckResultResponse,
-  AssetInfoResponse,
-  ProjectResponse,
-  UploadResponse
-}
+import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.domain.*
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.schema.{DeriveSchema, Schema}
@@ -105,19 +100,15 @@ object ProjectsEndpointsResponses {
     width: Option[Int] = None,
     height: Option[Int] = None,
     duration: Option[Double] = None,
-    fps: Option[Double] = None
+    fps: Option[Double] = None,
+    internalMimeType: Option[String] = None,
+    originalMimeType: Option[String] = None
   )
   object AssetInfoResponse {
 
     def from(assetInfo: AssetInfo): AssetInfoResponse = {
-      val dim = assetInfo.metadata match {
-        case it: HasDimensions => Some(it.dimensions)
-        case _                 => None
-      }
-      val movingImageMeta = assetInfo.metadata match {
-        case m: MovingImageMetadata => Some(m)
-        case _                      => None
-      }
+      val metadata = assetInfo.metadata
+      val dim      = metadata.dimensionsOpt
       AssetInfoResponse(
         assetInfo.derivative.filename.toString,
         assetInfo.original.filename.toString,
@@ -126,8 +117,10 @@ object ProjectsEndpointsResponses {
         assetInfo.derivative.checksum.toString,
         dim.map(_.width.value),
         dim.map(_.height.value),
-        movingImageMeta.map(_.duration.value),
-        movingImageMeta.map(_.fps.value)
+        metadata.durationOpt.map(_.value),
+        metadata.fpsOpt.map(_.value),
+        metadata.internalMimeType.map(_.stringValue),
+        metadata.originalMimeType.map(_.stringValue)
       )
     }
 
