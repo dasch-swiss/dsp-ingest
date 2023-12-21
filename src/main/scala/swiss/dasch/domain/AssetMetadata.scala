@@ -19,8 +19,9 @@ sealed trait AssetMetadata {
 object AssetMetadata {
   extension (m: AssetMetadata) {
     def dimensionsOpt: Option[Dimensions] = m match {
-      case hd: HasDimensions => Some(hd.dimensions)
-      case _                 => None
+      case mi: MovingImageMetadata => Some(mi.dimensions)
+      case si: StillImageMetadata  => Some(si.dimensions)
+      case _                       => None
     }
 
     def durationOpt: Option[DurationSecs] = m match {
@@ -40,7 +41,6 @@ final case class StillImageMetadata(
   internalMimeType: Option[MimeType],
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
-    with HasDimensions
 
 final case class MovingImageMetadata(
   dimensions: Dimensions,
@@ -49,14 +49,9 @@ final case class MovingImageMetadata(
   internalMimeType: Option[MimeType],
   originalMimeType: Option[MimeType]
 ) extends AssetMetadata
-    with HasDimensions
 
 final case class OtherMetadata(internalMimeType: Option[MimeType], originalMimeType: Option[MimeType])
     extends AssetMetadata
-
-trait HasDimensions {
-  def dimensions: Dimensions
-}
 
 type DurationSecs = Double Refined Positive
 object DurationSecs {
