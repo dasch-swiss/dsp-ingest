@@ -8,7 +8,7 @@ package swiss.dasch.domain
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.PathOps.fileExtension
 import zio.nio.file.Path
-import zio.{URIO, ZIO, ZLayer}
+import zio.{ZIO, ZLayer}
 
 final case class MimeType private (value: NonEmptyString) extends AnyVal {
   def stringValue: String = value.value
@@ -33,8 +33,6 @@ final case class MimeTypeGuesser() {
 }
 
 object MimeTypeGuesser {
-
-  def guess(file: Path): URIO[MimeTypeGuesser, Option[MimeType]] = ZIO.serviceWith[MimeTypeGuesser](_.guess(file))
 
   val layer = ZLayer.derive[MimeTypeGuesser]
 }

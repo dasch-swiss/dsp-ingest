@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import zio.nio.file.Path
 import zio.test.{Gen, ZIOSpecDefault, assertTrue, check}
+import zio.{URIO, ZIO}
 
 object MimeTypeGuesserSpec extends ZIOSpecDefault {
 
@@ -43,19 +44,18 @@ object MimeTypeGuesserSpec extends ZIOSpecDefault {
     "xsl" -> MimeType.unsafeFrom("application/xslt+xml")
   )
 
+  private def guess(file: Path): URIO[MimeTypeGuesser, Option[MimeType]] =
+    ZIO.serviceWith[MimeTypeGuesser](_.guess(file))
+
   val spec = suite("MimeTypeGuesser")(
     test("should guess the mime type from the filename") {
       check(Gen.fromIterable(filesAndMimeTypes ++ filesAndMimeTypes.map((k, v) => (k.toUpperCase, v)))) {
         case (ext, expected) =>
-          for {
-            result <- MimeTypeGuesser.guess(Path("test." + ext))
-          } yield assertTrue(result.contains(expected))
+          guess(Path("test." + ext)).map(result => assertTrue(result.contains(expected)))
       }
     },
     test("should return None if it cannot guess the mimetype") {
-      MimeTypeGuesser
-        .guess(Path("test"))
-        .map(result => assertTrue(result.isEmpty))
+      guess(Path("test")).map(result => assertTrue(result.isEmpty))
     }
   ).provide(MimeTypeGuesser.layer)
 }
