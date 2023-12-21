@@ -30,7 +30,7 @@ object AssetInfoFileTestHelper {
                 |""".stripMargin
       info <- ZIO
                 .fromEither(json.fromJson[AssetInfoFileContent])
-                .orElseFail(new Exception(s"Invalid AssetInfoFileContent $json"))
+                .orElseFail(new IllegalArgumentException(s"Invalid AssetInfoFileContent:\n$json"))
       assetDir <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
       _        <- StorageService.saveJsonFile[AssetInfoFileContent](assetDir / s"${assetRef.id}.info", info)
     } yield (assetRef, assetDir)
