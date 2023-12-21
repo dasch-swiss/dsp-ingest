@@ -1,6 +1,7 @@
 package swiss.dasch.domain
 
 import zio.ZIO
+import zio.json.DecoderOps
 import zio.nio.file.{Files, Path}
 
 object AssetInfoFileTestHelper {
@@ -16,21 +17,20 @@ object AssetInfoFileTestHelper {
     customJsonProps: Option[String] = None
   ): ZIO[StorageService, Throwable, (AssetRef, Path)] =
     for {
-      assetRef      <- AssetRef.makeNew(testProject)
-      assetDir      <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
-      simpleInfoFile = assetDir / s"${assetRef.id}.info"
-      _             <- Files.createFile(simpleInfoFile)
-      _ <- Files.writeLines(
-             simpleInfoFile,
-             List(s"""{
-                     |    ${customJsonProps.map(_ + ",").getOrElse("")}
-                     |    "internalFilename" : "${assetRef.id}.$derivativeFileExt",
-                     |    "originalInternalFilename" : "${assetRef.id}.$originalFileExt.orig",
-                     |    "originalFilename" : "test.$originalFileExt",
-                     |    "checksumOriginal" : "$testChecksumOriginal",
-                     |    "checksumDerivative" : "$testChecksumDerivative"
-                     |}
-                     |""".stripMargin)
-           )
+      assetRef <- AssetRef.makeNew(testProject)
+      json = s"""{
+                |    ${customJsonProps.map(_ + ",").getOrElse("")}
+                |    "internalFilename" : "${assetRef.id}.$derivativeFileExt",
+                |    "originalInternalFilename" : "${assetRef.id}.$originalFileExt.orig",
+                |    "originalFilename" : "test.$originalFileExt",
+                |    "checksumOriginal" : "$testChecksumOriginal",
+                |    "checksumDerivative" : "$testChecksumDerivative"
+                |}
+                |""".stripMargin
+      info <- ZIO
+                .fromEither(json.fromJson[AssetInfoFileContent])
+                .orElseFail(new Exception(s"Invalid AssetInfoFileContent $json"))
+      assetDir <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+      _        <- StorageService.saveJsonFile[AssetInfoFileContent](assetDir / s"${assetRef.id}.info", info)
     } yield (assetRef, assetDir)
 }
