@@ -30,7 +30,7 @@ final case class MimeTypeGuesser() {
   private val allMappings: Map[String, MimeType] = SupportedFileType.values.flatMap(_.mappings).toMap
 
   def guess(file: Path): IO[IOException, Option[MimeType]] =
-    ZIO.succeed(allMappings.get(file.fileExtension))
+    ZIO.succeed(allMappings.get(file.fileExtension.toLowerCase))
 }
 
 object MimeTypeGuesser {

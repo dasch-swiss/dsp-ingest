@@ -45,10 +45,11 @@ object MimeTypeGuesserSpec extends ZIOSpecDefault {
 
   val spec = suite("MimeTypeGuesser")(
     test("should guess the mime type from the filename") {
-      check(Gen.fromIterable(filesAndMimeTypes)) { case (ext, expected) =>
-        for {
-          result <- MimeTypeGuesser.guess(Path("test." + ext))
-        } yield assertTrue(result.contains(expected))
+      check(Gen.fromIterable(filesAndMimeTypes ++ filesAndMimeTypes.map((k, v) => (k.toUpperCase, v)))) {
+        case (ext, expected) =>
+          for {
+            result <- MimeTypeGuesser.guess(Path("test." + ext))
+          } yield assertTrue(result.contains(expected))
       }
     },
     test("should return None if it cannot guess the mimetype") {
