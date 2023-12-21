@@ -224,6 +224,47 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
             originalMimeType = Some("image/png")
           )
         )
+      },
+      test("given a moving image asset info file exists it should return the info") {
+        for {
+          ref <- AssetInfoFileTestHelper
+                   .createInfoFile(
+                     originalFileExt = "mp4",
+                     derivativeFileExt = "mp4",
+                     customJsonProps = Some("""
+                                              |"width": 640,
+                                              |"height": 480,
+                                              |"fps": 60,
+                                              |"duration": 3.14,
+                                              |"internalMimeType": "video/mp4",
+                                              |"originalMimeType": "video/mp4"
+                                              |""".stripMargin)
+                   )
+                   .map { case (assetRef, _) => assetRef }
+          req = Request
+                  .get(URL(Root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value))
+                  .addHeader("Authorization", "Bearer fakeToken")
+          // when
+          response <- executeRequest(req)
+          // then
+          body <- response.body.asString
+          info  = body.fromJson[AssetInfoResponse].getOrElse(throw new Exception("Invalid response"))
+        } yield assertTrue(
+          response.status == Status.Ok,
+          info == AssetInfoResponse(
+            internalFilename = s"${ref.id}.mp4",
+            originalInternalFilename = s"${ref.id}.mp4.orig",
+            originalFilename = "test.mp4",
+            checksumOriginal = AssetInfoFileTestHelper.testChecksumOriginal.value,
+            checksumDerivative = AssetInfoFileTestHelper.testChecksumDerivative.value,
+            width = Some(640),
+            height = Some(480),
+            duration = Some(3.14),
+            fps = Some(60),
+            internalMimeType = Some("video/mp4"),
+            originalMimeType = Some("video/mp4")
+          )
+        )
       }
     )
 
