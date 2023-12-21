@@ -5,6 +5,9 @@
 
 package swiss.dasch.domain
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto.autoUnwrap
+import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.SupportedFileType.{MovingImage, Other, StillImage}
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
@@ -15,16 +18,19 @@ import zio.{IO, Task, UIO, ZIO, ZLayer}
 
 import java.io.FileNotFoundException
 
+type PositiveInt    = Int Refined Positive
+type PositiveDouble = Double Refined Positive
+
 final private case class AssetInfoFileContent(
   internalFilename: NonEmptyString,
   originalInternalFilename: NonEmptyString,
   originalFilename: NonEmptyString,
   checksumOriginal: Sha256Hash,
   checksumDerivative: Sha256Hash,
-  width: Option[Int] = None,
-  height: Option[Int] = None,
-  duration: Option[Double] = None,
-  fps: Option[Double] = None,
+  width: Option[PositiveInt] = None,
+  height: Option[PositiveInt] = None,
+  duration: Option[PositiveDouble] = None,
+  fps: Option[PositiveDouble] = None,
   internalMimeType: Option[NonEmptyString] = None,
   originalMimeType: Option[NonEmptyString] = None
 ) {
@@ -41,10 +47,10 @@ private object AssetInfoFileContent {
       assetInfo.originalFilename,
       assetInfo.original.checksum,
       assetInfo.derivative.checksum,
-      dim.map(_.width.value),
-      dim.map(_.height.value),
-      metadata.durationOpt.map(_.value),
-      metadata.fpsOpt.map(_.value),
+      dim.map(_.width),
+      dim.map(_.height),
+      metadata.durationOpt,
+      metadata.fpsOpt,
       metadata.internalMimeType.map(_.value),
       metadata.originalMimeType.map(_.value)
     )
