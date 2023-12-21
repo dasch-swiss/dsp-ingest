@@ -77,9 +77,9 @@ final case class IngestService(
       val derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
       val derivative     = OtherDerivativeFile.unsafeFrom(derivativePath)
       for {
-        _                  <- storage.copyFile(original.file.toPath, derivativePath)
-        originalMimeType   <- mimeTypeGuesser.guess(Path(original.originalFilename.value))
-        derivativeMimeType <- mimeTypeGuesser.guess(derivative.file)
+        _                 <- storage.copyFile(original.file.toPath, derivativePath)
+        originalMimeType   = mimeTypeGuesser.guess(Path(original.originalFilename.value))
+        derivativeMimeType = mimeTypeGuesser.guess(derivative.file)
       } yield Asset.makeOther(assetRef, original, derivative, originalMimeType, derivativeMimeType)
     }
 
