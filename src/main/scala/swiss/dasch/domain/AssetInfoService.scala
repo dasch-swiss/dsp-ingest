@@ -106,10 +106,7 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     } yield info
 
   override def save(assetInfo: AssetInfo): Task[Unit] =
-    getInfoFilePath(assetInfo.assetRef).flatMap { path =>
-      Files.createFile(path).whenZIO(Files.notExists(path)) *>
-        storage.saveJsonFile(path, AssetInfoFileContent.from(assetInfo))
-    }
+    getInfoFilePath(assetInfo.assetRef).flatMap(storage.saveJsonFile(_, AssetInfoFileContent.from(assetInfo)))
 
   def getInfoFilePath(asset: AssetRef): UIO[Path] =
     storage.getAssetDirectory(asset).map(_ / infoFilename(asset))
