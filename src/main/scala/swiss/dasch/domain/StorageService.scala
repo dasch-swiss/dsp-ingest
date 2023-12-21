@@ -30,7 +30,7 @@ trait StorageService {
   def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
 
   /**
-   * Saves an A as json in ad file.
+   * Saves an A as json in a file.
    * The file is created if it does not exist, otherwise it is overwritten.
    *
    * @param file the path to the file to save
