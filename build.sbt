@@ -116,7 +116,7 @@ lazy val root = (project in file("."))
       """HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=30s \
         |CMD curl -sS --fail 'http://localhost:3340/health' || exit 1""".stripMargin
     ),
-    // Install Temurin Java 11 https://adoptium.net/de/installation/linux/
+    // Install Temurin Java 21 https://adoptium.net/de/installation/linux/
     dockerCommands += Cmd(
       "RUN",
       "apt install -y wget apt-transport-https && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null"
