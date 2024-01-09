@@ -1,3 +1,8 @@
+/*
+ * Copyright © 2021 - 2024 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package swiss.dasch.domain
 
 import zio.Scope
@@ -20,7 +25,7 @@ object CsvUtilSpec extends ZIOSpecDefault {
       val result   = CsvUtil.escapeCsvValue("test\"test")
       val expected = "\"test\"\"test\""
       assertTrue(result == expected)
-    },
+    }
   )
 
   def spec: Spec[TestEnvironment with Scope, Any] = suite("CsvUtilSpec")(escapeCsvValueSuite)
