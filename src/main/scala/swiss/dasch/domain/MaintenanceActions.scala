@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
+import swiss.dasch.api.ActionName
 import swiss.dasch.domain
 import swiss.dasch.domain.DerivativeFile.{JpxDerivativeFile, MovingImageDerivativeFile}
 import swiss.dasch.domain.FileFilters.isJpeg2000
@@ -26,8 +27,13 @@ trait MaintenanceActions {
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
   def createWasTopLeftCorrectionAppliedReport(): Task[Unit]
-  def applyTopLeftCorrections(projectPath: Path): Task[Int]
-  def createOriginals(projectPath: Path, mapping: Map[String, String]): Task[Int]
+  def applyTopLeftCorrections(projectPath: ProjectPath): Task[Int]
+  final def applyTopLeftCorrections(projectPath: Iterable[ProjectPath]): Task[Int] =
+    ZIO
+      .foreach(projectPath)(applyTopLeftCorrections)
+      .map(_.sum)
+      .tap(sum => ZIO.logInfo(s"Finished ${ActionName.ApplyTopLeftCorrection} for $sum files"))
+  def createOriginals(projectPath: ProjectPath, mapping: Map[String, String]): Task[Int]
 }
 
 final case class MaintenanceActionsLive(
@@ -77,7 +83,7 @@ final case class MaintenanceActionsLive(
              Files
                .walk(projectPath.path)
                .filterZIO(FileFilters.isInfoFile)
-               .mapZIOPar(8)(updateSingleFile(_, projectPath.shortcode).logError)
+               .mapZIOPar(8)(updateSingleFile(_, projectPath.shortcode).ignore.logError)
                .runDrain
            }
       _ <- ZIO.logInfo(s"Finished extract StillImage metadata")
@@ -220,17 +226,17 @@ final case class MaintenanceActionsLive(
     )
   }
 
-  override def applyTopLeftCorrections(projectPath: Path): Task[Int] =
-    ZIO.logInfo(s"Starting top left corrections in $projectPath") *>
+  override def applyTopLeftCorrections(projectPath: ProjectPath): Task[Int] =
+    ZIO.logInfo(s"Starting top left corrections in ${projectPath.path}") *>
       findJpeg2000Files(projectPath)
         .mapZIOPar(8)(imageService.applyTopLeftCorrection)
         .map(_.map(_ => 1).getOrElse(0))
         .run(ZSink.sum)
-        .tap(sum => ZIO.logInfo(s"Top left corrections applied for $sum files in $projectPath"))
+        .tap(sum => ZIO.logInfo(s"Top left corrections applied for $sum files in ${projectPath.path}"))
 
-  private def findJpeg2000Files(projectPath: Path) = StorageService.findInPath(projectPath, isJpeg2000)
+  private def findJpeg2000Files(projectPath: ProjectPath) = StorageService.findInPath(projectPath.path, isJpeg2000)
 
-  override def createOriginals(projectPath: Path, mapping: Map[String, String]): Task[Int] =
+  override def createOriginals(projectPath: ProjectPath, mapping: Map[String, String]): Task[Int] =
     findJpeg2000Files(projectPath)
       .flatMap(findAssetsWithoutOriginal(_, mapping))
       .mapZIOPar(8)(createOriginalAndUpdateInfoFile)

@@ -25,12 +25,13 @@ object MappingEntry {
 }
 
 enum ActionName {
-//  case ApplyTopLeftCorrection               extends ActionName
+  case ApplyTopLeftCorrection extends ActionName
+  case UpdateAssetMetadata    extends ActionName
+
 //  case NeedsTopLeftCorrection               extends ActionName
 //  case WasTopLeftCorrectionApplied          extends ActionName
 //  case CreateOriginals                      extends ActionName
 //  case NeedsOriginals                       extends ActionName
-  case UpdateAssetMetadata extends ActionName
 }
 
 object ActionName {
@@ -72,11 +73,6 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val applyTopLeftCorrectionEndpoint = base.secureEndpoint.post
-    .in(maintenance / "apply-top-left-correction" / shortcodePathVar)
-    .out(statusCode(StatusCode.Accepted))
-    .tag(maintenance)
-
   val needsTopLeftCorrectionEndpoint = base.secureEndpoint.get
     .in(maintenance / "needs-top-left-correction")
     .out(stringBody)
@@ -104,7 +100,6 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
 
   val endpoints = List(
     postMaintenanceActionEndpoint,
-    applyTopLeftCorrectionEndpoint,
     createOriginalsEndpoint,
     needsTopLeftCorrectionEndpoint,
     needsOriginalsEndpoint
