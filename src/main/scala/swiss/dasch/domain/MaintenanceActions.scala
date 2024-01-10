@@ -86,7 +86,7 @@ final case class MaintenanceActionsLive(
                .mapZIOPar(8)(updateSingleFile(_, projectPath.shortcode).ignore.logError)
                .runDrain
            }
-      _ <- ZIO.logInfo(s"Finished extract StillImage metadata")
+      _ <- ZIO.logInfo(s"Finished ${ActionName.UpdateAssetMetadata}")
     } yield ()
   }
 
