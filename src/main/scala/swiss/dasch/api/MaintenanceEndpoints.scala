@@ -102,13 +102,12 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-
   val endpoints = List(
     postMaintenanceActionEndpoint,
     applyTopLeftCorrectionEndpoint,
     createOriginalsEndpoint,
     needsTopLeftCorrectionEndpoint,
-    needsOriginalsEndpoint,
+    needsOriginalsEndpoint
   )
 }
 

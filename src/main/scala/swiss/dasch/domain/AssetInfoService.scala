@@ -69,8 +69,7 @@ final case class AssetInfo(
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
   metadata: AssetMetadata
-) {
-}
+) {}
 
 trait AssetInfoService {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
