@@ -52,7 +52,7 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
       ffprobeInfo                <- extractWithFfprobe(derivative)
       (dimensions, duration, fps) = ffprobeInfo
       derivativeMimeType          = mimeTypeGuesser.guess(derivative.toPath)
-      originalMimeType            = mimeTypeGuesser.guess(Path(original.originalFilename.value))
+      originalMimeType            = mimeTypeGuesser.guess(original.originalFilename.value)
     } yield MovingImageMetadata(dimensions, duration, fps, derivativeMimeType, originalMimeType)
 
   private def extractWithFfprobe(derivative: MovingImageDerivativeFile) = for {

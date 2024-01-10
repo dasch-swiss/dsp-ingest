@@ -23,7 +23,7 @@ object FileFilters {
 
   val isMovingImage: FileFilter = hasFileExtension(SupportedFileType.MovingImage.extensions)
 
-  val isOther: FileFilter = hasFileExtension(SupportedFileType.Other.extensions)
+  val isOther: FileFilter = hasFileExtension(SupportedFileType.OtherFiles.extensions)
 
   val isSupported: FileFilter = hasFileExtension(SupportedFileType.values.map(_.extensions).reduce(_ ++ _))
 

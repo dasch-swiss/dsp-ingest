@@ -29,6 +29,8 @@ final case class MimeTypeGuesser() {
 
   private val allMappings: Map[String, MimeType] = SupportedFileType.values.flatMap(_.mappings).toMap
 
+  def guess(filename: String): Option[MimeType] = guess(Path(filename))
+
   def guess(file: Path): Option[MimeType] = allMappings.get(file.fileExtension.toLowerCase)
 }
 

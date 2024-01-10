@@ -9,7 +9,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ActionName
 import swiss.dasch.domain
-import swiss.dasch.domain.DerivativeFile.{JpxDerivativeFile, MovingImageDerivativeFile}
+import swiss.dasch.domain.DerivativeFile.{JpxDerivativeFile, MovingImageDerivativeFile, OtherDerivativeFile}
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import swiss.dasch.domain.SupportedFileType.MovingImage
@@ -41,6 +41,7 @@ final case class MaintenanceActionsLive(
   imageService: StillImageService,
   mimeTypeGuesser: MimeTypeGuesser,
   movingImageService: MovingImageService,
+  otherFilesService: OtherFilesService,
   projectService: ProjectService,
   sipiClient: SipiClient,
   storageService: StorageService
@@ -65,17 +66,16 @@ final case class MaintenanceActionsLive(
     def getMetadata(info: AssetInfo, assetType: SupportedFileType, original: Original): Task[AssetMetadata] =
       assetType match {
         case SupportedFileType.StillImage =>
-          val jpx = JpxDerivativeFile.unsafeFrom(info.derivative.file)
-          imageService.extractMetadata(original, jpx)
+          val derivative = JpxDerivativeFile.unsafeFrom(info.derivative.file)
+          imageService.extractMetadata(original, derivative)
 
         case SupportedFileType.MovingImage =>
           val derivative = MovingImageDerivativeFile.unsafeFrom(info.derivative.file)
           movingImageService.extractMetadata(original, derivative, info.assetRef)
 
-        case SupportedFileType.Other =>
-          val originalMimeType = mimeTypeGuesser.guess(Path(info.originalFilename.value))
-          val internalMimeType = mimeTypeGuesser.guess(info.derivative.file)
-          ZIO.succeed(OtherMetadata(internalMimeType, originalMimeType))
+        case SupportedFileType.OtherFiles =>
+          val derivative = OtherDerivativeFile.unsafeFrom(info.derivative.file)
+          otherFilesService.extractMetadata(original, derivative)
       }
 
     for {

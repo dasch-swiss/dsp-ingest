@@ -66,7 +66,7 @@ final case class StillImageService(
 
   def extractMetadata(original: Original, derivative: JpxDerivativeFile): Task[StillImageMetadata] = for {
     dim               <- getDimensions(derivative)
-    originalMimeType   = mimeTypeGuesser.guess(Path(original.originalFilename.value))
+    originalMimeType   = mimeTypeGuesser.guess(original.originalFilename.value)
     derivativeMimeType = mimeTypeGuesser.guess(derivative.file)
   } yield StillImageMetadata(dim, derivativeMimeType, originalMimeType)
 

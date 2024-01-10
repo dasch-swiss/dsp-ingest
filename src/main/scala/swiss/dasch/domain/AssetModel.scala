@@ -11,7 +11,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 import swiss.dasch.domain.PathOps.fileExtension
 import swiss.dasch.domain.SipiImageFormat.Jpx
-import swiss.dasch.domain.SupportedFileType.Other
+import swiss.dasch.domain.SupportedFileType.OtherFiles
 import swiss.dasch.infrastructure.Base62
 import zio.json.JsonCodec
 import zio.nio.file.Path
@@ -97,10 +97,8 @@ object Asset {
     assetRef: AssetRef,
     original: Original,
     derivative: DerivativeFile,
-    internalMimeType: Option[MimeType],
-    originalMimeType: Option[MimeType]
-  ): OtherAsset =
-    OtherAsset(assetRef, original, derivative, OtherMetadata(internalMimeType, originalMimeType))
+    metadata: OtherMetadata
+  ): OtherAsset = OtherAsset(assetRef, original, derivative, metadata)
 }
 
 def hasAssetIdInFilename(file: Path): Option[Path] = AssetId.fromPath(file).map(_ => file)
@@ -154,7 +152,7 @@ object DerivativeFile {
     def from(file: Path): Option[OtherDerivativeFile] =
       file match {
         case hidden if hidden.filename.toString.startsWith(".") => None
-        case other if Other.acceptsExtension(other.filename.fileExtension) =>
+        case other if OtherFiles.acceptsExtension(other.filename.fileExtension) =>
           hasAssetIdInFilename(other).map(OtherDerivativeFile(_))
         case _ => None
       }
