@@ -100,7 +100,9 @@ final case class ProjectServiceLive(
       .flatMap(path => ZIO.whenZIO(Files.isDirectory(path.path))(ZIO.succeed(path)))
 
   override def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
-    ZStream.fromIterableZIO(findProject(shortcode).map(_.toList)).flatMap(assetInfos.findAllInPath(_, shortcode))
+    ZStream
+      .fromIterableZIO(findProject(shortcode).map(_.map(_.path).toList))
+      .flatMap(assetInfos.findAllInPath(_, shortcode))
 
   override def zipProject(shortcode: ProjectShortcode): Task[Option[Path]] =
     ZIO.logInfo(s"Zipping project $shortcode") *>
