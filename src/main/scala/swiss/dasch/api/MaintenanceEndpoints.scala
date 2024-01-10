@@ -27,11 +27,6 @@ object MappingEntry {
 enum ActionName {
   case ApplyTopLeftCorrection extends ActionName
   case UpdateAssetMetadata    extends ActionName
-
-//  case NeedsTopLeftCorrection               extends ActionName
-//  case WasTopLeftCorrectionApplied          extends ActionName
-//  case CreateOriginals                      extends ActionName
-//  case NeedsOriginals                       extends ActionName
 }
 
 object ActionName {
