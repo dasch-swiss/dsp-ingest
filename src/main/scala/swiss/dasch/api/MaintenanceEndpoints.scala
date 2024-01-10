@@ -25,11 +25,11 @@ object MappingEntry {
 }
 
 enum ActionName {
-  case ApplyTopLeftCorrection               extends ActionName
-  case NeedsTopLeftCorrection               extends ActionName
-  case WasTopLeftCorrectionApplied          extends ActionName
-  case CreateOriginals                      extends ActionName
-  case NeedsOriginals                       extends ActionName
+//  case ApplyTopLeftCorrection               extends ActionName
+//  case NeedsTopLeftCorrection               extends ActionName
+//  case WasTopLeftCorrectionApplied          extends ActionName
+//  case CreateOriginals                      extends ActionName
+//  case NeedsOriginals                       extends ActionName
   case ExtractImageMetadataAndAddToInfoFile extends ActionName
 }
 
@@ -48,7 +48,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
 
   private val actionNamePathVar = path[ActionName]("name")
     .description("The name of the action to be performed")
-    .example(ActionName.ApplyTopLeftCorrection)
+    .example(ActionName.ExtractImageMetadataAndAddToInfoFile)
 
   private val restrictToProjectsQuery = {
     given Codec[List[String], List[ProjectShortcode], TextPlain] = Codec
@@ -102,11 +102,6 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val extractImageMetadataAndAddToInfoFileEndpoint = base.secureEndpoint.post
-    .in(maintenance / "extract-image-metadata-and-add-to-info-file")
-    .out(stringBody)
-    .out(statusCode(StatusCode.Accepted))
-    .tag(maintenance)
 
   val endpoints = List(
     postMaintenanceActionEndpoint,
@@ -114,7 +109,6 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     createOriginalsEndpoint,
     needsTopLeftCorrectionEndpoint,
     needsOriginalsEndpoint,
-    extractImageMetadataAndAddToInfoFileEndpoint
   )
 }
 

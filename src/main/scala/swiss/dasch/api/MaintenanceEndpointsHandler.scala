@@ -30,6 +30,10 @@ final case class MaintenanceEndpointsHandler(
             .flatMap(projectService.findProjects)
             .mapError(ApiProblem.InternalServerError(_))
         _ <- ZIO.logInfo(s"Maintenance endpoint called $action, $shortcodes, $paths")
+        _ <- action match {
+               case ActionName.ExtractImageMetadataAndAddToInfoFile =>
+                 maintenanceActions.extractImageMetadataAndAddToInfoFile(paths).forkDaemon.logError
+             }
       } yield "work in progress"
     })
 
@@ -38,10 +42,10 @@ final case class MaintenanceEndpointsHandler(
       projectService
         .findProject(shortcode)
         .some
-        .flatMap(path =>
+        .flatMap(projectPath =>
           maintenanceActions
-            .applyTopLeftCorrections(path.value)
-            .tap(count => ZIO.logInfo(s"Created $count originals for $path"))
+            .applyTopLeftCorrections(projectPath.path)
+            .tap(count => ZIO.logInfo(s"Created $count originals for $projectPath"))
             .logError
             .forkDaemon
         )
@@ -55,10 +59,10 @@ final case class MaintenanceEndpointsHandler(
         projectService
           .findProject(shortcode)
           .some
-          .flatMap(path =>
+          .flatMap(projectPath =>
             maintenanceActions
-              .createOriginals(path.value, mappings.map(e => e.internalFilename -> e.originalFilename).toMap)
-              .tap(count => ZIO.logInfo(s"Created $count originals for ${path.value}"))
+              .createOriginals(projectPath.path, mappings.map(e => e.internalFilename -> e.originalFilename).toMap)
+              .tap(count => ZIO.logInfo(s"Created $count originals for ${projectPath.path}"))
               .logError
               .forkDaemon
           )
@@ -97,17 +101,6 @@ final case class MaintenanceEndpointsHandler(
             .as("work in progress")
       )
 
-  val extractImageMetadataAndAddToInfoFileEndpoint: ZServerEndpoint[Any, Any] =
-    maintenanceEndpoints.extractImageMetadataAndAddToInfoFileEndpoint
-      .serverLogic(_ =>
-        _ =>
-          maintenanceActions
-            .extractImageMetadataAndAddToInfoFile()
-            .forkDaemon
-            .logError
-            .as("work in progress")
-      )
-
   val endpoints: List[ZServerEndpoint[Any, Any]] =
     List(
       postMaintenanceEndpoint,
@@ -115,8 +108,7 @@ final case class MaintenanceEndpointsHandler(
       createOriginalsEndpoint,
       needsOriginalsEndpoint,
       needsTopLeftCorrectionEndpoint,
-      wasTopLeftCorrectionAppliedEndpoint,
-      extractImageMetadataAndAddToInfoFileEndpoint
+      wasTopLeftCorrectionAppliedEndpoint
     )
 }
 

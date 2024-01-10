@@ -165,7 +165,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           .addHeader("Authorization", "Bearer fakeToken")
         StorageService
           .getProjectDirectory(ProjectShortcode.unsafeFrom("0666"))
-          .map(_.value)
+          .map(_.path)
           .tap(Files.createDirectories(_)) *>
           executeRequest(req).map(response => assertTrue(response.status == Status.NotFound))
       },

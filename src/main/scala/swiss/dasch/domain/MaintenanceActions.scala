@@ -21,7 +21,7 @@ import zio.stream.{ZSink, ZStream}
 import java.io.IOException
 
 trait MaintenanceActions {
-  def extractImageMetadataAndAddToInfoFile(): Task[Unit]
+  def extractImageMetadataAndAddToInfoFile(projects: Iterable[ProjectPath]): Task[Unit]
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
   def createWasTopLeftCorrectionAppliedReport(): Task[Unit]
@@ -37,7 +37,7 @@ final case class MaintenanceActionsLive(
   storageService: StorageService
 ) extends MaintenanceActions {
 
-  override def extractImageMetadataAndAddToInfoFile(): Task[Unit] = {
+  override def extractImageMetadataAndAddToInfoFile(projects: Iterable[ProjectPath]): Task[Unit] = {
     def updateSingleFile(path: Path, shortcode: ProjectShortcode): Task[Unit] =
       for {
         jpx <- ZIO
@@ -46,22 +46,19 @@ final case class MaintenanceActionsLive(
         id <- ZIO
                 .fromOption(AssetId.fromPath(path))
                 .orElseFail(new Exception(s"Could not get asset id from path $path"))
-        ref         = AssetRef(id, shortcode)
-        info       <- assetInfoService.findByAssetRef(ref).someOrFail(new Exception(s"Could not find info file for $ref"))
-        dim        <- imageService.getDimensions(jpx)
-        oldMetadata = info.metadata
-        newMetadata = StillImageMetadata(dim, oldMetadata.internalMimeType, oldMetadata.originalMimeType)
-        _          <- assetInfoService.save(info.copy(metadata = newMetadata))
+        ref          = AssetRef(id, shortcode)
+        info        <- assetInfoService.findByAssetRef(ref).someOrFail(new Exception(s"Could not find info file for $ref"))
+        original     = Original(OriginalFile.unsafeFrom(info.original.file), info.originalFilename)
+        newMetadata <- imageService.extractMetadata(original, jpx)
+        _           <- assetInfoService.save(info.copy(metadata = newMetadata))
       } yield ()
 
     for {
-      projectShortcodes <- projectService.listAllProjects()
-      assetDir          <- storageService.getAssetDirectory()
-      _ <- ZIO.foreachDiscard(projectShortcodes) { shortcode =>
+      _ <- ZIO.foreachDiscard(projects) { path =>
              Files
-               .walk(assetDir / s"$shortcode")
+               .walk(path.path)
                .filterZIO(FileFilters.isJpeg2000)
-               .mapZIOPar(8)(updateSingleFile(_, shortcode).logError)
+               .mapZIOPar(8)(updateSingleFile(_, path.shortcode).logError)
                .runDrain
            }
       _ <- ZIO.logInfo(s"Finished extract StillImage metadata")

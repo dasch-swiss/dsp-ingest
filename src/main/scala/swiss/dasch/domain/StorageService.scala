@@ -103,7 +103,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     getAssetDirectory().map(_ / projectShortcode.toString).map(ProjectPath.unsafeFrom)
 
   override def getAssetDirectory(asset: AssetRef): UIO[Path] =
-    getProjectDirectory(asset.belongsToProject).map(_.value).map(_ / segments(asset.id))
+    getProjectDirectory(asset.belongsToProject).map(_.path).map(_ / segments(asset.id))
 
   private def segments(assetId: AssetId): Path = {
     val assetString = assetId.value

@@ -25,9 +25,9 @@ object ProjectShortcode extends RefinedTypeOps[ProjectShortcode, String] {
   given codec: JsonCodec[ProjectShortcode]                         = JsonCodec[String].transformOrFail(ProjectShortcode.from, _.value)
 }
 
-final case class ProjectPath(value: Path) {
-  def toFile: java.io.File      = value.toFile
-  override def toString: String = value.toString
+final case class ProjectPath(path: Path, shortcode: ProjectShortcode) {
+  def toFile: java.io.File      = path.toFile
+  override def toString: String = path.toString
 }
 
 object ProjectPath {
@@ -38,7 +38,7 @@ object ProjectPath {
     val dir = path.elements.last
     ProjectShortcode
       .from(dir.toString)
-      .map(_ => ProjectPath(path))
+      .map(ProjectPath(path, _))
       .left
       .map(_ => s"Path $path does not contain a valid project shortcode")
   }
@@ -97,7 +97,7 @@ final case class ProjectServiceLive(
   override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectPath]] =
     storage
       .getProjectDirectory(shortcode)
-      .flatMap(path => ZIO.whenZIO(Files.isDirectory(path.value))(ZIO.succeed(path)))
+      .flatMap(path => ZIO.whenZIO(Files.isDirectory(path.path))(ZIO.succeed(path)))
 
   override def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
     ZStream.fromIterableZIO(findProject(shortcode).map(_.toList)).flatMap(assetInfos.findAllInPath(_, shortcode))
@@ -111,13 +111,13 @@ final case class ProjectServiceLive(
     storage
       .getTempDirectory()
       .map(_ / "zipped")
-      .flatMap(targetFolder => ZipUtility.zipFolder(projectPath.value, targetFolder).map(Some(_)))
+      .flatMap(targetFolder => ZipUtility.zipFolder(projectPath.path, targetFolder).map(Some(_)))
 
   override def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit] =
     storage
       .getProjectDirectory(shortcode)
       .flatMap { projectPath =>
-        ZIO.whenZIO(Files.isDirectory(projectPath.value))(
+        ZIO.whenZIO(Files.isDirectory(projectPath.path))(
           ZIO.attemptBlockingIO(FileUtils.deleteDirectory(projectPath.toFile))
         )
       }

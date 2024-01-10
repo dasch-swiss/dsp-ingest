@@ -69,7 +69,8 @@ final case class AssetInfo(
   originalFilename: NonEmptyString,
   derivative: FileAndChecksum,
   metadata: AssetMetadata
-)
+) {
+}
 
 trait AssetInfoService {
   def loadFromFilesystem(infoFile: Path, shortcode: ProjectShortcode): Task[AssetInfo]
@@ -77,8 +78,8 @@ trait AssetInfoService {
   def findByAssetRef(asset: AssetRef): Task[Option[AssetInfo]]
   def save(assetInfo: AssetInfo): Task[Unit]
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
-  final def findAllInPath(path: ProjectPath, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
-    findAllInPath(path.value, shortcode)
+  final def findAllInPath(projectPath: ProjectPath, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
+    findAllInPath(projectPath.path, shortcode)
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo]
 }
