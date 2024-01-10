@@ -77,6 +77,8 @@ trait AssetInfoService {
   def findByAssetRef(asset: AssetRef): Task[Option[AssetInfo]]
   def save(assetInfo: AssetInfo): Task[Unit]
   def findAllInPath(path: Path, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
+  final def findAllInPath(path: ProjectPath, shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
+    findAllInPath(path.value, shortcode)
   def updateAssetInfoForDerivative(derivative: Path): Task[Unit]
   def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo]
 }

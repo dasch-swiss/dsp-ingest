@@ -40,7 +40,7 @@ final case class MaintenanceEndpointsHandler(
         .some
         .flatMap(path =>
           maintenanceActions
-            .applyTopLeftCorrections(path)
+            .applyTopLeftCorrections(path.value)
             .tap(count => ZIO.logInfo(s"Created $count originals for $path"))
             .logError
             .forkDaemon
@@ -57,8 +57,8 @@ final case class MaintenanceEndpointsHandler(
           .some
           .flatMap(path =>
             maintenanceActions
-              .createOriginals(path, mappings.map(e => e.internalFilename -> e.originalFilename).toMap)
-              .tap(count => ZIO.logInfo(s"Created $count originals for $path"))
+              .createOriginals(path.value, mappings.map(e => e.internalFilename -> e.originalFilename).toMap)
+              .tap(count => ZIO.logInfo(s"Created $count originals for ${path.value}"))
               .logError
               .forkDaemon
           )
