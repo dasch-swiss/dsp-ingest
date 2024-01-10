@@ -48,13 +48,8 @@ final case class MaintenanceActionsLive(
 ) extends MaintenanceActions {
 
   override def updateAssetMetadata(projects: Iterable[ProjectPath]): Task[Unit] = {
-    def updateSingleFile(infoFilePath: Path, shortcode: ProjectShortcode): Task[Unit] =
+    def updateSingleAsset(info: AssetInfo): Task[Unit] =
       for {
-        id <- ZIO
-                .fromOption(AssetId.fromPath(infoFilePath))
-                .orElseFail(new Exception(s"Could not get asset id from info file $infoFilePath"))
-        ref   = AssetRef(id, shortcode)
-        info <- assetInfoService.findByAssetRef(ref).someOrFail(new Exception(s"Could not find info file for $ref"))
         assetType <- ZIO
                        .fromOption(SupportedFileType.fromPath(Path(info.originalFilename.value)))
                        .orElseFail(new Exception(s"Could not get asset type from path ${info.originalFilename.value}"))
@@ -80,10 +75,9 @@ final case class MaintenanceActionsLive(
 
     for {
       _ <- ZIO.foreachDiscard(projects) { projectPath =>
-             Files
-               .walk(projectPath.path)
-               .filterZIO(FileFilters.isInfoFile)
-               .mapZIOPar(8)(updateSingleFile(_, projectPath.shortcode).ignore.logError)
+             projectService
+               .findAssetInfosOfProject(projectPath.shortcode)
+               .mapZIOPar(8)(updateSingleAsset(_).logError.ignore)
                .runDrain
            }
       _ <- ZIO.logInfo(s"Finished ${ActionName.UpdateAssetMetadata}")
