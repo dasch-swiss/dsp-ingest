@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 - 2023 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+ * Copyright © 2021 - 2024 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -98,8 +98,8 @@ final case class BulkIngestServiceLive(
 
   private def updateMappingCsv(asset: Asset, fileToIngest: Path, importDir: Path, csv: Path) =
     ZIO.logInfo(s"Updating mapping file $csv, $asset") *> {
-      val ingestedFileRelativePath = s"${importDir.relativize(fileToIngest)}"
-      val derivativeFilename       = asset.derivative.filename
+      val ingestedFileRelativePath = CsvUtil.escapeCsvValue(s"${importDir.relativize(fileToIngest)}")
+      val derivativeFilename       = CsvUtil.escapeCsvValue(asset.derivative.filename.toString)
       val line                     = s"$ingestedFileRelativePath,$derivativeFilename"
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
