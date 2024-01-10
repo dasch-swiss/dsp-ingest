@@ -53,12 +53,12 @@ final case class MaintenanceActionsLive(
         assetType <- ZIO
                        .fromOption(SupportedFileType.fromPath(Path(info.originalFilename.value)))
                        .orElseFail(new Exception(s"Could not get asset type from path ${info.originalFilename.value}"))
-        original     = Original(OriginalFile.unsafeFrom(info.original.file), info.originalFilename)
-        newMetadata <- getMetadata(info, assetType, original)
+        newMetadata <- getMetadata(info, assetType)
         _           <- assetInfoService.save(info.copy(metadata = newMetadata))
       } yield ()
 
-    def getMetadata(info: AssetInfo, assetType: SupportedFileType, original: Original): Task[AssetMetadata] =
+    def getMetadata(info: AssetInfo, assetType: SupportedFileType): Task[AssetMetadata] = {
+      val original = Original(OriginalFile.unsafeFrom(info.original.file), info.originalFilename)
       assetType match {
         case SupportedFileType.StillImage =>
           val derivative = JpxDerivativeFile.unsafeFrom(info.derivative.file)
@@ -66,12 +66,13 @@ final case class MaintenanceActionsLive(
 
         case SupportedFileType.MovingImage =>
           val derivative = MovingImageDerivativeFile.unsafeFrom(info.derivative.file)
-          movingImageService.extractMetadata(original, derivative, info.assetRef)
+          movingImageService.extractMetadata(original, derivative)
 
         case SupportedFileType.OtherFiles =>
           val derivative = OtherDerivativeFile.unsafeFrom(info.derivative.file)
           otherFilesService.extractMetadata(original, derivative)
       }
+    }
 
     for {
       _ <- ZIO.foreachDiscard(projects) { projectPath =>
