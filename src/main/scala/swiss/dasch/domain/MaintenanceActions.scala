@@ -8,9 +8,10 @@ package swiss.dasch.domain
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain
-import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
+import swiss.dasch.domain.DerivativeFile.{JpxDerivativeFile, MovingImageDerivativeFile}
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
+import swiss.dasch.domain.SupportedFileType.MovingImage
 import zio.*
 import zio.json.interop.refined.*
 import zio.json.{DeriveJsonCodec, EncoderOps, JsonCodec, JsonEncoder}
@@ -21,7 +22,7 @@ import zio.stream.{ZSink, ZStream}
 import java.io.IOException
 
 trait MaintenanceActions {
-  def extractImageMetadataAndAddToInfoFile(projects: Iterable[ProjectPath]): Task[Unit]
+  def updateAssetMetadata(projects: Iterable[ProjectPath]): Task[Unit]
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
   def createWasTopLeftCorrectionAppliedReport(): Task[Unit]
@@ -32,33 +33,51 @@ trait MaintenanceActions {
 final case class MaintenanceActionsLive(
   assetInfoService: AssetInfoService,
   imageService: StillImageService,
+  mimeTypeGuesser: MimeTypeGuesser,
+  movingImageService: MovingImageService,
   projectService: ProjectService,
   sipiClient: SipiClient,
   storageService: StorageService
 ) extends MaintenanceActions {
 
-  override def extractImageMetadataAndAddToInfoFile(projects: Iterable[ProjectPath]): Task[Unit] = {
-    def updateSingleFile(path: Path, shortcode: ProjectShortcode): Task[Unit] =
+  override def updateAssetMetadata(projects: Iterable[ProjectPath]): Task[Unit] = {
+    def updateSingleFile(infoFilePath: Path, shortcode: ProjectShortcode): Task[Unit] =
       for {
-        jpx <- ZIO
-                 .fromOption(JpxDerivativeFile.from(path))
-                 .orElseFail(new Exception(s"Is not a jpx file: $path"))
         id <- ZIO
-                .fromOption(AssetId.fromPath(path))
-                .orElseFail(new Exception(s"Could not get asset id from path $path"))
-        ref          = AssetRef(id, shortcode)
-        info        <- assetInfoService.findByAssetRef(ref).someOrFail(new Exception(s"Could not find info file for $ref"))
+                .fromOption(AssetId.fromPath(infoFilePath))
+                .orElseFail(new Exception(s"Could not get asset id from info file $infoFilePath"))
+        ref   = AssetRef(id, shortcode)
+        info <- assetInfoService.findByAssetRef(ref).someOrFail(new Exception(s"Could not find info file for $ref"))
+        assetType <- ZIO
+                       .fromOption(SupportedFileType.fromPath(Path(info.originalFilename.value)))
+                       .orElseFail(new Exception(s"Could not get asset type from path ${info.originalFilename.value}"))
         original     = Original(OriginalFile.unsafeFrom(info.original.file), info.originalFilename)
-        newMetadata <- imageService.extractMetadata(original, jpx)
+        newMetadata <- getMetadata(info, assetType, original)
         _           <- assetInfoService.save(info.copy(metadata = newMetadata))
       } yield ()
 
+    def getMetadata(info: AssetInfo, assetType: SupportedFileType, original: Original): Task[AssetMetadata] =
+      assetType match {
+        case SupportedFileType.StillImage =>
+          val jpx = JpxDerivativeFile.unsafeFrom(info.derivative.file)
+          imageService.extractMetadata(original, jpx)
+
+        case SupportedFileType.MovingImage =>
+          val derivative = MovingImageDerivativeFile.unsafeFrom(info.derivative.file)
+          movingImageService.extractMetadata(original, derivative, info.assetRef)
+
+        case SupportedFileType.Other =>
+          val originalMimeType = mimeTypeGuesser.guess(Path(info.originalFilename.value))
+          val internalMimeType = mimeTypeGuesser.guess(info.derivative.file)
+          ZIO.succeed(OtherMetadata(internalMimeType, originalMimeType))
+      }
+
     for {
-      _ <- ZIO.foreachDiscard(projects) { path =>
+      _ <- ZIO.foreachDiscard(projects) { projectPath =>
              Files
-               .walk(path.path)
-               .filterZIO(FileFilters.isJpeg2000)
-               .mapZIOPar(8)(updateSingleFile(_, path.shortcode).logError)
+               .walk(projectPath.path)
+               .filterZIO(FileFilters.isInfoFile)
+               .mapZIOPar(8)(updateSingleFile(_, projectPath.shortcode).logError)
                .runDrain
            }
       _ <- ZIO.logInfo(s"Finished extract StillImage metadata")

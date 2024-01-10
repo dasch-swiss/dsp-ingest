@@ -31,8 +31,8 @@ final case class MaintenanceEndpointsHandler(
             .mapError(ApiProblem.InternalServerError(_))
         _ <- ZIO.logInfo(s"Maintenance endpoint called $action, $shortcodes, $paths")
         _ <- action match {
-               case ActionName.ExtractImageMetadataAndAddToInfoFile =>
-                 maintenanceActions.extractImageMetadataAndAddToInfoFile(paths).forkDaemon.logError
+               case ActionName.UpdateAssetMetadata =>
+                 maintenanceActions.updateAssetMetadata(paths).forkDaemon.logError
              }
       } yield "work in progress"
     })

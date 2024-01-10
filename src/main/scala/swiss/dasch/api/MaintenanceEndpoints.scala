@@ -30,7 +30,7 @@ enum ActionName {
 //  case WasTopLeftCorrectionApplied          extends ActionName
 //  case CreateOriginals                      extends ActionName
 //  case NeedsOriginals                       extends ActionName
-  case ExtractImageMetadataAndAddToInfoFile extends ActionName
+  case UpdateAssetMetadata extends ActionName
 }
 
 object ActionName {
@@ -48,7 +48,7 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
 
   private val actionNamePathVar = path[ActionName]("name")
     .description("The name of the action to be performed")
-    .example(ActionName.ExtractImageMetadataAndAddToInfoFile)
+    .example(ActionName.UpdateAssetMetadata)
 
   private val restrictToProjectsQuery = {
     given Codec[List[String], List[ProjectShortcode], TextPlain] = Codec

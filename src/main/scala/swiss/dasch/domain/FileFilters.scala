@@ -17,6 +17,8 @@ object FileFilters {
 
   val isJpeg2000: FileFilter = hasFileExtension(Jpx.allExtensions)
 
+  val isInfoFile: FileFilter = hasFileExtension(List("info"))
+
   val isStillImage: FileFilter = hasFileExtension(SupportedFileType.StillImage.extensions)
 
   val isMovingImage: FileFilter = hasFileExtension(SupportedFileType.MovingImage.extensions)
