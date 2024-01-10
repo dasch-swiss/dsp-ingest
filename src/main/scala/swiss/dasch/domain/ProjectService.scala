@@ -28,6 +28,8 @@ object ProjectShortcode extends RefinedTypeOps[ProjectShortcode, String] {
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[Path]]
+  def findProjects(shortcodes: Iterable[ProjectShortcode]): IO[IOException, List[Path]] =
+    ZIO.foreach(shortcodes)(findProject).map(_.toList.flatten)
   def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit]
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
   def zipProject(shortcode: ProjectShortcode): Task[Option[Path]]

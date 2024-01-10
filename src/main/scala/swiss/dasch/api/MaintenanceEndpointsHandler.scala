@@ -7,7 +7,7 @@ package swiss.dasch.api
 
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.domain.*
-import zio.{ZIO, ZLayer}
+import zio.{Chunk, ZIO, ZLayer}
 
 final case class MaintenanceEndpointsHandler(
   maintenanceEndpoints: MaintenanceEndpoints,
@@ -20,9 +20,17 @@ final case class MaintenanceEndpointsHandler(
 
   private val postMaintenanceEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints.postMaintenanceActionEndpoint
     .serverLogic(_ => { case (action, shortcodes) =>
-      ZIO
-        .logInfo(s"Maintenance endpoint called $action, $shortcodes")
-        .as("work in progress")
+      for {
+        paths <-
+          ZIO
+            .ifZIO(ZIO.succeed(shortcodes.isEmpty))(
+              projectService.listAllProjects(),
+              ZIO.succeed(Chunk.fromIterable(shortcodes))
+            )
+            .flatMap(projectService.findProjects)
+            .mapError(ApiProblem.InternalServerError(_))
+        _ <- ZIO.logInfo(s"Maintenance endpoint called $action, $shortcodes, $paths")
+      } yield "work in progress"
     })
 
   val applyTopLeftCorrectionEndpoint: ZServerEndpoint[Any, Any] =
