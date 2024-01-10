@@ -18,6 +18,13 @@ final case class MaintenanceEndpointsHandler(
   imageService: StillImageService
 ) extends HandlerFunctions {
 
+  private val postMaintenanceEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints.postMaintenanceActionEndpoint
+    .serverLogic(_ => { case (action, shortcodes) =>
+      ZIO
+        .logInfo(s"Maintenance endpoint called $action, $shortcodes")
+        .as("work in progress")
+    })
+
   val applyTopLeftCorrectionEndpoint: ZServerEndpoint[Any, Any] =
     maintenanceEndpoints.applyTopLeftCorrectionEndpoint.serverLogic { _ => shortcode =>
       projectService
@@ -95,6 +102,7 @@ final case class MaintenanceEndpointsHandler(
 
   val endpoints: List[ZServerEndpoint[Any, Any]] =
     List(
+      postMaintenanceEndpoint,
       applyTopLeftCorrectionEndpoint,
       createOriginalsEndpoint,
       needsOriginalsEndpoint,
