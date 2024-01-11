@@ -86,16 +86,15 @@ final case class MaintenanceActionsLive(
     val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
     for {
       _                 <- ZIO.logInfo(s"Checking for originals")
-      assetDir          <- storageService.getAssetDirectory()
       tmpDir            <- storageService.getTempDirectory()
       projectShortcodes <- projectService.listAllProjects()
       _ <- ZIO
-             .foreach(projectShortcodes)(shortcode =>
+             .foreach(projectShortcodes)(prj =>
                Files
-                 .walk(assetDir / shortcode.toString)
+                 .walk(prj.path)
                  .mapZIOPar(8)(originalNotPresent(imagesOnly))
                  .filter(identity)
-                 .as(shortcode)
+                 .as(prj.shortcode)
                  .runHead
              )
              .map(_.flatten.map(_.toString))
@@ -136,18 +135,17 @@ final case class MaintenanceActionsLive(
   override def createNeedsTopLeftCorrectionReport(): Task[Unit] =
     for {
       _                 <- ZIO.logInfo(s"Checking for top left correction")
-      assetDir          <- storageService.getAssetDirectory()
       tmpDir            <- storageService.getTempDirectory()
       projectShortcodes <- projectService.listAllProjects()
       _ <-
         ZIO
-          .foreach(projectShortcodes)(shortcode =>
+          .foreach(projectShortcodes)(prj =>
             Files
-              .walk(assetDir / shortcode.toString)
+              .walk(prj.path)
               .mapZIOPar(8)(imageService.needsTopLeftCorrection)
               .filter(identity)
               .runHead
-              .map(_.map(_ => shortcode))
+              .map(_.map(_ => prj.shortcode))
           )
           .map(_.flatten)
           .map(_.map(_.toString))
