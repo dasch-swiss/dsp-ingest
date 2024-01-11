@@ -8,19 +8,8 @@ package swiss.dasch.domain
 import swiss.dasch.domain.AugmentedPath.JpxDerivativeFile.given
 import swiss.dasch.domain.AugmentedPath.MovingImageDerivativeFile.given
 import swiss.dasch.domain.AugmentedPath.ProjectFolder.given
-import swiss.dasch.domain.AugmentedPath.{
-  JpxDerivativeFile,
-  MovingImageDerivativeFile,
-  OrigFile,
-  OtherDerivativeFile,
-  ProjectFolder
-}
-import swiss.dasch.domain.AugmentedPathSpec.ExpectedErrorMessages.{
-  hiddenFile,
-  noAssetIdInFilename,
-  notAProjectFolder,
-  unsupportedFileType
-}
+import swiss.dasch.domain.AugmentedPath.*
+import swiss.dasch.domain.AugmentedPathSpec.ExpectedErrorMessages.{hiddenFile, noAssetIdInFilename, notAProjectFolder, unsupportedFileType}
 import swiss.dasch.test.SpecConstants
 import zio.nio.file.Path
 import zio.test.{Gen, Spec, ZIOSpecDefault, assertTrue, check}
