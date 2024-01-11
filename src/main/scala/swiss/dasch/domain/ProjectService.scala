@@ -27,7 +27,7 @@ object ProjectShortcode extends RefinedTypeOps[ProjectShortcode, String] {
 }
 
 trait ProjectService {
-  def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
+  def listAllProjects(): IO[IOException, Chunk[ProjectFolder]]
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectFolder]]
   def findProjects(shortcodes: Iterable[ProjectShortcode]): IO[IOException, List[ProjectFolder]] =
     ZIO.foreach(shortcodes)(findProject).map(_.toList.flatten)
@@ -37,7 +37,7 @@ trait ProjectService {
 }
 
 object ProjectService {
-  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]] =
+  def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectFolder]] =
     ZIO.serviceWithZIO[ProjectService](_.listAllProjects())
   def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[ProjectFolder]] =
     ZIO.serviceWithZIO[ProjectService](_.findProject(shortcode))
@@ -55,7 +55,7 @@ final case class ProjectServiceLive(
   checksum: FileChecksumService
 ) extends ProjectService {
 
-  override def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]] =
+  override def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
     ZStream
       .fromZIO(storage.getAssetDirectory())
       .flatMap(newDirectoryStream(_))
@@ -63,7 +63,7 @@ final case class ProjectServiceLive(
         ZStream.succeed(path).filterZIO(directoryContainsNonHiddenRegularFile)
       )
       .runCollect
-      .map(toProjectShortcodes)
+      .map(_.map(AugmentedPath.unsafeFrom))
 
   private def directoryContainsNonHiddenRegularFile(path: Path) =
     Files.isDirectory(path) &&
@@ -72,9 +72,6 @@ final case class ProjectServiceLive(
         .filterZIO(FileFilters.isNonHiddenRegularFile)
         .runHead
         .map(_.isDefined)
-
-  private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
-    _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.from(_).toOption)
 
   override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectFolder]] =
     storage

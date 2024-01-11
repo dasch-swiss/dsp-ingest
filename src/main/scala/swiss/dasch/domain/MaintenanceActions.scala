@@ -170,20 +170,20 @@ final case class MaintenanceActionsLive(
 
   override def createWasTopLeftCorrectionAppliedReport(): Task[Unit] =
     for {
-      _                 <- ZIO.logInfo(s"Checking where top left correction was applied")
-      assetDir          <- storageService.getAssetDirectory()
-      tmpDir            <- storageService.getTempDirectory()
-      projectShortcodes <- projectService.listAllProjects()
+      _              <- ZIO.logInfo(s"Checking where top left correction was applied")
+      assetDir       <- storageService.getAssetDirectory()
+      tmpDir         <- storageService.getTempDirectory()
+      projectFolders <- projectService.listAllProjects()
       assetsWithBak <-
         ZIO
-          .foreach(projectShortcodes) { shortcode =>
+          .foreach(projectFolders) { prj =>
             Files
-              .walk(assetDir / shortcode.toString)
+              .walk(prj.path)
               .flatMapPar(8)(hasBeenTopLeftTransformed)
               .runCollect
               .map { assetIdDimensions =>
                 ProjectWithBakFiles(
-                  shortcode,
+                  prj.shortcode,
                   assetIdDimensions.map { case (id: AssetId, dim: Dimensions) => ReportAsset(id, dim) }
                 )
               }
