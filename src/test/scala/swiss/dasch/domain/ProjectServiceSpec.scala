@@ -64,7 +64,7 @@ object ProjectServiceSpec extends ZIOSpecDefault {
     ).provide(
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,
-      ProjectServiceLive.layer,
+      ProjectService.layer,
       SpecConfigurations.storageConfigLayer,
       StorageServiceLive.layer
     )

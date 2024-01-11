@@ -175,7 +175,7 @@ object MaintenanceEndpointsSpec extends ZIOSpecDefault {
       MimeTypeGuesser.layer,
       MovingImageService.layer,
       OtherFilesService.layer,
-      ProjectServiceLive.layer,
+      ProjectService.layer,
       SipiClientMock.layer,
       SpecConfigurations.jwtConfigDisableAuthLayer,
       SpecConfigurations.storageConfigLayer,
