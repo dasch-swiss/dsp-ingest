@@ -143,10 +143,10 @@ object DerivativeFile {
     f: (Path, AssetId) => A
   ): Either[String, A] =
     file match {
-      case hidden if hidden.filename.toString.startsWith(".") => Left("Hidden file")
+      case hidden if hidden.filename.toString.startsWith(".") => Left("Hidden file.")
       case derivative if isSupported(derivative.fileExtension) =>
-        AssetId.fromPath(derivative).map(f(file, _)).toRight("No AssetId in filename")
-      case _ => Left("Unsupported file type")
+        AssetId.fromPath(derivative).map(f(file, _)).toRight("No Asset ID in the filename.")
+      case _ => Left("Unsupported file type.")
     }
 
   final case class JpxDerivativeFile private (file: Path, assetId: AssetId) extends DerivativeFile(file)
