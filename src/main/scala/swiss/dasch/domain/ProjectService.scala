@@ -8,6 +8,7 @@ package swiss.dasch.domain
 import eu.timepit.refined.api.{Refined, RefinedTypeOps}
 import eu.timepit.refined.string.MatchesRegex
 import org.apache.commons.io.FileUtils
+import swiss.dasch.domain.AugmentedPath.ProjectFolder
 import zio.*
 import zio.json.JsonCodec
 import zio.nio.file.Files.{isDirectory, newDirectoryStream}
@@ -25,29 +26,10 @@ object ProjectShortcode extends RefinedTypeOps[ProjectShortcode, String] {
   given codec: JsonCodec[ProjectShortcode]                         = JsonCodec[String].transformOrFail(ProjectShortcode.from, _.value)
 }
 
-final case class ProjectPath(path: Path, shortcode: ProjectShortcode) {
-  def toFile: java.io.File      = path.toFile
-  override def toString: String = path.toString
-}
-
-object ProjectPath {
-
-  def unsafeFrom(path: Path): ProjectPath = from(path).fold(msg => throw IllegalArgumentException(msg), identity)
-
-  def from(path: Path): Either[String, ProjectPath] = {
-    val dir = path.elements.last
-    ProjectShortcode
-      .from(dir.toString)
-      .map(ProjectPath(path, _))
-      .left
-      .map(_ => s"Path $path does not contain a valid project shortcode")
-  }
-}
-
 trait ProjectService {
   def listAllProjects(): IO[IOException, Chunk[ProjectShortcode]]
-  def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectPath]]
-  def findProjects(shortcodes: Iterable[ProjectShortcode]): IO[IOException, List[ProjectPath]] =
+  def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectFolder]]
+  def findProjects(shortcodes: Iterable[ProjectShortcode]): IO[IOException, List[ProjectFolder]] =
     ZIO.foreach(shortcodes)(findProject).map(_.toList.flatten)
   def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit]
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo]
@@ -57,7 +39,7 @@ trait ProjectService {
 object ProjectService {
   def listAllProjects(): ZIO[ProjectService, IOException, Chunk[ProjectShortcode]] =
     ZIO.serviceWithZIO[ProjectService](_.listAllProjects())
-  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[ProjectPath]] =
+  def findProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Option[ProjectFolder]] =
     ZIO.serviceWithZIO[ProjectService](_.findProject(shortcode))
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[ProjectService, Throwable, AssetInfo] =
     ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
@@ -94,7 +76,7 @@ final case class ProjectServiceLive(
   private val toProjectShortcodes: Chunk[Path] => Chunk[ProjectShortcode] =
     _.map(_.filename.toString).sorted.flatMap(ProjectShortcode.from(_).toOption)
 
-  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectPath]] =
+  override def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectFolder]] =
     storage
       .getProjectDirectory(shortcode)
       .flatMap(path => ZIO.whenZIO(Files.isDirectory(path.path))(ZIO.succeed(path)))
@@ -109,7 +91,7 @@ final case class ProjectServiceLive(
       findProject(shortcode).flatMap(_.map(zipProjectPath).getOrElse(ZIO.none)) <*
       ZIO.logInfo(s"Zipping project $shortcode was successful")
 
-  private def zipProjectPath(projectPath: ProjectPath) =
+  private def zipProjectPath(projectPath: ProjectFolder) =
     storage
       .getTempDirectory()
       .map(_ / "zipped")
@@ -120,7 +102,7 @@ final case class ProjectServiceLive(
       .getProjectDirectory(shortcode)
       .flatMap { projectPath =>
         ZIO.whenZIO(Files.isDirectory(projectPath.path))(
-          ZIO.attemptBlockingIO(FileUtils.deleteDirectory(projectPath.toFile))
+          ZIO.attemptBlockingIO(FileUtils.deleteDirectory(projectPath.path.toFile))
         )
       }
       .unit

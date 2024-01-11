@@ -11,7 +11,6 @@ import eu.timepit.refined.numeric.*
 import eu.timepit.refined.numeric.Greater.greaterValidate
 import swiss.dasch.api.SipiClientMockMethodInvocation.ApplyTopLeftCorrection
 import swiss.dasch.api.{SipiClientMock, SipiClientMockMethodInvocation}
-import swiss.dasch.domain.DerivativeFile.JpxDerivativeFile
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.RefinedHelper.positiveFrom
 import swiss.dasch.test.SpecConfigurations
@@ -71,9 +70,9 @@ object StillImageServiceLiveSpec extends ZIOSpecDefault {
         _          <- Files.createDirectories(assetDir)
         image       = assetDir / s"$assetId.jp2.orig"
         _          <- Files.createFile(image)
-        derivative <- StillImageService.createDerivative(OriginalFile.unsafeFrom(image))
-        fileExists <- Files.exists(derivative.toPath)
-      } yield assertTrue(fileExists, derivative.toPath.filename.toString == s"$assetId.jpx")
+        derivative <- StillImageService.createDerivative(AugmentedPath.unsafeFrom(image))
+        fileExists <- Files.exists(derivative.path)
+      } yield assertTrue(fileExists, derivative.path.filename.toString == s"$assetId.jpx")
     },
     test("createDerivative should fail if Sipi silently does not transcode the image") {
       for {
@@ -83,19 +82,19 @@ object StillImageServiceLiveSpec extends ZIOSpecDefault {
         _        <- Files.createDirectories(assetDir)
         image     = assetDir / s"$assetId.jp2.orig"
         _        <- Files.createFile(image)
-        actual   <- StillImageService.createDerivative(OriginalFile.unsafeFrom(image)).exit
+        actual   <- StillImageService.createDerivative(AugmentedPath.unsafeFrom(image)).exit
       } yield assertTrue(actual.isFailure)
     },
     test("getDimensions should return Dimensions if Sipi returns them") {
       val dim = Dimensions(positiveFrom(100), positiveFrom(100))
       for {
         _      <- SipiClientMock.setQueryImageDimensions(dim)
-        actual <- StillImageService.getDimensions(JpxDerivativeFile.unsafeFrom(Path("images/some-file.jp2")))
+        actual <- StillImageService.getDimensions(AugmentedPath.unsafeFrom(Path("images/some-file.jp2")))
       } yield assertTrue(actual == dim)
     },
     test("getDimensions should fail Dimensions if Sipi does not return them") {
       for {
-        actual <- StillImageService.getDimensions(JpxDerivativeFile.unsafeFrom(Path("images/some-file.jp2"))).exit
+        actual <- StillImageService.getDimensions(AugmentedPath.unsafeFrom(Path("images/some-file.jp2"))).exit
       } yield assert(actual)(
         fails(isSubtype[IOException](hasMessage(equalTo("Could not get dimensions from 'images/some-file.jp2'"))))
       )
