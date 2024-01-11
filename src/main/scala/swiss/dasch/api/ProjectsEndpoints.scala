@@ -13,7 +13,12 @@ import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
 import sttp.tapir.{CodecFormat, EndpointInput}
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
-import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
+import swiss.dasch.api.ProjectsEndpointsResponses.{
+  AssetCheckResultResponse,
+  AssetInfoResponse,
+  ProjectResponse,
+  UploadResponse
+}
 import swiss.dasch.domain.*
 import swiss.dasch.domain.AugmentedPath.ProjectFolder
 import zio.json.{DeriveJsonCodec, JsonCodec}
