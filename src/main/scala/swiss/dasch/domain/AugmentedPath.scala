@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.PathOps.{fileExtension, isHidden}
+import swiss.dasch.domain.SipiImageFormat.Jpx
 import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles}
 import zio.nio.file.Path
 
@@ -30,7 +31,7 @@ trait AssetFile extends AugmentedFile {
   def assetId: AssetId
 }
 
-trait DerivativeFile extends AugmentedFile
+trait DerivativeFile extends AssetFile
 
 object AugmentedPath {
   import ErrorMessages.*
@@ -51,66 +52,54 @@ object AugmentedPath {
           case _ =>
             ProjectShortcode
               .from(path.elements.last.toString)
-              .map(code => ProjectFolder(path, code))
+              .map(ProjectFolder(path, _))
               .left
               .map(_ => notAProjectFolder)
         }
     }
   }
 
+  private def from[A <: AssetFile](
+    path: Path,
+    fileExtensionSupported: String => Boolean,
+    create: (Path, AssetId) => A
+  ): Either[String, A] =
+    path match {
+      case _ if path.isHidden => Left(hiddenFile)
+      case _ if fileExtensionSupported(path.fileExtension) =>
+        AssetId.fromPath(path).map(create(path, _)).toRight(noAssetIdInFilename)
+      case _ => Left(unsupportedFileType)
+    }
+
   final case class JpxDerivativeFile private (path: Path, assetId: AssetId) extends DerivativeFile
   object JpxDerivativeFile {
-
     given AugmentedPathBuilder[JpxDerivativeFile] with {
       def from(path: Path): Either[String, JpxDerivativeFile] =
-        path match {
-          case _ if path.isHidden => Left(hiddenFile)
-          case _ if SipiImageFormat.Jpx.acceptsExtension(path.fileExtension) =>
-            AssetId.fromPath(path).map(JpxDerivativeFile(path, _)).toRight(noAssetIdInFilename)
-          case _ => Left(unsupportedFileType)
-        }
+        AugmentedPath.from(path, Jpx.acceptsExtension, JpxDerivativeFile.apply)
     }
   }
 
   final case class MovingImageDerivativeFile private (path: Path, assetId: AssetId) extends DerivativeFile
   object MovingImageDerivativeFile {
-
     given AugmentedPathBuilder[MovingImageDerivativeFile] with {
       def from(path: Path): Either[String, MovingImageDerivativeFile] =
-        path match {
-          case _ if path.isHidden => Left(hiddenFile)
-          case _ if MovingImage.acceptsExtension(path.fileExtension) =>
-            AssetId.fromPath(path).map(MovingImageDerivativeFile(path, _)).toRight(noAssetIdInFilename)
-          case _ => Left(unsupportedFileType)
-        }
+        AugmentedPath.from(path, MovingImage.acceptsExtension, MovingImageDerivativeFile.apply)
     }
   }
 
   final case class OrigFile private (path: Path, assetId: AssetId) extends AssetFile
   object OrigFile {
-
     given AugmentedPathBuilder[OrigFile] with {
       def from(path: Path): Either[String, OrigFile] =
-        path match {
-          case _ if path.isHidden => Left(hiddenFile)
-          case _ if path.fileExtension == "orig" =>
-            AssetId.fromPath(path).map(OrigFile(path, _)).toRight(noAssetIdInFilename)
-          case _ => Left(unsupportedFileType)
-        }
+        AugmentedPath.from(path, _ == "orig", OrigFile.apply)
     }
   }
 
   final case class OtherDerivativeFile private (path: Path, assetId: AssetId) extends DerivativeFile
   object OtherDerivativeFile {
-
     given AugmentedPathBuilder[OtherDerivativeFile] with {
       def from(path: Path): Either[String, OtherDerivativeFile] =
-        path match {
-          case _ if path.isHidden => Left(hiddenFile)
-          case _ if OtherFiles.acceptsExtension(path.fileExtension) =>
-            AssetId.fromPath(path).map(OtherDerivativeFile(path, _)).toRight(noAssetIdInFilename)
-          case _ => Left(unsupportedFileType)
-        }
+        AugmentedPath.from(path, OtherFiles.acceptsExtension, OtherDerivativeFile.apply)
     }
   }
 
