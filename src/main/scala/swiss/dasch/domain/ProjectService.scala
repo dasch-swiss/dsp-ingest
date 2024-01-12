@@ -36,16 +36,14 @@ final case class ProjectService(
     ZStream
       .fromZIO(storage.getAssetDirectory())
       .flatMap(newDirectoryStream(_))
-      .flatMapPar(StorageService.maxParallelism())(path =>
-        ZStream.succeed(path).filterZIO(directoryContainsNonHiddenRegularFile)
-      )
+      .flatMap(dir => ZStream.fromZIOOption(ZIO.fromOption(ProjectFolder.from(dir).toOption)))
+      .flatMapPar(StorageService.maxParallelism())(ZStream.succeed(_).filterZIO(projectIsNotEmpty))
       .runCollect
-      .map(_.map(AugmentedPath.from[ProjectFolder]).map(_.toOption).flatten)
 
-  private def directoryContainsNonHiddenRegularFile(path: Path) =
-    Files.isDirectory(path) &&
+  private def projectIsNotEmpty(prj: ProjectFolder) =
+    Files.isDirectory(prj.path) &&
       Files
-        .walk(path, maxDepth = 3)
+        .walk(prj.path, maxDepth = 3)
         .filterZIO(FileFilters.isNonHiddenRegularFile)
         .runHead
         .map(_.isDefined)

@@ -53,15 +53,14 @@ final case class StillImageService(
             .exists(_.lastOption.exists(_ != Exif.Image.OrientationValue.Horizontal.value))
         }
 
-  def createDerivative(original: OrigFile): Task[JpxDerivativeFile] = {
-    val imagePath      = original.path
-    val derivativePath = imagePath.parent.head / s"${original.assetId}.${Jpx.extension}"
-    ZIO.logInfo(s"Creating derivative for $imagePath") *>
-      sipiClient.transcodeImageFile(imagePath, derivativePath, Jpx) *>
+  def createDerivative(orig: OrigFile): Task[JpxDerivativeFile] = {
+    val jpxFile = JpxDerivativeFile.unsafeFrom(orig.path.parent.head / s"${orig.assetId}.${Jpx.extension}")
+    ZIO.logInfo(s"Creating derivative for ${orig.path}") *>
+      sipiClient.transcodeImageFile(orig.path, jpxFile.path, Jpx) *>
       ZIO
-        .fail(new IOException(s"Sipi failed creating derivative for $imagePath"))
-        .whenZIO(Files.notExists(derivativePath))
-        .as(AugmentedPath.unsafeFrom(derivativePath))
+        .fail(new IOException(s"Sipi failed creating derivative for ${orig.path}"))
+        .whenZIO(Files.notExists(jpxFile.path))
+        .as(jpxFile)
   }
 
   def extractMetadata(original: Original, derivative: JpxDerivativeFile): Task[StillImageMetadata] = for {

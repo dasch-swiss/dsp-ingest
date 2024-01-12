@@ -54,7 +54,7 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
         expected <-
           ZIO
             .serviceWith[StorageConfig](_.assetPath)
-            .map(p => AugmentedPath.unsafeFrom[ProjectFolder](p / existingProject.toString))
+            .map(p => ProjectFolder.unsafeFrom(p / existingProject.toString))
         actual <- StorageService.getProjectDirectory(existingProject)
       } yield assertTrue(expected == actual)
     },

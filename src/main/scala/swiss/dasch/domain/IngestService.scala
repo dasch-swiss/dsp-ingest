@@ -57,11 +57,10 @@ final case class IngestService(
 
   private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef, assetDir: Path): IO[IOException, Original] =
     ZIO.logInfo(s"Creating original for $file, $assetRef") *> {
-      val fileExtension          = s"${file.fileExtension}.orig"
-      val originalPath           = assetDir / s"${assetRef.id}.$fileExtension"
-      val originalFile: OrigFile = AugmentedPath.unsafeFrom(originalPath)
-      val originalFileName       = NonEmptyString.unsafeFrom(file.filename.toString)
-      storage.copyFile(file, originalPath).as(Original(originalFile, originalFileName))
+      val fileExtension    = s"${file.fileExtension}.orig"
+      val orig             = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension")
+      val originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
+      storage.copyFile(file, orig.path).as(Original(orig, originalFileName))
     }
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
@@ -74,11 +73,10 @@ final case class IngestService(
 
   private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
-      val fileExtension                   = FilenameUtils.getExtension(original.originalFilename.toString)
-      val derivativePath                  = assetDir / s"${assetRef.id}.$fileExtension"
-      val derivative: OtherDerivativeFile = AugmentedPath.unsafeFrom(derivativePath)
+      val fileExtension = FilenameUtils.getExtension(original.originalFilename.toString)
+      val derivative    = OtherDerivativeFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension")
       for {
-        _        <- storage.copyFile(original.file.path, derivativePath)
+        _        <- storage.copyFile(original.file.path, derivative.file)
         metadata <- otherFilesService.extractMetadata(original, derivative)
       } yield Asset.makeOther(assetRef, original, derivative, metadata)
     }

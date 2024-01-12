@@ -100,8 +100,8 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
   override def getAssetDirectory(): UIO[Path] =
     ZIO.succeed(config.assetPath)
 
-  override def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[ProjectFolder] =
-    getAssetDirectory().map(_ / projectShortcode.toString).map(AugmentedPath.unsafeFrom)
+  override def getProjectDirectory(shortcode: ProjectShortcode): UIO[ProjectFolder] =
+    getAssetDirectory().map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
 
   override def getAssetDirectory(asset: AssetRef): UIO[Path] =
     getProjectDirectory(asset.belongsToProject).map(_.path).map(_ / segments(asset.id))

@@ -5,10 +5,10 @@
 
 package swiss.dasch.domain
 
+import swiss.dasch.domain.AugmentedPath.*
 import swiss.dasch.domain.AugmentedPath.JpxDerivativeFile.given
 import swiss.dasch.domain.AugmentedPath.MovingImageDerivativeFile.given
 import swiss.dasch.domain.AugmentedPath.ProjectFolder.given
-import swiss.dasch.domain.AugmentedPath.*
 import swiss.dasch.domain.AugmentedPathSpec.ExpectedErrorMessages.{
   hiddenFile,
   noAssetIdInFilename,
@@ -33,22 +33,17 @@ object AugmentedPathSpec extends ZIOSpecDefault {
 
   private val projectFolderSuite = suite("ProjectFolder")(
     test("can be created from a Path which is a project folder") {
-      val path: Path                            = Path(s"/tmp/$someProjectId/")
-      val actual: Either[String, ProjectFolder] = AugmentedPath.from(path)
+      val actual = ProjectFolder.from(Path(s"/tmp/$someProjectId/"))
       assertTrue(
-        actual.map(_.path).contains(path),
+        actual.map(_.path).contains(Path(s"/tmp/$someProjectId/")),
         actual.map(_.shortcode).contains(someProjectId)
       )
     },
     test("cannot be created from a Path which is hidden") {
-      val path: Path                            = Path(s"/tmp/.$someProjectId/")
-      val actual: Either[String, ProjectFolder] = AugmentedPath.from(path)
-      assertTrue(actual == Left(hiddenFile))
+      assertTrue(ProjectFolder.from(Path(s"/tmp/.$someProjectId/")) == Left(hiddenFile))
     },
     test("cannot be created from a Path which is not a project folder") {
-      val path: Path                            = Path("/tmp/not-a-project-folder/")
-      val actual: Either[String, ProjectFolder] = AugmentedPath.from(path)
-      assertTrue(actual == Left(notAProjectFolder))
+      assertTrue(ProjectFolder.from(Path("/tmp/not-a-project-folder/")) == Left(notAProjectFolder))
     }
   )
 
@@ -57,35 +52,26 @@ object AugmentedPathSpec extends ZIOSpecDefault {
       test("can be created from a Path which is a derivative file jpx") {
         val gen = Gen.fromIterable(List("jpx", "JPX", "jp2", "JP2"))
         check(gen) { extension =>
-          val path: Path                                = Path(s"/tmp/$someAssetId.$extension")
-          val actual: Either[String, JpxDerivativeFile] = AugmentedPath.from(path)
+          val actual = JpxDerivativeFile.from(Path(s"/tmp/$someAssetId.$extension"))
           assertTrue(
-            actual.map(_.path).contains(path),
+            actual.map(_.path).contains(Path(s"/tmp/$someAssetId.$extension")),
             actual.map(_.assetId).contains(someAssetId)
           )
         }
       },
       test("cannot be created if filename is not a valid AssetId") {
-        val path: Path                                = Path("/tmp/this_is_no_asset_id!.jpx")
-        val actual: Either[String, JpxDerivativeFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(noAssetIdInFilename))
+        assertTrue(JpxDerivativeFile.from(Path("/tmp/this_is_no_asset_id!.jpx")) == Left(noAssetIdInFilename))
       },
       test("cannot be created from original file") {
-        val path: Path                                = Path(s"/tmp/$someAssetId.orig")
-        val actual: Either[String, JpxDerivativeFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(unsupportedFileType))
+        assertTrue(JpxDerivativeFile.from(Path(s"/tmp/$someAssetId.orig")) == Left(unsupportedFileType))
       },
       test("cannot be created from directory") {
-        val path: Path                                = Path(s"/tmp/hello/")
-        val actual: Either[String, JpxDerivativeFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(unsupportedFileType))
+        assertTrue(JpxDerivativeFile.from(Path(s"/tmp/hello/")) == Left(unsupportedFileType))
       },
       test("cannot be created from hidden file") {
         val hiddenFiles = Gen.fromIterable(List(s".$someAssetId.txt", s".$someAssetId.jpx"))
         check(hiddenFiles) { filename =>
-          val path: Path                                = Path(s"/tmp/$filename")
-          val actual: Either[String, JpxDerivativeFile] = AugmentedPath.from(path)
-          assertTrue(actual == Left(hiddenFile))
+          assertTrue(JpxDerivativeFile.from(Path(s"/tmp/$filename")) == Left(hiddenFile))
         }
       }
     )
@@ -94,67 +80,52 @@ object AugmentedPathSpec extends ZIOSpecDefault {
     test("can be created from a Path which is a derivative file mov") {
       val gen = Gen.fromIterable(List("mp4", "MP4"))
       check(gen) { extension =>
-        val path: Path                                        = Path(s"/tmp/$someAssetId.$extension")
-        val actual: Either[String, MovingImageDerivativeFile] = AugmentedPath.from(path)
+        val actual = MovingImageDerivativeFile.from(Path(s"/tmp/$someAssetId.$extension"))
         assertTrue(
-          actual.map(_.path).contains(path),
+          actual.map(_.path).contains(Path(s"/tmp/$someAssetId.$extension")),
           actual.map(_.assetId).contains(someAssetId)
         )
       }
     },
     test("cannot be created if filename is not a valid AssetId") {
-      val path: Path                                        = Path("/tmp/this_is_no_asset_id!.mp4")
-      val actual: Either[String, MovingImageDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(noAssetIdInFilename))
+      assertTrue(MovingImageDerivativeFile.from(Path("/tmp/this_is_no_asset_id!.mp4")) == Left(noAssetIdInFilename))
     },
     test("cannot be created from original file") {
-      val path: Path                                        = Path(s"/tmp/$someAssetId.orig")
-      val actual: Either[String, MovingImageDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(unsupportedFileType))
+      assertTrue(MovingImageDerivativeFile.from(Path(s"/tmp/$someAssetId.orig")) == Left(unsupportedFileType))
     },
     test("cannot be created from directory") {
-      val path: Path                                        = Path(s"/tmp/hello/")
-      val actual: Either[String, MovingImageDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(unsupportedFileType))
+      assertTrue(MovingImageDerivativeFile.from(Path(s"/tmp/hello/")) == Left(unsupportedFileType))
     },
     test("cannot be created from hidden file") {
       val hiddenFiles = Gen.fromIterable(List(s".$someAssetId.mp4", s".$someAssetId.MP4"))
       check(hiddenFiles) { filename =>
-        val path: Path                                        = Path(s"/tmp/$filename")
-        val actual: Either[String, MovingImageDerivativeFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(hiddenFile))
+        assertTrue(MovingImageDerivativeFile.from(Path(s"/tmp/$filename")) == Left(hiddenFile))
       }
     }
   )
 
   private val origFileSuite = suite("OrigFile")(
     test("can be created if Path ends with .orig") {
-      val path: Path                       = Path(s"/tmp/$someAssetId.orig")
-      val actual: Either[String, OrigFile] = AugmentedPath.from(path)
+      val path   = Path(s"/tmp/$someAssetId.orig")
+      val actual = OrigFile.from(path)
       assertTrue(
         actual.map(_.path).contains(path),
         actual.map(_.assetId).contains(someAssetId)
       )
     },
     test("cannot be created if filename is not a valid AssetId") {
-      val path: Path                       = Path("/tmp/this_is_no_asset_id!.orig")
-      val actual: Either[String, OrigFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(noAssetIdInFilename))
+      assertTrue(OrigFile.from(Path("/tmp/this_is_no_asset_id!.orig")) == Left(noAssetIdInFilename))
     },
     test("cannot be created if file is not an .orig file, e.g. directory or other extension") {
       val invalidFileExtensions = Gen.fromIterable(List(".png", ".orig.tiff", "/", ".txt", ""))
       check(invalidFileExtensions) { extension =>
-        val path: Path                       = Path(s"/tmp/$someAssetId$extension")
-        val actual: Either[String, OrigFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(unsupportedFileType))
+        assertTrue(OrigFile.from(Path(s"/tmp/$someAssetId$extension")) == Left(unsupportedFileType))
       }
     },
     test("cannot be created from hidden file") {
       val hiddenFiles = Gen.fromIterable(List(s".$someAssetId.txt", s".$someAssetId.orig", s".$someAssetId.tiff.orig"))
       check(hiddenFiles) { filename =>
-        val path: Path                       = Path(s"/tmp/$filename")
-        val actual: Either[String, OrigFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(hiddenFile))
+        assertTrue(OrigFile.from(Path(s"/tmp/$filename")) == Left(hiddenFile))
       }
     }
   )
@@ -163,35 +134,27 @@ object AugmentedPathSpec extends ZIOSpecDefault {
     test("can be created from a Path which is a derivative file") {
       val gen = Gen.fromIterable(SupportedFileType.OtherFiles.extensions)
       check(gen) { extension =>
-        val path: Path                                  = Path(s"/tmp/$someAssetId.$extension")
-        val actual: Either[String, OtherDerivativeFile] = AugmentedPath.from(path)
+        val actual = OtherDerivativeFile.from(Path(s"/tmp/$someAssetId.$extension"))
         assertTrue(
-          actual.map(_.path).contains(path),
+          actual.map(_.path).contains(Path(s"/tmp/$someAssetId.$extension")),
           actual.map(_.assetId).contains(someAssetId)
         )
       }
     },
     test("cannot be created if filename is not a valid AssetId") {
-      val path: Path                                  = Path("/tmp/this_is_no_asset_id!.txt")
-      val actual: Either[String, OtherDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(noAssetIdInFilename))
+      val path = Path("/tmp/this_is_no_asset_id!.txt")
+      assertTrue(OtherDerivativeFile.from(path) == Left(noAssetIdInFilename))
     },
     test("cannot be created from original file") {
-      val path: Path                                  = Path(s"/tmp/$someAssetId.orig")
-      val actual: Either[String, OtherDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(unsupportedFileType))
+      assertTrue(OtherDerivativeFile.from(Path(s"/tmp/$someAssetId.orig")) == Left(unsupportedFileType))
     },
     test("cannot be created from directory") {
-      val path: Path                                  = Path(s"/tmp/hello/")
-      val actual: Either[String, OtherDerivativeFile] = AugmentedPath.from(path)
-      assertTrue(actual == Left(unsupportedFileType))
+      assertTrue(OtherDerivativeFile.from(Path(s"/tmp/hello/")) == Left(unsupportedFileType))
     },
     test("cannot be created from hidden file") {
       val hiddenFiles = Gen.fromIterable(List(s".$someAssetId.txt", s".$someAssetId.TXT"))
       check(hiddenFiles) { filename =>
-        val path: Path                                  = Path(s"/tmp/$filename")
-        val actual: Either[String, OtherDerivativeFile] = AugmentedPath.from(path)
-        assertTrue(actual == Left(hiddenFile))
+        assertTrue(OtherDerivativeFile.from(Path(s"/tmp/$filename")) == Left(hiddenFile))
       }
     }
   )

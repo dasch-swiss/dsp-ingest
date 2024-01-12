@@ -9,7 +9,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ActionName
 import swiss.dasch.domain
-import swiss.dasch.domain.AugmentedPath.ProjectFolder
+import swiss.dasch.domain.AugmentedPath.*
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import swiss.dasch.domain.SupportedFileType.MovingImage
@@ -58,16 +58,16 @@ final case class MaintenanceActionsLive(
       } yield ()
 
     def getMetadata(info: AssetInfo, assetType: SupportedFileType): Task[AssetMetadata] = {
-      val original = Original(AugmentedPath.unsafeFrom(info.original.file), info.originalFilename)
+      val original = Original(OrigFile.unsafeFrom(info.original.file), info.originalFilename)
       assetType match {
         case SupportedFileType.StillImage =>
-          imageService.extractMetadata(original, AugmentedPath.unsafeFrom(info.derivative.file))
+          imageService.extractMetadata(original, JpxDerivativeFile.unsafeFrom(info.derivative.file))
 
         case SupportedFileType.MovingImage =>
-          movingImageService.extractMetadata(original, AugmentedPath.unsafeFrom(info.derivative.file))
+          movingImageService.extractMetadata(original, MovingImageDerivativeFile.unsafeFrom(info.derivative.file))
 
         case SupportedFileType.OtherFiles =>
-          otherFilesService.extractMetadata(original, AugmentedPath.unsafeFrom(info.derivative.file))
+          otherFilesService.extractMetadata(original, OtherDerivativeFile.unsafeFrom(info.derivative.file))
       }
     }
 
@@ -169,7 +169,6 @@ final case class MaintenanceActionsLive(
   override def createWasTopLeftCorrectionAppliedReport(): Task[Unit] =
     for {
       _              <- ZIO.logInfo(s"Checking where top left correction was applied")
-      assetDir       <- storageService.getAssetDirectory()
       tmpDir         <- storageService.getTempDirectory()
       projectFolders <- projectService.listAllProjects()
       assetsWithBak <-
@@ -200,10 +199,10 @@ final case class MaintenanceActionsLive(
       // must have a corresponding Jpeg2000 derivative
       bakFilename        = bakFile.filename.toString
       derivativeFilename = bakFilename.substring(0, bakFilename.length - ".bak".length)
-      derivativeFile     = path.parent.map(_ / derivativeFilename).orNull
-      _                 <- ZIO.fail(None).whenZIO(FileFilters.isJpeg2000(derivativeFile).negate.asSomeError)
+      derivative         = JpxDerivativeFile.unsafeFrom(path.parent.head / derivativeFilename)
+      _                 <- ZIO.fail(None).whenZIO(FileFilters.isJpeg2000(derivative.file).negate.asSomeError)
       // get the dimensions
-      dimensions <- imageService.getDimensions(AugmentedPath.unsafeFrom(derivativeFile)).asSomeError
+      dimensions <- imageService.getDimensions(derivative).asSomeError
     } yield (assetId, dimensions)
 
     ZStream.fromZIOOption(
@@ -301,7 +300,7 @@ final case class MaintenanceActionsLive(
         _    <- Files.deleteIfExists(infoFilePath) *> Files.createFile(infoFilePath)
         _    <- Files.writeBytes(infoFilePath, Chunk.fromArray(info.toJsonPretty.getBytes))
       } yield 1)
-      .someOrElseZIO(ZIO.logWarning(s"Sipi did not create an original for $c") *> ZIO.succeed(0))
+      .someOrElseZIO(ZIO.logWarning(s"Sipi did not create an original for $c").as(0))
   }
 
   private def createNewAssetInfoFileContent(c: CreateOriginalFor): IO[Throwable, AssetInfoFileContent] =

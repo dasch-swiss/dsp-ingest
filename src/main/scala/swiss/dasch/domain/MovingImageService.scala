@@ -18,9 +18,9 @@ case class MovingImageService(storage: StorageService, executor: CommandExecutor
     for {
       fileExtension <- ensureSupportedFileType(original.originalFilename.toString)
       assetDir      <- storage.getAssetDirectory(assetRef)
-      derivativePath = assetDir / s"${assetRef.id}.$fileExtension"
-      _             <- storage.copyFile(original.file.path, derivativePath)
-    } yield AugmentedPath.unsafeFrom(derivativePath)
+      derivative     = MovingImageDerivativeFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension")
+      _             <- storage.copyFile(original.file.path, derivative.path)
+    } yield derivative
 
   private def ensureSupportedFileType(file: Path | String) = {
     val fileExtension = file match {
@@ -108,8 +108,7 @@ object MovingImageService {
 
   def extractMetadata(
     original: Original,
-    file: MovingImageDerivativeFile,
-    assetRef: AssetRef
+    file: MovingImageDerivativeFile
   ): ZIO[MovingImageService, Throwable, MovingImageMetadata] =
     ZIO.serviceWithZIO[MovingImageService](_.extractMetadata(original, file))
 
