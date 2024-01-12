@@ -49,11 +49,6 @@ object AugmentedPath {
 
   object Conversions {
     given Conversion[AugmentedPath, Path] = _.path
-
-    given Conversion[PathOrAugmentedPath, Path] = {
-      case path: Path               => path
-      case augmented: AugmentedPath => augmented.path
-    }
   }
 
   private[AugmentedPath] object ErrorMessages {

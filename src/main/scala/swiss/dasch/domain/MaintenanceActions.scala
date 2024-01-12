@@ -4,7 +4,6 @@
  */
 
 package swiss.dasch.domain
-
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ActionName

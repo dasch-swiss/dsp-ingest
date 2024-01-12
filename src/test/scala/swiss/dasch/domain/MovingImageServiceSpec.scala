@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.OrigFile
 import swiss.dasch.infrastructure.{CommandExecutor, CommandExecutorMock, ProcessOutput}
 import swiss.dasch.test.SpecConfigurations

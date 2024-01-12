@@ -7,7 +7,7 @@ package swiss.dasch.domain
 
 import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_PathOrAugmentedPath_Path
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.{AssetFolder, AssetsBaseFolder, ProjectFolder, TempFolder}
 import zio.*
 import zio.json.{DecoderOps, EncoderOps, JsonDecoder, JsonEncoder}
@@ -22,16 +22,12 @@ import java.text.ParseException
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZoneOffset}
 
-type PathOrAugmentedFolder = Path | AugmentedFolder
-type PathOrAugmentedPath   = Path | AugmentedPath
-type PathOrAugmentedFile   = Path | AugmentedFile
-
 trait StorageService {
   def getProjectFolder(projectShortcode: ProjectShortcode): UIO[ProjectFolder]
   def getAssetFolder(asset: AssetRef): UIO[AssetFolder]
   def getAssetsBaseFolder(): UIO[AssetsBaseFolder]
   def getTempFolder(): UIO[TempFolder]
-  def fileExists(path: PathOrAugmentedFile): IO[IOException, Boolean]
+  def fileExists(path: Path): IO[IOException, Boolean]
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
   def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
 
@@ -48,12 +44,12 @@ trait StorageService {
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
 
   def copyFile(
-    source: Path | PathOrAugmentedFile,
-    target: Path | PathOrAugmentedFile,
+    source: Path,
+    target: Path,
     copyOption: CopyOption*
   ): IO[IOException, Unit]
 
-  def createDirectories(path: AugmentedFolder, attrs: FileAttribute[_]*): IO[IOException, Unit]
+  def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit]
 
   /**
    * Deletes a a regular file.
@@ -63,7 +59,7 @@ trait StorageService {
    * @return A task that completes when the file is deleted.
    *        Fails with an [[IOException]] if the file is not a regular file or does not exist.
    */
-  def delete(file: PathOrAugmentedFile): IO[IOException, Unit]
+  def delete(file: Path): IO[IOException, Unit]
 
   /**
    * Deletes a file tree recursively.
@@ -71,14 +67,14 @@ trait StorageService {
    * @param directory the root of the file tree to delete
    * @return the number of files deleted
    */
-  def deleteRecursive(directory: PathOrAugmentedFolder): IO[IOException, Long]
+  def deleteRecursive(directory: Path): IO[IOException, Long]
 
-  def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit]
+  def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit]
 }
 
 object StorageService {
   def findInPath(
-    path: PathOrAugmentedFolder,
+    path: Path,
     filter: FileFilter,
     maxDepth: Int = Int.MaxValue
   ): ZStream[Any, IOException, Path] =
@@ -110,7 +106,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
   override def getTempFolder(): UIO[TempFolder] =
     ZIO.succeed(TempFolder.from(config))
 
-  override def fileExists(path: PathOrAugmentedFile): IO[IOException, Boolean] =
+  override def fileExists(path: Path): IO[IOException, Boolean] =
     Files.exists(path)
 
   override def getAssetsBaseFolder(): UIO[AssetsBaseFolder] =
@@ -150,27 +146,23 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     Files.writeBytes(file, bytes, WRITE, CREATE, TRUNCATE_EXISTING)
   }
 
-  override def copyFile(
-    source: PathOrAugmentedFile,
-    target: PathOrAugmentedFile,
-    copyOption: CopyOption*
-  ): IO[IOException, Unit] =
+  override def copyFile(source: Path, target: Path, copyOption: CopyOption*): IO[IOException, Unit] =
     Files.copy(source, target, copyOption: _*)
 
-  override def createDirectories(dir: AugmentedFolder, attrs: FileAttribute[_]*): IO[IOException, Unit] =
-    Files.createDirectories(dir.path, attrs: _*)
+  override def createDirectories(dir: Path, attrs: FileAttribute[_]*): IO[IOException, Unit] =
+    Files.createDirectories(dir, attrs: _*)
 
-  override def delete(file: PathOrAugmentedFile): IO[IOException, Unit] =
+  override def delete(file: Path): IO[IOException, Unit] =
     Files
       .delete(file)
       .whenZIO(Files.isRegularFile(file))
       .someOrFail(new IOException(s"File $file is not a regular file"))
       .unit
 
-  override def deleteRecursive(folder: PathOrAugmentedFolder): IO[IOException, Long] =
+  override def deleteRecursive(folder: Path): IO[IOException, Long] =
     Files.deleteRecursive(folder)
 
-  override def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit] =
+  override def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit] =
     Files
       .delete(directory)
       .catchSome { case _: DirectoryNotEmptyException => ZIO.unit }

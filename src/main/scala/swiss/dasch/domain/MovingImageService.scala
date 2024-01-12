@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import org.apache.commons.io.FilenameUtils
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.MovingImageDerivativeFile
 import swiss.dasch.infrastructure.CommandExecutor
 import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}

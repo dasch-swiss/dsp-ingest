@@ -9,7 +9,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto.autoUnwrap
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_PathOrAugmentedPath_Path
+import swiss.dasch.domain.AugmentedPath.Conversions.given
 import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles, StillImage}
 import zio.json.interop.refined.{decodeRefined, encodeRefined}
 import zio.json.{DeriveJsonCodec, JsonCodec}
@@ -64,7 +64,7 @@ final case class FileAndChecksum(file: Path, checksum: Sha256Hash) {
   lazy val filename: NonEmptyString = NonEmptyString.unsafeFrom(file.filename.toString)
 }
 object FileAndChecksum {
-  def from(file: PathOrAugmentedFile): Task[FileAndChecksum] =
+  def from(file: AugmentedPath): Task[FileAndChecksum] =
     FileChecksumService.createSha256Hash(file).map(FileAndChecksum(file, _))
 }
 
