@@ -164,9 +164,8 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           .get(URL(Root / "projects" / "0666" / "assets" / "7l5QJAtPnv5-lLmBPfO7U40"))
           .addHeader("Authorization", "Bearer fakeToken")
         StorageService
-          .getProjectDirectory(ProjectShortcode.unsafeFrom("0666"))
-          .map(_.path)
-          .tap(Files.createDirectories(_)) *>
+          .getProjectFolder(ProjectShortcode.unsafeFrom("0666"))
+          .tap(StorageService.createDirectories(_)) *>
           executeRequest(req).map(response => assertTrue(response.status == Status.NotFound))
       },
       test("given a basic asset info file exists it should return the info") {

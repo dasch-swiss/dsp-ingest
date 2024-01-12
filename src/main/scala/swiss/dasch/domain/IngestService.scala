@@ -9,7 +9,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.types.string.NonEmptyString
 import org.apache.commons.io.FilenameUtils
 import swiss.dasch.domain.Asset.{MovingImageAsset, OtherAsset, StillImageAsset}
-import swiss.dasch.domain.AugmentedPath.{OrigFile, OtherDerivativeFile}
+import swiss.dasch.domain.AugmentedPath.{AssetFolder, OrigFile, OtherDerivativeFile}
 import swiss.dasch.domain.PathOps.fileExtension
 import zio.nio.file.{Files, Path}
 import zio.{IO, Task, ZIO, ZLayer}
@@ -37,7 +37,7 @@ final case class IngestService(
       _        <- ZIO.logInfo(s"Successfully ingesting file $fileToIngest as ${asset.ref}")
     } yield asset
 
-  private def ingestAsset(fileToIngest: Path, assetRef: AssetRef, assetDir: Path) =
+  private def ingestAsset(fileToIngest: Path, assetRef: AssetRef, assetDir: AssetFolder) =
     for {
       original <- createOriginalFileInAssetDir(fileToIngest, assetRef, assetDir)
       asset <- ZIO
@@ -52,14 +52,18 @@ final case class IngestService(
       _ <- storage.delete(fileToIngest)
     } yield asset
 
-  private def ensureAssetDirectoryExists(assetRef: AssetRef): IO[IOException, Path] =
-    storage.getAssetDirectory(assetRef).tap(storage.createDirectories(_))
+  private def ensureAssetDirectoryExists(assetRef: AssetRef): IO[IOException, AssetFolder] =
+    storage.getAssetFolder(assetRef).tap(storage.createDirectories(_))
 
-  private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef, assetDir: Path): IO[IOException, Original] =
+  private def createOriginalFileInAssetDir(
+    file: Path,
+    assetRef: AssetRef,
+    assetDir: AssetFolder
+  ): IO[IOException, Original] =
     ZIO.logInfo(s"Creating original for $file, $assetRef") *> {
       val orig             = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.${file.fileExtension}.orig")
       val originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
-      storage.copyFile(file, orig.path).as(Original(orig, originalFileName))
+      storage.copyFile(file, orig).as(Original(orig, originalFileName))
     }
 
   private def handleImageFile(original: Original, assetRef: AssetRef): Task[StillImageAsset] =
@@ -70,12 +74,12 @@ final case class IngestService(
       } yield Asset.makeStillImage(assetRef, original, derivative, metadata)
     }
 
-  private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: Path): Task[OtherAsset] =
+  private def handleOtherFile(original: Original, assetRef: AssetRef, assetDir: AssetFolder): Task[OtherAsset] =
     ZIO.logInfo(s"Creating derivative for other $original, $assetRef") *> {
       val fileExtension = FilenameUtils.getExtension(original.originalFilename.toString)
       val derivative    = OtherDerivativeFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension")
       for {
-        _        <- storage.copyFile(original.file.path, derivative.file)
+        _        <- storage.copyFile(original.file, derivative)
         metadata <- otherFilesService.extractMetadata(original, derivative)
       } yield Asset.makeOther(assetRef, original, derivative, metadata)
     }
@@ -89,7 +93,7 @@ final case class IngestService(
       } yield Asset.makeMovingImageAsset(assetRef, original, derivative, meta)
     }
 
-  private def tryCleanup(assetRef: AssetRef, assetDir: Path): IO[IOException, Unit] =
+  private def tryCleanup(assetRef: AssetRef, assetDir: AssetFolder): IO[IOException, Unit] =
     // remove all files and folders which start with the asset id and remove empty assetDir
     ZIO.logInfo(s"Failed ingest for $assetRef cleaning up in directory $assetDir") *>
       StorageService

@@ -33,21 +33,21 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
     test("should return the path of the folder where the asset is stored") {
       for {
         assetPath <- ZIO.serviceWith[StorageConfig](_.assetPath)
-        actual <-
-          StorageService.getAssetDirectory(AssetRef("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode))
-      } yield assertTrue(actual == assetPath / "0001" / "fg" / "il")
+        ref        = AssetRef("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode)
+        actual    <- StorageService.getAssetFolder(ref)
+      } yield assertTrue(actual.path == assetPath / "0001" / "fg" / "il")
     },
     test("should return asset path") {
       for {
         expected <- ZIO.serviceWith[StorageConfig](_.assetPath)
-        actual   <- StorageService.getAssetDirectory()
-      } yield assertTrue(expected == actual)
+        actual   <- StorageService.getAssetsBaseFolder()
+      } yield assertTrue(actual.path == expected)
     },
     test("should return temp path") {
       for {
         expected <- ZIO.serviceWith[StorageConfig](_.tempPath)
-        actual   <- StorageService.getTempDirectory()
-      } yield assertTrue(expected == actual)
+        actual   <- StorageService.getTempFolder()
+      } yield assertTrue(actual.path == expected)
     },
     test("should return project directory") {
       for {
@@ -55,7 +55,7 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
           ZIO
             .serviceWith[StorageConfig](_.assetPath)
             .map(p => ProjectFolder.unsafeFrom(p / existingProject.toString))
-        actual <- StorageService.getProjectDirectory(existingProject)
+        actual <- StorageService.getProjectFolder(existingProject)
       } yield assertTrue(expected == actual)
     },
     suite("create temp directory scoped")(

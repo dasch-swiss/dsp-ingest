@@ -9,7 +9,6 @@ import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.AssetInfoFileTestHelper.*
 import swiss.dasch.test.SpecConfigurations
 import zio.Scope
-import zio.nio.file.Path
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object AssetInfoServiceSpec extends ZIOSpecDefault {

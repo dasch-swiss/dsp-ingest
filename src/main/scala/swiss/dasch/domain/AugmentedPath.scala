@@ -6,11 +6,14 @@
 package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.PathOps.{fileExtension, isHidden}
 import swiss.dasch.domain.SipiImageFormat.Jpx
 import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles}
+import zio.IO
 import zio.nio.file.Path
 
+import java.io.IOError
 import scala.util.Left
 
 trait AugmentedPathBuilder[A <: AugmentedPath] {
@@ -22,7 +25,13 @@ trait AugmentedPathBuilder[A <: AugmentedPath] {
 
 trait AugmentedPath {
   def path: Path
+  def /(other: Path): Path              = path / other
+  def /(other: String): Path            = path / other
+  def toAbsolutePath: IO[IOError, Path] = path.toAbsolutePath
+  def parent: Option[Path]              = path.parent
 }
+
+trait AugmentedFolder extends AugmentedPath
 
 trait AugmentedFile extends AugmentedPath {
   inline def file: Path        = path
@@ -56,7 +65,30 @@ object AugmentedPath {
       builder.from(str)
   }
 
-  final case class ProjectFolder(path: Path, shortcode: ProjectShortcode) extends AugmentedPath
+  final case class AssetsBaseFolder private (path: Path) extends AugmentedFolder
+  object AssetsBaseFolder {
+    def from(config: StorageConfig): AssetsBaseFolder = AssetsBaseFolder(config.assetPath)
+  }
+
+  final case class TempFolder private (path: Path) extends AugmentedFolder
+
+  object TempFolder {
+    def from(config: StorageConfig): TempFolder = TempFolder(config.tempPath)
+  }
+
+  final case class AssetFolder private (path: Path, assetId: AssetId, shortcode: ProjectShortcode)
+      extends AugmentedFolder {
+    lazy val assetRef: AssetRef = AssetRef(assetId, shortcode)
+  }
+  object AssetFolder {
+    def from(ref: AssetRef, basePath: ProjectFolder): AssetFolder = {
+      val segment1 = ref.id.value.substring(0, 2).toLowerCase()
+      val segment2 = ref.id.value.substring(2, 4).toLowerCase()
+      AssetFolder(basePath.path / segment1 / segment2, ref.id, ref.belongsToProject)
+    }
+  }
+
+  final case class ProjectFolder(path: Path, shortcode: ProjectShortcode) extends AugmentedFolder
   object ProjectFolder extends WithSmartConstructors[ProjectFolder] {
     given AugmentedPathBuilder[ProjectFolder] with {
       def from(path: Path): Either[String, ProjectFolder] =

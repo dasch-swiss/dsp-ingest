@@ -22,7 +22,7 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
   private final case class OrigRef(original: Original, assetRef: AssetRef)
   private def createOriginalFile(fileExtension: String): ZIO[StorageService, Throwable, OrigRef] = for {
     assetRef <- AssetRef.makeNew(shortcode)
-    assetDir <- StorageService.getAssetDirectory(assetRef).tap(Files.createDirectories(_))
+    assetDir <- StorageService.getAssetFolder(assetRef).tap(dir => Files.createDirectories(dir.path))
     orig      = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension.orig")
     _        <- Files.createFile(orig.path)
     original  = Original(orig, NonEmptyString.unsafeFrom(s"test.$fileExtension"))
@@ -46,10 +46,10 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
         derivative <- MovingImageService.createDerivative(c.original, c.assetRef)
         // then
         expectedDerivativePath <- StorageService
-                                    .getAssetDirectory(c.assetRef)
+                                    .getAssetFolder(c.assetRef)
                                     .map(_ / s"${c.assetRef.id}.mp4")
-        origChecksum  <- FileChecksumService.createSha256Hash(c.original.file.path)
-        derivChecksum <- FileChecksumService.createSha256Hash(derivative.path)
+        origChecksum  <- FileChecksumService.createSha256Hash(c.original.file)
+        derivChecksum <- FileChecksumService.createSha256Hash(derivative)
       } yield assertTrue(
         derivative.path == expectedDerivativePath,
         origChecksum == derivChecksum // moving image derivative is just a copy

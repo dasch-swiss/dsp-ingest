@@ -86,7 +86,7 @@ final case class MaintenanceActionsLive(
     val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
     for {
       _        <- ZIO.logInfo(s"Checking for originals")
-      tmpDir   <- storageService.getTempDirectory()
+      tmpDir   <- storageService.getTempFolder()
       projects <- projectService.listAllProjects()
       _ <- ZIO
              .foreach(projects)(prj =>
@@ -98,7 +98,7 @@ final case class MaintenanceActionsLive(
                  .runHead
              )
              .map(_.flatten.map(_.toString))
-             .flatMap(saveReport(tmpDir, reportName, _))
+             .flatMap(saveReport(tmpDir.path, reportName, _))
              .zipLeft(ZIO.logInfo(s"Created $reportName.json"))
 
     } yield ()
@@ -135,7 +135,7 @@ final case class MaintenanceActionsLive(
   override def createNeedsTopLeftCorrectionReport(): Task[Unit] =
     for {
       _        <- ZIO.logInfo(s"Checking for top left correction")
-      tmpDir   <- storageService.getTempDirectory()
+      tmpDir   <- storageService.getTempFolder()
       projects <- projectService.listAllProjects()
       _ <-
         ZIO
@@ -149,7 +149,7 @@ final case class MaintenanceActionsLive(
           )
           .map(_.flatten)
           .map(_.map(_.toString))
-          .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))
+          .flatMap(saveReport(tmpDir.path, "needsTopLeftCorrection", _))
           .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
     } yield ()
 
@@ -169,7 +169,7 @@ final case class MaintenanceActionsLive(
   override def createWasTopLeftCorrectionAppliedReport(): Task[Unit] =
     for {
       _        <- ZIO.logInfo(s"Checking where top left correction was applied")
-      tmpDir   <- storageService.getTempDirectory()
+      tmpDir   <- storageService.getTempFolder()
       projects <- projectService.listAllProjects()
       assetsWithBak <-
         ZIO
@@ -186,7 +186,7 @@ final case class MaintenanceActionsLive(
               }
           }
       report = ProjectsWithBakfilesReport(assetsWithBak.filter(_.assetIds.nonEmpty))
-      _     <- saveReport(tmpDir, "wasTopLeftCorrectionApplied", report)
+      _     <- saveReport(tmpDir.path, "wasTopLeftCorrectionApplied", report)
       _     <- ZIO.logInfo(s"Created wasTopLeftCorrectionApplied.json")
     } yield ()
 

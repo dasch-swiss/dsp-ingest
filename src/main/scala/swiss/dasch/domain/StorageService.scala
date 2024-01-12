@@ -7,7 +7,8 @@ package swiss.dasch.domain
 
 import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.AugmentedPath.ProjectFolder
+import swiss.dasch.domain.AugmentedPath.{AssetFolder, AssetsBaseFolder, ProjectFolder, TempFolder}
+import swiss.dasch.domain.StorageService.asPath
 import zio.*
 import zio.json.{DecoderOps, EncoderOps, JsonDecoder, JsonEncoder}
 import zio.nio.file.{Files, Path}
@@ -21,12 +22,16 @@ import java.text.ParseException
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneId, ZoneOffset}
 
+type PathOrAugmentedFolder = Path | AugmentedFolder
+type PathOrAugmentedPath   = Path | AugmentedPath
+type PathOrAugmentedFile   = Path | AugmentedFile
+
 trait StorageService {
-  def getProjectDirectory(projectShortcode: ProjectShortcode): UIO[ProjectFolder]
-  def getAssetDirectory(asset: AssetRef): UIO[Path]
-  def getAssetDirectory(): UIO[Path]
-  def getTempDirectory(): UIO[Path]
-  def fileExists(path: Path): IO[IOException, Boolean]
+  def getProjectFolder(projectShortcode: ProjectShortcode): UIO[ProjectFolder]
+  def getAssetFolder(asset: AssetRef): UIO[AssetFolder]
+  def getAssetsBaseFolder(): UIO[AssetsBaseFolder]
+  def getTempFolder(): UIO[TempFolder]
+  def fileExists(path: PathOrAugmentedFile): IO[IOException, Boolean]
   def createTempDirectoryScoped(directoryName: String, prefix: Option[String] = None): ZIO[Scope, IOException, Path]
   def loadJsonFile[A](file: Path)(implicit decoder: JsonDecoder[A]): Task[A]
 
@@ -41,15 +46,24 @@ trait StorageService {
    * @return a task that completes when the file is saved
    */
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
-  def copyFile(source: Path, target: Path, copyOption: CopyOption*): IO[IOException, Unit]
-  def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit]
+
+  def copyFile(
+    source: Path | PathOrAugmentedFile,
+    target: Path | PathOrAugmentedFile,
+    copyOption: CopyOption*
+  ): IO[IOException, Unit]
+
+  def createDirectories(path: AugmentedFolder, attrs: FileAttribute[_]*): IO[IOException, Unit]
 
   /**
-   * Deletes a file.
+   * Deletes a a regular file.
    *
    * @param file the path to the file to delete
+   *
+   * @return A task that completes when the file is deleted.
+   *        Fails with an [[IOException]] if the file is not a regular file or does not exist.
    */
-  def delete(file: Path): IO[IOException, Unit]
+  def delete(file: PathOrAugmentedFile): IO[IOException, Unit]
 
   /**
    * Deletes a file tree recursively.
@@ -57,27 +71,34 @@ trait StorageService {
    * @param directory the root of the file tree to delete
    * @return the number of files deleted
    */
-  def deleteRecursive(directory: Path): IO[IOException, Long]
+  def deleteRecursive(directory: PathOrAugmentedFolder): IO[IOException, Long]
 
-  def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit]
+  def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit]
 }
 
 object StorageService {
+  def asPath(path: PathOrAugmentedPath): Path = path match {
+    case p: Path          => p
+    case f: AugmentedPath => f.path
+  }
+
   def findInPath(
-    path: Path,
+    path: PathOrAugmentedFolder,
     filter: FileFilter,
     maxDepth: Int = Int.MaxValue
   ): ZStream[Any, IOException, Path] =
-    Files.walk(path, maxDepth).filterZIO(filter)
+    Files.walk(asPath(path), maxDepth).filterZIO(filter)
   def maxParallelism(): Int = 10
-  def getProjectDirectory(projectShortcode: ProjectShortcode): RIO[StorageService, ProjectFolder] =
-    ZIO.serviceWithZIO[StorageService](_.getProjectDirectory(projectShortcode))
-  def getAssetDirectory(asset: AssetRef): RIO[StorageService, Path] =
-    ZIO.serviceWithZIO[StorageService](_.getAssetDirectory(asset))
-  def getAssetDirectory(): RIO[StorageService, Path] =
-    ZIO.serviceWithZIO[StorageService](_.getAssetDirectory())
-  def getTempDirectory(): RIO[StorageService, Path] =
-    ZIO.serviceWithZIO[StorageService](_.getTempDirectory())
+  def getProjectFolder(projectShortcode: ProjectShortcode): RIO[StorageService, ProjectFolder] =
+    ZIO.serviceWithZIO[StorageService](_.getProjectFolder(projectShortcode))
+  def getAssetFolder(asset: AssetRef): RIO[StorageService, AssetFolder] =
+    ZIO.serviceWithZIO[StorageService](_.getAssetFolder(asset))
+  def getAssetsBaseFolder(): RIO[StorageService, AssetsBaseFolder] =
+    ZIO.serviceWithZIO[StorageService](_.getAssetsBaseFolder())
+  def getTempFolder(): RIO[StorageService, TempFolder] =
+    ZIO.serviceWithZIO[StorageService](_.getTempFolder())
+  def createDirectories(path: AugmentedFolder, attrs: FileAttribute[_]*): ZIO[StorageService, IOException, Unit] =
+    ZIO.serviceWithZIO[StorageService](_.createDirectories(path, attrs: _*))
   def createTempDirectoryScoped(
     directoryName: String,
     prefix: Option[String] = None
@@ -91,27 +112,20 @@ object StorageService {
 
 final case class StorageServiceLive(config: StorageConfig) extends StorageService {
 
-  override def getTempDirectory(): UIO[Path] =
-    ZIO.succeed(config.tempPath)
+  override def getTempFolder(): UIO[TempFolder] =
+    ZIO.succeed(TempFolder.from(config))
 
-  override def fileExists(path: Path): IO[IOException, Boolean] =
-    Files.exists(path)
+  override def fileExists(path: PathOrAugmentedFile): IO[IOException, Boolean] =
+    Files.exists(asPath(path))
 
-  override def getAssetDirectory(): UIO[Path] =
-    ZIO.succeed(config.assetPath)
+  override def getAssetsBaseFolder(): UIO[AssetsBaseFolder] =
+    ZIO.succeed(AssetsBaseFolder.from(config))
 
-  override def getProjectDirectory(shortcode: ProjectShortcode): UIO[ProjectFolder] =
-    getAssetDirectory().map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
+  override def getProjectFolder(shortcode: ProjectShortcode): UIO[ProjectFolder] =
+    getAssetsBaseFolder().map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
 
-  override def getAssetDirectory(asset: AssetRef): UIO[Path] =
-    getProjectDirectory(asset.belongsToProject).map(_.path).map(_ / segments(asset.id))
-
-  private def segments(assetId: AssetId): Path = {
-    val assetString = assetId.value
-    val segment1    = assetString.substring(0, 2)
-    val segment2    = assetString.substring(2, 4)
-    Path(segment1.toLowerCase, segment2.toLowerCase)
-  }
+  override def getAssetFolder(ref: AssetRef): UIO[AssetFolder] =
+    getProjectFolder(ref.belongsToProject).map(AssetFolder.from(ref, _))
 
   override def createTempDirectoryScoped(
     directoryName: String,
@@ -141,24 +155,34 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     Files.writeBytes(file, bytes, WRITE, CREATE, TRUNCATE_EXISTING)
   }
 
-  override def copyFile(source: Path, target: Path, copyOption: CopyOption*): IO[IOException, Unit] =
-    Files.copy(source, target, copyOption: _*)
+  override def copyFile(
+    source: PathOrAugmentedFile,
+    target: PathOrAugmentedFile,
+    copyOption: CopyOption*
+  ): IO[IOException, Unit] =
+    Files.copy(asPath(source), asPath(target), copyOption: _*)
 
-  override def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit] =
-    Files.createDirectories(path, attrs: _*)
+  override def createDirectories(dir: AugmentedFolder, attrs: FileAttribute[_]*): IO[IOException, Unit] =
+    Files.createDirectories(dir.path, attrs: _*)
 
-  override def delete(path: Path): IO[IOException, Unit] =
-    Files.delete(path)
-
-  override def deleteRecursive(path: Path): IO[IOException, Long] =
-    Files.deleteRecursive(path)
-
-  override def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit] =
+  override def delete(file: PathOrAugmentedFile): IO[IOException, Unit] =
     Files
-      .delete(directory)
-      .catchSome { case _: DirectoryNotEmptyException => ZIO.unit }
-      .whenZIO(Files.isDirectory(directory))
+      .delete(asPath(file))
+      .whenZIO(Files.isRegularFile(asPath(file)))
+      .someOrFail(new IOException(s"File $file is not a regular file"))
       .unit
+
+  override def deleteRecursive(folder: PathOrAugmentedFolder): IO[IOException, Long] =
+    Files.deleteRecursive(asPath(folder))
+
+  override def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit] = {
+    val path = asPath(directory)
+    Files
+      .delete(path)
+      .catchSome { case _: DirectoryNotEmptyException => ZIO.unit }
+      .whenZIO(Files.isDirectory(path))
+      .unit
+  }
 }
 
 object StorageServiceLive {

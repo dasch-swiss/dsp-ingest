@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.api.{Refined, RefinedTypeOps}
 import eu.timepit.refined.string.MatchesRegex
+import swiss.dasch.domain.StorageService.asPath
 import zio.*
 import zio.nio.file.Path
 
@@ -30,8 +31,8 @@ object FileChecksumService {
   def verifyChecksum(assetInfo: AssetInfo): ZIO[FileChecksumService, Throwable, Chunk[ChecksumResult]] =
     ZIO.serviceWithZIO[FileChecksumService](_.verifyChecksum(assetInfo))
 
-  def createSha256Hash(path: Path): IO[FileNotFoundException, Sha256Hash] =
-    ZIO.scoped(ScopedIoStreams.fileInputStream(path).flatMap(hashSha256))
+  def createSha256Hash(path: PathOrAugmentedFile): IO[FileNotFoundException, Sha256Hash] =
+    ZIO.scoped(ScopedIoStreams.fileInputStream(asPath(path)).flatMap(hashSha256))
 
   private def hashSha256(fis: FileInputStream): UIO[Sha256Hash] = {
     val digest    = java.security.MessageDigest.getInstance("SHA-256")

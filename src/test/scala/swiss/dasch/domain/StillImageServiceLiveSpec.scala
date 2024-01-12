@@ -26,7 +26,7 @@ import java.io.IOException
 object StillImageServiceLiveSpec extends ZIOSpecDefault {
 
   private val asset      = AssetRef("needs-topleft-correction".toAssetId, "0001".toProjectShortcode)
-  private val imageFile  = StorageService.getAssetDirectory(asset).map(_ / s"${asset.id}.jp2")
+  private val imageFile  = StorageService.getAssetFolder(asset).map(dir => dir / s"${dir.assetId}.jp2")
   private val backupFile = imageFile.map(image => image.parent.map(_ / s"${image.filename}.bak").orNull)
 
   val spec = suite("StillImageServiceLive")(
@@ -67,8 +67,8 @@ object StillImageServiceLiveSpec extends ZIOSpecDefault {
     test("createDerivative should create a jpx file with correct name") {
       for {
         assetId    <- AssetId.makeNew
-        assetDir   <- StorageService.getAssetDirectory(AssetRef(assetId, "0001".toProjectShortcode))
-        _          <- Files.createDirectories(assetDir)
+        assetDir   <- StorageService.getAssetFolder(AssetRef(assetId, "0001".toProjectShortcode))
+        _          <- Files.createDirectories(assetDir.path)
         orig        = OrigFile.unsafeFrom(assetDir / s"$assetId.jp2.orig")
         _          <- Files.createFile(orig.path)
         derivative <- StillImageService.createDerivative(orig)
@@ -79,8 +79,8 @@ object StillImageServiceLiveSpec extends ZIOSpecDefault {
       for {
         _        <- SipiClientMock.dontTranscode()
         assetId  <- AssetId.makeNew
-        assetDir <- StorageService.getAssetDirectory(AssetRef(assetId, "0001".toProjectShortcode))
-        _        <- Files.createDirectories(assetDir)
+        assetDir <- StorageService.getAssetFolder(AssetRef(assetId, "0001".toProjectShortcode))
+        _        <- Files.createDirectories(assetDir.path)
         orig      = OrigFile.unsafeFrom(assetDir / s"$assetId.jp2.orig")
         _        <- Files.createFile(orig.path)
         actual   <- StillImageService.createDerivative(orig).exit

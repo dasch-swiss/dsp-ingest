@@ -34,7 +34,7 @@ final case class ProjectService(
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
     ZStream
-      .fromZIO(storage.getAssetDirectory())
+      .fromZIO(storage.getAssetsBaseFolder().map(_.path))
       .flatMap(newDirectoryStream(_))
       .flatMap(dir => ZStream.fromZIOOption(ZIO.fromOption(ProjectFolder.from(dir).toOption)))
       .flatMapPar(StorageService.maxParallelism())(ZStream.succeed(_).filterZIO(projectIsNotEmpty))
@@ -53,7 +53,7 @@ final case class ProjectService(
 
   def findProject(shortcode: ProjectShortcode): IO[IOException, Option[ProjectFolder]] =
     storage
-      .getProjectDirectory(shortcode)
+      .getProjectFolder(shortcode)
       .flatMap(path => ZIO.whenZIO(Files.isDirectory(path.path))(ZIO.succeed(path)))
 
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
@@ -68,7 +68,7 @@ final case class ProjectService(
 
   private def zipProjectPath(projectPath: ProjectFolder) =
     storage
-      .getTempDirectory()
+      .getTempFolder()
       .map(_ / "zipped")
       .flatMap(targetFolder => ZipUtility.zipFolder(projectPath.path, targetFolder).map(Some(_)))
 

@@ -88,7 +88,7 @@ final case class ImportServiceLive(
     } yield tempDir
 
   private def importProject(shortcode: ProjectShortcode, unzippedFolder: Path): IO[Throwable, Unit] =
-    storageService.getProjectDirectory(shortcode).flatMap { projectPath =>
+    storageService.getProjectFolder(shortcode).flatMap { projectPath =>
       ZIO.logInfo(s"Importing project $shortcode") *>
         projectService.deleteProject(shortcode) *>
         ZIO.attemptBlockingIO(FileUtils.moveDirectory(unzippedFolder.toFile, projectPath.path.toFile)) *>
