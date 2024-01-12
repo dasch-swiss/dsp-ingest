@@ -85,11 +85,11 @@ final case class MaintenanceActionsLive(
   def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {
     val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
     for {
-      _                 <- ZIO.logInfo(s"Checking for originals")
-      tmpDir            <- storageService.getTempDirectory()
-      projectShortcodes <- projectService.listAllProjects()
+      _        <- ZIO.logInfo(s"Checking for originals")
+      tmpDir   <- storageService.getTempDirectory()
+      projects <- projectService.listAllProjects()
       _ <- ZIO
-             .foreach(projectShortcodes)(prj =>
+             .foreach(projects)(prj =>
                Files
                  .walk(prj.path)
                  .mapZIOPar(8)(originalNotPresent(imagesOnly))
@@ -134,12 +134,12 @@ final case class MaintenanceActionsLive(
 
   override def createNeedsTopLeftCorrectionReport(): Task[Unit] =
     for {
-      _                 <- ZIO.logInfo(s"Checking for top left correction")
-      tmpDir            <- storageService.getTempDirectory()
-      projectShortcodes <- projectService.listAllProjects()
+      _        <- ZIO.logInfo(s"Checking for top left correction")
+      tmpDir   <- storageService.getTempDirectory()
+      projects <- projectService.listAllProjects()
       _ <-
         ZIO
-          .foreach(projectShortcodes)(prj =>
+          .foreach(projects)(prj =>
             Files
               .walk(prj.path)
               .mapZIOPar(8)(imageService.needsTopLeftCorrection)
@@ -168,12 +168,12 @@ final case class MaintenanceActionsLive(
 
   override def createWasTopLeftCorrectionAppliedReport(): Task[Unit] =
     for {
-      _              <- ZIO.logInfo(s"Checking where top left correction was applied")
-      tmpDir         <- storageService.getTempDirectory()
-      projectFolders <- projectService.listAllProjects()
+      _        <- ZIO.logInfo(s"Checking where top left correction was applied")
+      tmpDir   <- storageService.getTempDirectory()
+      projects <- projectService.listAllProjects()
       assetsWithBak <-
         ZIO
-          .foreach(projectFolders) { prj =>
+          .foreach(projects) { prj =>
             Files
               .walk(prj.path)
               .flatMapPar(8)(hasBeenTopLeftTransformed)
