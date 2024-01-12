@@ -63,10 +63,6 @@ private object AssetInfoFileContent {
 final case class FileAndChecksum(file: Path, checksum: Sha256Hash) {
   lazy val filename: NonEmptyString = NonEmptyString.unsafeFrom(file.filename.toString)
 }
-object FileAndChecksum {
-  def from(file: AugmentedPath): Task[FileAndChecksum] =
-    FileChecksumService.createSha256Hash(file).map(FileAndChecksum(file, _))
-}
 
 final case class AssetInfo(
   assetRef: AssetRef,
