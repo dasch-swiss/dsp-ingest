@@ -13,7 +13,7 @@ import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles}
 import zio.IO
 import zio.nio.file.Path
 
-import java.io.IOError
+import java.io.{File, IOError}
 import scala.util.Left
 
 trait AugmentedPathBuilder[A <: AugmentedPath] {
@@ -29,6 +29,7 @@ trait AugmentedPath {
   def /(other: String): Path            = path / other
   def toAbsolutePath: IO[IOError, Path] = path.toAbsolutePath
   def parent: Option[Path]              = path.parent
+  def toFile: java.io.File              = path.toFile
 }
 
 trait AugmentedFolder extends AugmentedPath
