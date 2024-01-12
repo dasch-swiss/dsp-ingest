@@ -47,6 +47,15 @@ trait DerivativeFile extends AssetFile
 object AugmentedPath {
   import ErrorMessages.*
 
+  object Conversions {
+    given Conversion[AugmentedPath, Path] = _.path
+
+    given Conversion[PathOrAugmentedPath, Path] = {
+      case path: Path               => path
+      case augmented: AugmentedPath => augmented.path
+    }
+  }
+
   private[AugmentedPath] object ErrorMessages {
     val hiddenFile: String          = "Hidden file."
     val unsupportedFileType: String = "Unsupported file type."

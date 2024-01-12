@@ -7,8 +7,8 @@ package swiss.dasch.domain
 
 import org.apache.commons.io.FileUtils
 import swiss.dasch.config.Configuration.StorageConfig
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_PathOrAugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.{AssetFolder, AssetsBaseFolder, ProjectFolder, TempFolder}
-import swiss.dasch.domain.StorageService.asPath
 import zio.*
 import zio.json.{DecoderOps, EncoderOps, JsonDecoder, JsonEncoder}
 import zio.nio.file.{Files, Path}
@@ -77,17 +77,12 @@ trait StorageService {
 }
 
 object StorageService {
-  def asPath(path: PathOrAugmentedPath): Path = path match {
-    case p: Path          => p
-    case f: AugmentedPath => f.path
-  }
-
   def findInPath(
     path: PathOrAugmentedFolder,
     filter: FileFilter,
     maxDepth: Int = Int.MaxValue
   ): ZStream[Any, IOException, Path] =
-    Files.walk(asPath(path), maxDepth).filterZIO(filter)
+    Files.walk(path, maxDepth).filterZIO(filter)
   def maxParallelism(): Int = 10
   def getProjectFolder(projectShortcode: ProjectShortcode): RIO[StorageService, ProjectFolder] =
     ZIO.serviceWithZIO[StorageService](_.getProjectFolder(projectShortcode))
@@ -116,7 +111,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     ZIO.succeed(TempFolder.from(config))
 
   override def fileExists(path: PathOrAugmentedFile): IO[IOException, Boolean] =
-    Files.exists(asPath(path))
+    Files.exists(path)
 
   override def getAssetsBaseFolder(): UIO[AssetsBaseFolder] =
     ZIO.succeed(AssetsBaseFolder.from(config))
@@ -160,29 +155,27 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     target: PathOrAugmentedFile,
     copyOption: CopyOption*
   ): IO[IOException, Unit] =
-    Files.copy(asPath(source), asPath(target), copyOption: _*)
+    Files.copy(source, target, copyOption: _*)
 
   override def createDirectories(dir: AugmentedFolder, attrs: FileAttribute[_]*): IO[IOException, Unit] =
     Files.createDirectories(dir.path, attrs: _*)
 
   override def delete(file: PathOrAugmentedFile): IO[IOException, Unit] =
     Files
-      .delete(asPath(file))
-      .whenZIO(Files.isRegularFile(asPath(file)))
+      .delete(file)
+      .whenZIO(Files.isRegularFile(file))
       .someOrFail(new IOException(s"File $file is not a regular file"))
       .unit
 
   override def deleteRecursive(folder: PathOrAugmentedFolder): IO[IOException, Long] =
-    Files.deleteRecursive(asPath(folder))
+    Files.deleteRecursive(folder)
 
-  override def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit] = {
-    val path = asPath(directory)
+  override def deleteDirectoryIfEmpty(directory: PathOrAugmentedFolder): IO[IOException, Unit] =
     Files
-      .delete(path)
+      .delete(directory)
       .catchSome { case _: DirectoryNotEmptyException => ZIO.unit }
-      .whenZIO(Files.isDirectory(path))
+      .whenZIO(Files.isDirectory(directory))
       .unit
-  }
 }
 
 object StorageServiceLive {
