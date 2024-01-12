@@ -9,6 +9,7 @@ import org.apache.commons.io.FilenameUtils
 import swiss.dasch.api.ActionName
 import swiss.dasch.domain
 import swiss.dasch.domain.AugmentedPath.*
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.FileFilters.isJpeg2000
 import swiss.dasch.domain.SipiImageFormat.Tif
 import swiss.dasch.domain.SupportedFileType.MovingImage
@@ -97,7 +98,7 @@ final case class MaintenanceActionsLive(
                  .runHead
              )
              .map(_.flatten.map(_.toString))
-             .flatMap(saveReport(tmpDir.path, reportName, _))
+             .flatMap(saveReport(tmpDir, reportName, _))
              .zipLeft(ZIO.logInfo(s"Created $reportName.json"))
 
     } yield ()
@@ -148,7 +149,7 @@ final case class MaintenanceActionsLive(
           )
           .map(_.flatten)
           .map(_.map(_.toString))
-          .flatMap(saveReport(tmpDir.path, "needsTopLeftCorrection", _))
+          .flatMap(saveReport(tmpDir, "needsTopLeftCorrection", _))
           .zipLeft(ZIO.logInfo(s"Created needsTopLeftCorrection.json"))
     } yield ()
 
@@ -185,7 +186,7 @@ final case class MaintenanceActionsLive(
               }
           }
       report = ProjectsWithBakfilesReport(assetsWithBak.filter(_.assetIds.nonEmpty))
-      _     <- saveReport(tmpDir.path, "wasTopLeftCorrectionApplied", report)
+      _     <- saveReport(tmpDir, "wasTopLeftCorrectionApplied", report)
       _     <- ZIO.logInfo(s"Created wasTopLeftCorrectionApplied.json")
     } yield ()
 
