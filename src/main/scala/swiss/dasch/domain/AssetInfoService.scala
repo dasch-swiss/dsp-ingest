@@ -116,7 +116,7 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
     getInfoFilePath(assetInfo.assetRef).flatMap(storage.saveJsonFile(_, AssetInfoFileContent.from(assetInfo)))
 
   def getInfoFilePath(asset: AssetRef): UIO[Path] =
-    storage.getAssetFolder(asset).map(_.path).map(_ / infoFilename(asset))
+    storage.getAssetFolder(asset).map(_ / infoFilename(asset))
 
   private def infoFilename(asset: AssetRef): String = infoFilename(asset.id)
   private def infoFilename(id: AssetId): String     = s"$id.info"
@@ -172,9 +172,9 @@ final case class AssetInfoServiceLive(storage: StorageService) extends AssetInfo
 
   override def createAssetInfo(asset: Asset): IO[FileNotFoundException, AssetInfo] = for {
     checksumOriginal   <- FileChecksumService.createSha256Hash(asset.original.file)
-    original            = FileAndChecksum(asset.original.file.path, checksumOriginal)
+    original            = FileAndChecksum(asset.original.file, checksumOriginal)
     checksumDerivative <- FileChecksumService.createSha256Hash(asset.derivative)
-    derivative          = FileAndChecksum(asset.derivative.path, checksumDerivative)
+    derivative          = FileAndChecksum(asset.derivative, checksumDerivative)
   } yield AssetInfo(asset.ref, original, asset.original.originalFilename, derivative, asset.metadata)
 }
 
