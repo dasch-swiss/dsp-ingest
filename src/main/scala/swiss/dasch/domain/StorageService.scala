@@ -125,7 +125,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     getAssetsBaseFolder().map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
 
   override def getAssetFolder(ref: AssetRef): UIO[AssetFolder] =
-    getProjectFolder(ref.belongsToProject).map(AssetFolder.from(ref, _))
+    getProjectFolder(ref.belongsToProject).map(_.assetFolder(ref.id))
 
   override def createTempDirectoryScoped(
     directoryName: String,

@@ -21,7 +21,7 @@ object AssetInfoFileTestHelper {
     originalFileExt: String,
     derivativeFileExt: String,
     customJsonProps: Option[String] = None
-  ): ZIO[StorageService, Throwable, (AssetRef, AssetFolder)] =
+  ): ZIO[StorageService, Throwable, AssetFolder] =
     for {
       assetRef <- AssetRef.makeNew(testProject)
       json = s"""{
@@ -38,5 +38,5 @@ object AssetInfoFileTestHelper {
                 .orElseFail(new IllegalArgumentException(s"Invalid AssetInfoFileContent:\n$json"))
       assetDir <- StorageService.getAssetFolder(assetRef).tap(StorageService.createDirectories(_))
       _        <- StorageService.saveJsonFile[AssetInfoFileContent](assetDir / s"${assetRef.id}.info", info)
-    } yield (assetRef, assetDir)
+    } yield (assetDir)
 }

@@ -76,19 +76,26 @@ object AugmentedPath {
     def from(config: StorageConfig): TempFolder = TempFolder(config.tempPath)
   }
 
-  final case class AssetFolder private (path: Path, assetId: AssetId, shortcode: ProjectShortcode)
+  final case class AssetFolder private (path: Path, assetId: AssetId, projectFolder: ProjectFolder)
       extends AugmentedFolder {
-    lazy val assetRef: AssetRef = AssetRef(assetId, shortcode)
+    lazy val shortcode: ProjectShortcode = projectFolder.shortcode
+    lazy val assetRef: AssetRef          = AssetRef(assetId, shortcode)
   }
+
   object AssetFolder {
-    def from(ref: AssetRef, basePath: ProjectFolder): AssetFolder = {
-      val segment1 = ref.id.value.substring(0, 2).toLowerCase()
-      val segment2 = ref.id.value.substring(2, 4).toLowerCase()
-      AssetFolder(basePath.path / segment1 / segment2, ref.id, ref.belongsToProject)
+    def from(assetId: AssetId, projectFolder: ProjectFolder): AssetFolder = {
+      val assetIdStr  = assetId.value
+      val segment1    = assetIdStr.substring(0, 2).toLowerCase()
+      val segment2    = assetIdStr.substring(2, 4).toLowerCase()
+      val assetFolder = projectFolder / segment1 / segment2
+      AssetFolder(assetFolder, assetId, projectFolder)
     }
   }
 
-  final case class ProjectFolder(path: Path, shortcode: ProjectShortcode) extends AugmentedFolder
+  final case class ProjectFolder(path: Path, shortcode: ProjectShortcode) extends AugmentedFolder {
+    def assetFolder(assetId: AssetId): AssetFolder = AssetFolder.from(assetId, this)
+  }
+
   object ProjectFolder extends WithSmartConstructors[ProjectFolder] {
     given AugmentedPathBuilder[ProjectFolder] with {
       def from(path: Path): Either[String, ProjectFolder] =

@@ -170,7 +170,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       },
       test("given a basic asset info file exists it should return the info") {
         for {
-          ref <- AssetInfoFileTestHelper.createInfoFile("txt", "txt").map { case (assetRef, _) => assetRef }
+          ref <- AssetInfoFileTestHelper.createInfoFile("txt", "txt").map(_.assetRef)
           req = Request
                   .get(URL(Root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value))
                   .addHeader("Authorization", "Bearer fakeToken")
@@ -203,7 +203,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
                                               |"originalMimeType": "image/png"
                                               |""".stripMargin)
                    )
-                   .map { case (assetRef, _) => assetRef }
+                   .map(_.assetRef)
           req = Request
                   .get(URL(Root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value))
                   .addHeader("Authorization", "Bearer fakeToken")
@@ -242,7 +242,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
                                               |"originalMimeType": "video/mp4"
                                               |""".stripMargin)
                    )
-                   .map { case (assetRef, _) => assetRef }
+                   .map(_.assetRef)
           req = Request
                   .get(URL(Root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value))
                   .addHeader("Authorization", "Bearer fakeToken")
