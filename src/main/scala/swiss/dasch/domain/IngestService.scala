@@ -57,8 +57,7 @@ final case class IngestService(
 
   private def createOriginalFileInAssetDir(file: Path, assetRef: AssetRef, assetDir: Path): IO[IOException, Original] =
     ZIO.logInfo(s"Creating original for $file, $assetRef") *> {
-      val fileExtension    = s"${file.fileExtension}.orig"
-      val orig             = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension")
+      val orig             = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.${file.fileExtension}.orig")
       val originalFileName = NonEmptyString.unsafeFrom(file.filename.toString)
       storage.copyFile(file, orig.path).as(Original(orig, originalFileName))
     }
