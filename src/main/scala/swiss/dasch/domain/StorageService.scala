@@ -43,11 +43,7 @@ trait StorageService {
    */
   def saveJsonFile[A](file: Path, content: A)(implicit encoder: JsonEncoder[A]): Task[Unit]
 
-  def copyFile(
-    source: Path,
-    target: Path,
-    copyOption: CopyOption*
-  ): IO[IOException, Unit]
+  def copyFile(source: Path, target: Path, copyOption: CopyOption*): IO[IOException, Unit]
 
   def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit]
 
