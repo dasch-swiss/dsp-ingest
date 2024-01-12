@@ -11,6 +11,7 @@ import eu.timepit.refined.numeric.*
 import eu.timepit.refined.numeric.Greater.greaterValidate
 import swiss.dasch.api.SipiClientMockMethodInvocation.ApplyTopLeftCorrection
 import swiss.dasch.api.{SipiClientMock, SipiClientMockMethodInvocation}
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.{JpxDerivativeFile, OrigFile}
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.domain.RefinedHelper.positiveFrom
@@ -68,21 +69,21 @@ object StillImageServiceLiveSpec extends ZIOSpecDefault {
       for {
         assetId    <- AssetId.makeNew
         assetDir   <- StorageService.getAssetFolder(AssetRef(assetId, "0001".toProjectShortcode))
-        _          <- Files.createDirectories(assetDir.path)
+        _          <- Files.createDirectories(assetDir)
         orig        = OrigFile.unsafeFrom(assetDir / s"$assetId.jp2.orig")
-        _          <- Files.createFile(orig.path)
+        _          <- Files.createFile(orig)
         derivative <- StillImageService.createDerivative(orig)
-        fileExists <- Files.exists(derivative.path)
-      } yield assertTrue(fileExists, derivative.path.filename.toString == s"$assetId.jpx")
+        fileExists <- Files.exists(derivative)
+      } yield assertTrue(fileExists, derivative.filename.toString == s"$assetId.jpx")
     },
     test("createDerivative should fail if Sipi silently does not transcode the image") {
       for {
         _        <- SipiClientMock.dontTranscode()
         assetId  <- AssetId.makeNew
         assetDir <- StorageService.getAssetFolder(AssetRef(assetId, "0001".toProjectShortcode))
-        _        <- Files.createDirectories(assetDir.path)
+        _        <- Files.createDirectories(assetDir)
         orig      = OrigFile.unsafeFrom(assetDir / s"$assetId.jp2.orig")
-        _        <- Files.createFile(orig.path)
+        _        <- Files.createFile(orig)
         actual   <- StillImageService.createDerivative(orig).exit
       } yield assertTrue(actual.isFailure)
     },

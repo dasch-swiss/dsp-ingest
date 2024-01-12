@@ -23,9 +23,9 @@ object MovingImageServiceSpec extends ZIOSpecDefault {
   private final case class OrigRef(original: Original, assetRef: AssetRef)
   private def createOriginalFile(fileExtension: String): ZIO[StorageService, Throwable, OrigRef] = for {
     assetRef <- AssetRef.makeNew(shortcode)
-    assetDir <- StorageService.getAssetFolder(assetRef).tap(dir => Files.createDirectories(dir.path))
+    assetDir <- StorageService.getAssetFolder(assetRef).tap(Files.createDirectories(_))
     orig      = OrigFile.unsafeFrom(assetDir / s"${assetRef.id}.$fileExtension.orig")
-    _        <- Files.createFile(orig.path)
+    _        <- Files.createFile(orig)
     original  = Original(orig, NonEmptyString.unsafeFrom(s"test.$fileExtension"))
   } yield OrigRef(original, assetRef)
 

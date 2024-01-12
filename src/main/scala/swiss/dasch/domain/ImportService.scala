@@ -53,14 +53,14 @@ final case class ImportServiceLive(
           .tap(size => ZIO.logDebug(s"Saved $zipFile with size $size bytes"))
       )
       .logError
-      .mapError(IoError(_))
+      .mapError(IoError.apply)
 
   override def importZipFile(shortcode: ProjectShortcode, zipFile: Path): IO[ImportFailed, Unit] = ZIO.scoped {
     for {
       unzippedFolder <- validateZipFile(shortcode, zipFile)
       _ <- importProject(shortcode, unzippedFolder)
              .logError(s"Error while importing project $shortcode")
-             .mapError(IoError(_))
+             .mapError(IoError.apply)
     } yield ()
   }
 
@@ -71,19 +71,19 @@ final case class ImportServiceLive(
       unzippedPath <- unzipAndVerifyChecksums(shortcode, zipFile)
     } yield unzippedPath
   private def checkIsNotEmptyFile(zipFile: Path): IO[ImportFailed, Unit] =
-    ZIO.fail(EmptyFile).whenZIO(Files.size(zipFile).mapBoth(IoError(_), _ == 0)).unit
+    ZIO.fail(EmptyFile).whenZIO(Files.size(zipFile).mapBoth(IoError.apply, _ == 0)).unit
   private def checkIsZipFile(zipFile: Path): IO[NoZipFile.type, Unit] = ZIO.scoped {
     ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new ZipFile(zipFile.toFile))).orElseFail(NoZipFile).unit
   }
   private def unzipAndVerifyChecksums(shortcode: ProjectShortcode, zipFile: Path): ZIO[Scope, ImportFailed, Path] =
     for {
-      tempDir <- storageService.createTempDirectoryScoped(s"${shortcode}_import").mapError(IoError(_))
-      _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(IoError(_))
+      tempDir <- storageService.createTempDirectoryScoped(s"${shortcode}_import").mapError(IoError.apply)
+      _       <- ZipUtility.unzipFile(zipFile, tempDir).mapError(IoError.apply)
       checks <- assetInfos
                   .findAllInPath(tempDir, shortcode)
                   .mapZIOPar(StorageService.maxParallelism())(assetService.verifyChecksum)
                   .runCollect
-                  .mapBoth(IoError(_), _.flatten)
+                  .mapBoth(IoError.apply, _.flatten)
       _ <- ZIO.fail(InvalidChecksums).when(checks.exists(!_.checksumMatches))
     } yield tempDir
 
@@ -96,10 +96,5 @@ final case class ImportServiceLive(
     }
 }
 object ImportServiceLive {
-  val layer: ZLayer[
-    FileChecksumService with AssetInfoService with ProjectService with StorageService,
-    Nothing,
-    ImportService
-  ] =
-    ZLayer.derive[ImportServiceLive]
+  val layer = ZLayer.derive[ImportServiceLive]
 }

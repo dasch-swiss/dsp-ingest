@@ -50,6 +50,7 @@ object AugmentedPath {
 
   object Conversions {
     given Conversion[AugmentedPath, Path] = _.path
+    given Conversion[AugmentedPath, File] = _.toFile
   }
 
   private[AugmentedPath] object ErrorMessages {
