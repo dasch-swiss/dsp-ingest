@@ -60,10 +60,10 @@ trait StorageService {
   /**
    * Deletes a file tree recursively.
    *
-   * @param directory the root of the file tree to delete
+   * @param path the root of the file tree to delete
    * @return the number of files deleted
    */
-  def deleteRecursive(directory: Path): IO[IOException, Long]
+  def deleteRecursive(path: Path): IO[IOException, Long]
 
   def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit]
 }
@@ -155,8 +155,8 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
       .someOrFail(new IOException(s"File $file is not a regular file"))
       .unit
 
-  override def deleteRecursive(folder: Path): IO[IOException, Long] =
-    Files.deleteRecursive(folder)
+  override def deleteRecursive(path: Path): IO[IOException, Long] =
+    Files.deleteRecursive(path)
 
   override def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit] =
     Files
