@@ -7,7 +7,6 @@ package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.StorageConfig
-import swiss.dasch.domain.AugmentedPath.ProjectFolder
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Projects.existingProject
@@ -35,7 +34,11 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
         assetPath <- ZIO.serviceWith[StorageConfig](_.assetPath)
         ref        = AssetRef("FGiLaT4zzuV-CqwbEDFAFeS".toAssetId, "0001".toProjectShortcode)
         actual    <- StorageService.getAssetFolder(ref)
-      } yield assertTrue(actual.path == assetPath / "0001" / "fg" / "il")
+      } yield assertTrue(
+        actual.path == assetPath / "0001" / "fg" / "il",
+        actual.shortcode == ref.belongsToProject,
+        actual.assetId == ref.id
+      )
     },
     test("should return asset path") {
       for {
@@ -51,12 +54,9 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
     },
     test("should return project directory") {
       for {
-        expected <-
-          ZIO
-            .serviceWith[StorageConfig](_.assetPath)
-            .map(p => ProjectFolder.unsafeFrom(p / existingProject.toString))
-        actual <- StorageService.getProjectFolder(existingProject)
-      } yield assertTrue(expected == actual)
+        expected <- ZIO.serviceWith[StorageConfig](_.assetPath / existingProject.value)
+        actual   <- StorageService.getProjectFolder(existingProject)
+      } yield assertTrue(actual.path == expected, actual.shortcode == existingProject)
     },
     suite("create temp directory scoped")(
       test("should create a temp directory") {
@@ -123,11 +123,11 @@ object StorageServiceLiveSpec extends ZIOSpecDefault {
           } yield assert(actual)(failsWithA[NoSuchFileException])
         }
       },
-      test("should fail to load a non existing json file") {
+      test("should fail to load a file which does not contain json") {
         ZIO.scoped {
           for {
             tempDir <- Files.createTempDirectoryScoped(Some("test"), List.empty)
-            testFile = tempDir / "this-does-not-exist.json"
+            testFile = tempDir / "this-does-not-contain.json"
             _       <- Files.createFile(testFile) *> Files.writeLines(testFile, List("not a json file"))
             actual  <- StorageService.loadJsonFile[SomeJsonContent](testFile).exit
           } yield assert(actual)(failsWithA[ParseException])
