@@ -10,7 +10,12 @@ import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
 import swiss.dasch.api.ApiProblem.{BadRequest, InternalServerError}
-import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
+import swiss.dasch.api.ProjectsEndpointsResponses.{
+  AssetCheckResultResponse,
+  AssetInfoResponse,
+  ProjectResponse,
+  UploadResponse
+}
 import swiss.dasch.domain.*
 import zio.stream.ZStream
 import zio.{ZIO, ZLayer, stream}
