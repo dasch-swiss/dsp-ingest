@@ -48,7 +48,7 @@ trait StorageService {
   def createDirectories(path: Path, attrs: FileAttribute[_]*): IO[IOException, Unit]
 
   /**
-   * Deletes a a regular file.
+   * Deletes a regular file.
    *
    * @param file the path to the file to delete
    *
