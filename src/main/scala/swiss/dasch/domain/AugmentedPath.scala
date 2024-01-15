@@ -25,11 +25,11 @@ trait AugmentedPathBuilder[A <: AugmentedPath] {
 
 trait AugmentedPath {
   def path: Path
-  def /(other: Path): Path              = path / other
-  def /(other: String): Path            = path / other
-  def toAbsolutePath: IO[IOError, Path] = path.toAbsolutePath
-  def parent: Option[Path]              = path.parent
-  def toFile: java.io.File              = path.toFile
+  final def /(other: Path): Path              = path / other
+  final def /(other: String): Path            = path / other
+  final def toAbsolutePath: IO[IOError, Path] = path.toAbsolutePath
+  final def parent: Option[Path]              = path.parent
+  final def toFile: java.io.File              = path.toFile
 }
 
 trait AugmentedFolder extends AugmentedPath
