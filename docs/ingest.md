@@ -1,7 +1,6 @@
 # Ingesting Assets
 
 Every [asset](index.md#assets) belongs to a project. 
-Assets are group by Projects, you should create one using the [Project Administration](https://docs.dasch.swiss/latest/DSP-APP/user-guide/project/?h=project).
 
 ## _Bulk Ingest_
 
