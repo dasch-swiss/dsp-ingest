@@ -37,7 +37,7 @@ someImage.jp2,4lNd38JEiHC-lofT60RQbYm.jp2
 some-sub-folder/someText.txt,2hWjjyahcMM-Kkkm8qJpSGk.txt
 ```
 
-You can use this mapping to update the respective resource in the DSP-API.
+You can use this mapping to create the respective resource in the DSP-API.
 
 ### Finalizing a _Bulk Ingest_
 Once you have verified the success of the ingest and/or updated the resources in the DSP-API, you should finalize the _Bulk Ingest_ with a request to the [_Bulk Ingest Finalize_ Endpoint](api-endpoints-projects.md#post-projectsshortcodebulk-ingestfinalize).
