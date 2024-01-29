@@ -54,6 +54,7 @@ final case class BulkIngestServiceLive(
       mappingFile <- createMappingFile(project, importDir)
       _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
       total       <- StorageService.findInPath(importDir, FileFilters.isNonHiddenRegularFile).runCount
+      _           <- ZIO.logInfo(s"Found $total ingest candidates")
       sum <-
         StorageService
           .findInPath(importDir, FileFilters.isSupported)
