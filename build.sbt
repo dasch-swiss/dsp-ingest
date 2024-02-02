@@ -18,7 +18,7 @@ val zioLoggingVersion           = "2.1.17"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC21"
+val zioPreludeVersion           = "1.0.0-RC22"
 val zioVersion                  = "2.0.21"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
@@ -85,7 +85,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-nio"                           % zioNioVersion,
       "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
       "dev.zio"              %% "zio-streams"                       % zioVersion,
-      "eu.timepit"           %% "refined"                           % "0.11.0",
+      "eu.timepit"           %% "refined"                           % "0.11.1",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
