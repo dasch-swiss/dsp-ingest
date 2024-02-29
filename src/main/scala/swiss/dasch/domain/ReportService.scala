@@ -5,25 +5,84 @@
 
 package swiss.dasch.domain
 
+import swiss.dasch.domain.SizeInBytesPerType.{SizeInBytesMovingImages, SizeInBytesOther}
 import zio.*
+import zio.nio.file.Path
 
-final case class Report(results: Map[AssetInfo, Chunk[ChecksumResult]], nrOfAssets: Int)
+final case class ChecksumReport(results: Map[AssetInfo, Chunk[ChecksumResult]], nrOfAssets: Int)
 
-object Report {
-  def make(map: Map[AssetInfo, Chunk[ChecksumResult]]): Report = Report(map, map.size)
+object ChecksumReport {
+  def make(map: Map[AssetInfo, Chunk[ChecksumResult]]): ChecksumReport = ChecksumReport(map, map.size)
 }
 
-trait ReportService {
-  def checksumReport(projectShortcode: ProjectShortcode): Task[Option[Report]]
+final case class AssetOverviewReport(
+  shortcode: ProjectShortcode,
+  totalNrOfAssets: Int,
+  nrOfAssetsPerType: Map[SupportedFileType, Int],
+  sizesPerType: SizeInBytesReport
+) { self =>
+  def add(someSize: SizeInBytesPerType): AssetOverviewReport =
+    self.copy(sizesPerType = sizesPerType.add(someSize))
 }
-object ReportService {
-  def checksumReport(projectShortcode: ProjectShortcode): RIO[ReportService, Option[Report]] =
-    ZIO.serviceWithZIO[ReportService](_.checksumReport(projectShortcode))
+object AssetOverviewReport {
+  def make(shortcode: ProjectShortcode) =
+    AssetOverviewReport(shortcode, 0, Map.empty, SizeInBytesReport(Map.empty[SupportedFileType, SizeInBytesPerType]))
 }
 
-final case class ReportServiceLive(projectService: ProjectService, assetService: FileChecksumService)
-    extends ReportService {
-  override def checksumReport(projectShortcode: ProjectShortcode): Task[Option[Report]] =
+final case class SizeInBytesReport(sizes: Map[SupportedFileType, SizeInBytesPerType]) { self =>
+  def add(size: SizeInBytesPerType): SizeInBytesReport =
+    self.copy(sizes.updatedWith(size.fileType) {
+      case None               => Some(size)
+      case Some(existingSize) => Some(existingSize.add(size))
+    })
+}
+
+sealed trait SizeInBytesPerType {
+  def fileType: SupportedFileType
+  def add(other: SizeInBytesPerType): SizeInBytesPerType
+}
+
+object SizeInBytesPerType {
+  final case class SizeInBytesOther(fileType: SupportedFileType, sizeOrig: BigInt, sizeDerivative: BigInt)
+      extends SizeInBytesPerType { self =>
+    override def add(other: SizeInBytesPerType): SizeInBytesOther =
+      other match {
+        case otherSize: SizeInBytesOther =>
+          self.copy(
+            sizeOrig = sizeOrig + otherSize.sizeOrig,
+            sizeDerivative = sizeDerivative + otherSize.sizeDerivative
+          )
+        case _ => self
+      }
+
+  }
+
+  final case class SizeInBytesMovingImages(
+    sizeOrig: BigInt,
+    sizeDerivative: BigInt,
+    sizeKeyframes: BigInt
+  ) extends SizeInBytesPerType { self =>
+    val fileType: SupportedFileType = SupportedFileType.MovingImage
+    def add(other: SizeInBytesPerType): SizeInBytesMovingImages =
+      other match {
+        case otherSize: SizeInBytesMovingImages =>
+          self.copy(
+            sizeOrig = sizeOrig + otherSize.sizeOrig,
+            sizeDerivative = sizeDerivative + otherSize.sizeDerivative,
+            sizeKeyframes = sizeKeyframes + otherSize.sizeKeyframes
+          )
+        case _ => this
+      }
+  }
+}
+
+final case class ReportService(
+  projectService: ProjectService,
+  assetService: FileChecksumService,
+  storageService: StorageService
+) {
+
+  def checksumReport(projectShortcode: ProjectShortcode): Task[Option[ChecksumReport]] =
     projectService
       .findProject(projectShortcode)
       .flatMap {
@@ -33,11 +92,76 @@ final case class ReportServiceLive(projectService: ProjectService, assetService:
             .mapZIOPar(StorageService.maxParallelism())(info => assetService.verifyChecksum(info).map((info, _)))
             .runCollect
             .map(_.toMap)
-            .map(Report.make)
+            .map(ChecksumReport.make)
             .map(Some(_))
         case None => ZIO.none
       }
+
+  def assetsOverviewReport: Task[Option[AssetOverviewReport]] =
+    assetsOverviewReport(ProjectShortcode.unsafeFrom("0002"))
+
+  def assetsOverviewReport(projectShortcode: ProjectShortcode): Task[Option[AssetOverviewReport]] =
+    ZIO.logInfo(s"Calculating asset overview report for project $projectShortcode") *>
+      projectService
+        .findProject(projectShortcode)
+        .flatMap {
+          case Some(_) =>
+            ZIO.logInfo(s"Project $projectShortcode exists, calculating asset overview report") *>
+              projectService
+                .findAssetInfosOfProject(projectShortcode)
+                .runFoldZIO(AssetOverviewReport.make(projectShortcode))(updateAssetOverviewReport)
+                .map(Some(_))
+          case None => ZIO.none
+        }
+
+  private def updateAssetOverviewReport(
+    report: AssetOverviewReport,
+    info: AssetInfo
+  ): Task[AssetOverviewReport] =
+    ZIO
+      .fromOption(SupportedFileType.fromPath(Path(info.originalFilename.value)))
+      .tapSomeError { case None => ZIO.logWarning(s"Could not determine file type for asset ${info.assetRef}") }
+      .flatMap(updateAssetOverviewReport(report, info, _).asSomeError)
+      .unsome
+      .map(_.getOrElse(report))
+
+  private def updateAssetOverviewReport(
+    report: AssetOverviewReport,
+    info: AssetInfo,
+    fileType: SupportedFileType
+  ): ZIO[Any, Throwable, AssetOverviewReport] =
+    ZIO.logInfo(s"Calculating size for asset ${info.assetRef} of type $fileType") *>
+      calculateSizeInBytes(fileType, info)
+        .map(size =>
+          report.copy(
+            totalNrOfAssets = report.totalNrOfAssets + 1,
+            nrOfAssetsPerType = report.nrOfAssetsPerType.updatedWith(fileType)(_.map(_ + 1).orElse(Some(1))),
+            sizesPerType = report.sizesPerType.add(size)
+          )
+        )
+
+  private def calculateSizeInBytes(fileType: SupportedFileType, info: AssetInfo): Task[SizeInBytesPerType] =
+    fileType match {
+      case SupportedFileType.MovingImage => calculateSizeInBytesMovingImages(info)
+      case _                             => calculateSizeInBytesOther(fileType, info)
+    }
+
+  private def calculateSizeInBytesMovingImages(info: AssetInfo): Task[SizeInBytesMovingImages] =
+    for {
+      assetFolder    <- storageService.getAssetFolder(info.assetRef)
+      sizeOrig       <- storageService.calculateSizeInBytes(assetFolder / info.original.file.filename)
+      sizeDerivative <- storageService.calculateSizeInBytes(assetFolder / info.derivative.file.filename)
+      sizeKeyframes  <- storageService.calculateSizeInBytes(assetFolder / info.assetRef.id.toString)
+
+    } yield SizeInBytesMovingImages(sizeOrig, sizeDerivative, sizeKeyframes)
+
+  private def calculateSizeInBytesOther(fileType: SupportedFileType, info: AssetInfo): Task[SizeInBytesOther] =
+    for {
+      assetFolder    <- storageService.getAssetFolder(info.assetRef)
+      sizeOrig       <- storageService.calculateSizeInBytes(assetFolder / info.original.file.filename)
+      sizeDerivative <- storageService.calculateSizeInBytes(assetFolder / info.derivative.file.filename)
+    } yield SizeInBytesOther(fileType, sizeOrig, sizeDerivative)
 }
-object ReportServiceLive {
-  val layer = ZLayer.derive[ReportServiceLive]
+object ReportService {
+  val layer = ZLayer.derive[ReportService]
 }
