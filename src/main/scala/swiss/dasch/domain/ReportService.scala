@@ -4,9 +4,9 @@
  */
 
 package swiss.dasch.domain
-
 import swiss.dasch.domain.SizeInBytesPerType.{SizeInBytesMovingImages, SizeInBytesOther}
 import zio.*
+import zio.json.{DeriveJsonEncoder, JsonEncoder, JsonFieldDecoder, JsonFieldEncoder}
 import zio.nio.file.Path
 
 final case class ChecksumReport(results: Map[AssetInfo, Chunk[ChecksumResult]], nrOfAssets: Int)
@@ -24,7 +24,16 @@ final case class AssetOverviewReport(
   def add(someSize: SizeInBytesPerType): AssetOverviewReport =
     self.copy(sizesPerType = sizesPerType.add(someSize))
 }
+
 object AssetOverviewReport {
+
+  import zio.json.*
+  import zio.json.interop.refined.encodeRefined
+
+  given JsonFieldEncoder[SupportedFileType] = JsonFieldEncoder[String].contramap(_.toString)
+
+  given JsonEncoder[AssetOverviewReport] = DeriveJsonEncoder.gen[AssetOverviewReport]
+
   def make(shortcode: ProjectShortcode) =
     AssetOverviewReport(shortcode, 0, Map.empty, SizeInBytesReport(Map.empty[SupportedFileType, SizeInBytesPerType]))
 }
@@ -36,13 +45,20 @@ final case class SizeInBytesReport(sizes: Map[SupportedFileType, SizeInBytesPerT
       case Some(existingSize) => Some(existingSize.add(size))
     })
 }
+object SizeInBytesReport {
+
+  given JsonFieldEncoder[SupportedFileType] = JsonFieldEncoder[String].contramap(_.toString)
+  given JsonFieldDecoder[SupportedFileType] = JsonFieldDecoder[String].map(s => SupportedFileType.valueOf(s))
+  given JsonEncoder[SizeInBytesReport]      = DeriveJsonEncoder.gen[SizeInBytesReport]
+}
 
 sealed trait SizeInBytesPerType {
   def fileType: SupportedFileType
   def add(other: SizeInBytesPerType): SizeInBytesPerType
 }
-
 object SizeInBytesPerType {
+  given JsonEncoder[SizeInBytesPerType] = DeriveJsonEncoder.gen[SizeInBytesPerType]
+
   final case class SizeInBytesOther(fileType: SupportedFileType, sizeOrig: BigInt, sizeDerivative: BigInt)
       extends SizeInBytesPerType { self =>
     override def add(other: SizeInBytesPerType): SizeInBytesOther =
@@ -54,7 +70,6 @@ object SizeInBytesPerType {
           )
         case _ => self
       }
-
   }
 
   final case class SizeInBytesMovingImages(
@@ -97,9 +112,6 @@ final case class ReportService(
         case None => ZIO.none
       }
 
-  def assetsOverviewReport: Task[Option[AssetOverviewReport]] =
-    assetsOverviewReport(ProjectShortcode.unsafeFrom("0002"))
-
   def assetsOverviewReport(projectShortcode: ProjectShortcode): Task[Option[AssetOverviewReport]] =
     ZIO.logInfo(s"Calculating asset overview report for project $projectShortcode") *>
       projectService
@@ -112,7 +124,16 @@ final case class ReportService(
                 .runFoldZIO(AssetOverviewReport.make(projectShortcode))(updateAssetOverviewReport)
                 .map(Some(_))
           case None => ZIO.none
-        }
+        } <* ZIO.logInfo(s"Finished overview report for project $projectShortcode")
+
+  def saveReport[A](name: String, report: A)(using encoder: JsonEncoder[A]): Task[Path] = for {
+    tmpDir    <- storageService.getTempFolder()
+    reportDir  = tmpDir / "reports"
+    _         <- storageService.createDirectories(reportDir)
+    now       <- Clock.instant
+    reportFile = reportDir / s"${name}_$now.json"
+    _         <- storageService.saveJsonFile(reportFile, report)
+  } yield reportFile
 
   private def updateAssetOverviewReport(
     report: AssetOverviewReport,
