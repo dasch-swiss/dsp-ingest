@@ -67,7 +67,7 @@ trait StorageService {
 
   def deleteDirectoryIfEmpty(directory: Path): IO[IOException, Unit]
 
-  def calculateSizeInBytes(path: Path): Task[BigInt]
+  def calculateSizeInBytes(path: Path): Task[FileSize]
 }
 
 object StorageService {
@@ -172,24 +172,24 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
    * @param path the path to the file or directory
    * @return the size in bytes, or 0 if the file is neither a non hidden regular file or a directory
    */
-  override def calculateSizeInBytes(path: Path): Task[BigInt] =
+  override def calculateSizeInBytes(path: Path): Task[FileSize] =
     Files.isDirectory(path).flatMap {
       case true  => calculateDirectorySize(path)
       case false => calculateFileSize(path)
     }
 
-  private def calculateDirectorySize(path: Path): ZIO[Any, IOException, BigInt] =
+  private def calculateDirectorySize(path: Path): ZIO[Any, IOException, FileSize] =
     Files
       .walk(path)
       .filterZIO(p => FileFilters.isNonHiddenRegularFile(p))
       .mapZIO(Files.size)
-      .map(BigInt.apply)
-      .runSum
+      .map(FileSize.apply)
+      .runFold(FileSize(0L))(_ + _)
 
-  private def calculateFileSize(path: Path): ZIO[Any, IOException, BigInt] =
+  private def calculateFileSize(path: Path): ZIO[Any, IOException, FileSize] =
     FileFilters.isNonHiddenRegularFile.apply(path).flatMap {
-      case false => ZIO.succeed(BigInt(0))
-      case true  => Files.size(path).map(BigInt.apply)
+      case false => ZIO.succeed(FileSize(0))
+      case true  => Files.size(path).map(FileSize.apply)
     }
 }
 

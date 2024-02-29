@@ -52,6 +52,29 @@ object SizeInBytesReport {
   given JsonEncoder[SizeInBytesReport]      = DeriveJsonEncoder.gen[SizeInBytesReport]
 }
 
+final case class FileSize(sizeInBytes: BigDecimal) {
+  def +(other: FileSize): FileSize = FileSize(sizeInBytes + other.sizeInBytes)
+
+}
+object FileSize {
+  given JsonEncoder[FileSize] = JsonEncoder[String].contramap(prettyPrint)
+
+  def apply(sizeInBytes: Long): FileSize = FileSize(BigDecimal.exact(sizeInBytes))
+
+  private val units = List("B", "KiB", "MiB", "GiB", "TiB")
+
+  def prettyPrint(fileSize: FileSize): String = {
+    @annotation.tailrec
+    def helper(size: BigDecimal, units: List[String]): String = units match {
+      case unit :: _ if size < 1024 => f"$size%.2f $unit"
+      case _ :: rest                => helper(size / 1024, rest)
+      case Nil                      => f"$size%.2f B"
+    }
+
+    helper(fileSize.sizeInBytes, units)
+  }
+
+}
 sealed trait SizeInBytesPerType {
   def fileType: SupportedFileType
   def add(other: SizeInBytesPerType): SizeInBytesPerType
@@ -59,7 +82,7 @@ sealed trait SizeInBytesPerType {
 object SizeInBytesPerType {
   given JsonEncoder[SizeInBytesPerType] = DeriveJsonEncoder.gen[SizeInBytesPerType]
 
-  final case class SizeInBytesOther(fileType: SupportedFileType, sizeOrig: BigInt, sizeDerivative: BigInt)
+  final case class SizeInBytesOther(fileType: SupportedFileType, sizeOrig: FileSize, sizeDerivative: FileSize)
       extends SizeInBytesPerType { self =>
     override def add(other: SizeInBytesPerType): SizeInBytesOther =
       other match {
@@ -73,9 +96,9 @@ object SizeInBytesPerType {
   }
 
   final case class SizeInBytesMovingImages(
-    sizeOrig: BigInt,
-    sizeDerivative: BigInt,
-    sizeKeyframes: BigInt
+    sizeOrig: FileSize,
+    sizeDerivative: FileSize,
+    sizeKeyframes: FileSize
   ) extends SizeInBytesPerType { self =>
     val fileType: SupportedFileType = SupportedFileType.MovingImage
     def add(other: SizeInBytesPerType): SizeInBytesMovingImages =
