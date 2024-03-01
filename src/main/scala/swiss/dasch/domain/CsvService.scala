@@ -49,7 +49,7 @@ object CsvRow {
     "totalNrOfAssets",
     "nrOfStillImageAssets",
     "nrOfMovingImageAssets",
-    "nrOrOtherAssets",
+    "nrOfOtherAssets",
     "sizeOfStillImageOriginals",
     "sizeOfStillImageDerivatives",
     "sizeOfMovingImageOriginals",
