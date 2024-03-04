@@ -12,7 +12,7 @@ import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles, StillImage
 import zio.nio.file.Path
 import zio.{Task, ZIO}
 
-final case class CsvRow(
+final case class AssetOverviewReportCsvRow(
   shortcode: ProjectShortcode,
   totalNrOfAssets: Int,
   nrOfStillImageAssets: Int,
@@ -43,7 +43,7 @@ final case class CsvRow(
   )
 }
 
-object CsvRow {
+object AssetOverviewReportCsvRow {
   val headerRow: List[String] = List(
     "shortcode",
     "totalNrOfAssets",
@@ -58,7 +58,7 @@ object CsvRow {
     "sizeOfOtherOriginals",
     "sizeOfOtherDerivatives"
   )
-  def fromReport(rep: AssetOverviewReport): CsvRow = {
+  def fromReport(rep: AssetOverviewReport): AssetOverviewReportCsvRow = {
     def getFileSize(key: SupportedFileType, typ: String) =
       rep.sizesPerType.sizes.get(key) match {
         case None => FileSize(0)
@@ -77,7 +77,7 @@ object CsvRow {
           }
       }
 
-    CsvRow(
+    AssetOverviewReportCsvRow(
       shortcode = rep.shortcode,
       totalNrOfAssets = rep.totalNrOfAssets,
       nrOfStillImageAssets = rep.nrOfAssetsPerType.getOrElse(StillImage, 0),
@@ -106,8 +106,10 @@ final case class CsvService() {
     ZIO.scoped {
       for {
         writer <- createWriter(path)
-        _      <- ZIO.succeed(writer.writeRow(CsvRow.headerRow))
-        _      <- ZIO.foreachDiscard(report)(rep => ZIO.succeed(writer.writeRow(CsvRow.fromReport(rep).toList)))
+        _      <- ZIO.succeed(writer.writeRow(AssetOverviewReportCsvRow.headerRow))
+        _ <- ZIO.foreachDiscard(report)(rep =>
+               ZIO.succeed(writer.writeRow(AssetOverviewReportCsvRow.fromReport(rep).toList))
+             )
       } yield path
     }
 }
