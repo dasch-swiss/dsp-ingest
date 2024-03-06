@@ -9,7 +9,7 @@ import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
-import swiss.dasch.api.ApiProblem.{BadRequest, InternalServerError, TooManyRequests}
+import swiss.dasch.api.ApiProblem.{BadRequest, InternalServerError, Conflict}
 import swiss.dasch.api.ProjectsEndpointsResponses.{
   AssetCheckResultResponse,
   AssetInfoResponse,
@@ -93,7 +93,7 @@ final case class ProjectsEndpointsHandler(
     )
 
   private def failBulkIngestInProgress(code: ProjectShortcode) =
-    ZIO.fail(TooManyRequests(s"A bulk ingest is currently in progress for project ${code.value}."))
+    ZIO.fail(Conflict(s"A bulk ingest is currently in progress for project ${code.value}."))
 
   private val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize
     .serverLogic(_ =>
