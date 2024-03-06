@@ -8,10 +8,20 @@ package swiss.dasch.domain
 import swiss.dasch.api.SipiClientMock
 import swiss.dasch.infrastructure.CommandExecutorMock
 import swiss.dasch.test.SpecConfigurations
+import zio.ZIO
 import zio.nio.file.Files
 import zio.test.{ZIOSpecDefault, assertTrue}
 
-object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
+object BulkIngestServiceSpec extends ZIOSpecDefault {
+  // accessor function for testing
+  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, IngestResult] =
+    ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
+
+  def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
+    ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
+
+  def getBulkIngestMappingCsv(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Option[String]] =
+    ZIO.serviceWithZIO[BulkIngestService](_.getBulkIngestMappingCsv(shortcode))
 
   private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
     val shortcode = ProjectShortcode.unsafeFrom("0001")
@@ -25,7 +35,7 @@ object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
       mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
       _             <- Files.createFile(mappingCsvFile)
       // when
-      _ <- BulkIngestService.finalizeBulkIngest(shortcode)
+      _ <- finalizeBulkIngest(shortcode)
       // then
       importDirDeleted   <- Files.exists(importDir).negate
       mappingFileDeleted <- Files.exists(mappingCsvFile).negate
@@ -44,7 +54,7 @@ object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
       _             <- Files.createFile(mappingCsvFile)
       _             <- Files.writeLines(mappingCsvFile, List("1,2,3"))
       // when
-      mappingCsv <- BulkIngestService.getBulkIngestMappingCsv(shortcode)
+      mappingCsv <- getBulkIngestMappingCsv(shortcode)
       // then
       mappingCsvFileExists <- Files.exists(mappingCsvFile)
     } yield assertTrue(mappingCsvFileExists && mappingCsv.contains("1,2,3"))
@@ -55,7 +65,7 @@ object BulkIngestServiceLiveSpec extends ZIOSpecDefault {
     getBulkIngestMappingCsvSuite,
   ).provide(
     AssetInfoServiceLive.layer,
-    BulkIngestServiceLive.layer,
+    BulkIngestService.layer,
     CommandExecutorMock.layer,
     IngestService.layer,
     MimeTypeGuesser.layer,
