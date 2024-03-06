@@ -175,7 +175,6 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(statusCode(StatusCode.Accepted))
     .description(
       "Triggers an ingest on the project with the given shortcode. " +
-        "Currently only supports ingest of images. " +
         "The files are expected to be in the `tmp/<project_shortcode>` directory.",
     )
     .tag("bulk-ingest")
@@ -193,12 +192,13 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
   val getBulkIngestMappingCsv = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "bulk-ingest" / "mapping.csv")
     .description(
-      "Get the current result of the bulk ingest, may be incomplete. " +
+      "Download the current result of the bulk ingest, may be incomplete. " +
         "The result is a csv with the following structure: " +
         "original,derivative",
     )
     .out(stringBody)
     .out(header(HeaderNames.ContentType, "text/csv"))
+    .out(header(HeaderNames.ContentDisposition, "attachment; filename=\"mapping.csv\""))
     .tag("bulk-ingest")
 
   val postExport = base.secureEndpoint.post
