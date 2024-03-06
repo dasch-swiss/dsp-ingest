@@ -26,15 +26,15 @@ final case class BulkIngestService(
   storage: StorageService,
   ingestService: IngestService,
   config: IngestConfig,
-  bulkIngestForProjectRunning: TMap[ProjectShortcode, TSemaphore],
+  semaphoresPerProject: TMap[ProjectShortcode, TSemaphore],
 ) {
 
   private def getSemaphoreWithTimeoutFor(key: ProjectShortcode): ZIO[Any, Nothing, Option[TSemaphore]] =
-    bulkIngestForProjectRunning
+    semaphoresPerProject
       .get(key)
       .flatMap {
         case Some(sem) => STM.succeed(sem)
-        case None      => TSemaphore.make(1).tap(sem => bulkIngestForProjectRunning.put(key, sem))
+        case None      => TSemaphore.make(1).tap(sem => semaphoresPerProject.put(key, sem))
       }
       .commit
       .flatMap(s => s.acquire.commit.timeout(Duration.fromMillis(400)).map(_.map(_ => s)))
