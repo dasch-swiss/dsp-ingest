@@ -102,7 +102,9 @@ final case class BulkIngestService(
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 
-  def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[Any, Option[Nothing], Fiber.Runtime[Option[IOException], Unit]] =
+  def finalizeBulkIngest(
+    shortcode: ProjectShortcode,
+  ): ZIO[Any, Option[Nothing], Fiber.Runtime[Option[IOException], Unit]] =
     getSemaphore(shortcode)
       .flatMap(acquireWithTimeout)
       .flatMap(sem => doFinalize(shortcode).asSomeError.ensuring(sem.release.commit).logError.forkDaemon)
