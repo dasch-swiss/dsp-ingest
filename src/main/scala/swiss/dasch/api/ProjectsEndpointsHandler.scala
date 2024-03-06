@@ -85,6 +85,7 @@ final case class ProjectsEndpointsHandler(
       code =>
         bulkIngestService
           .startBulkIngest(code)
+          .unsome
           .flatMap {
             case None    => ZIO.fail(TooManyRequests(s"A bulk ingest is already in progress for project ${code.value}"))
             case Some(_) => ZIO.succeed(ProjectResponse.from(code))
