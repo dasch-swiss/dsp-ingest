@@ -104,10 +104,10 @@ final case class BulkIngestService(
 
   def finalizeBulkIngest(
     shortcode: ProjectShortcode,
-  ): ZIO[Any, Option[Nothing], Fiber.Runtime[Option[IOException], Unit]] =
+  ): ZIO[Any, Option[Nothing], Fiber.Runtime[IOException, Unit]] =
     getSemaphore(shortcode)
       .flatMap(acquireWithTimeout)
-      .flatMap(sem => doFinalize(shortcode).asSomeError.ensuring(sem.release.commit).logError.forkDaemon)
+      .flatMap(sem => doFinalize(shortcode).logError.ensuring(sem.release.commit).forkDaemon)
 
   private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =
     for {
