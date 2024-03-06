@@ -6,9 +6,9 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
+import zio.*
 import zio.nio.file.{Files, Path}
 import zio.stm.{TMap, TSemaphore}
-import zio.*
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption
@@ -29,19 +29,21 @@ final case class BulkIngestService(
   semaphoresPerProject: TMap[ProjectShortcode, TSemaphore],
 ) {
 
-  private def getSemaphore(key: ProjectShortcode): ZIO[Any, Nothing, TSemaphore] =
-    semaphoresPerProject
-      .getOrElseSTM(key, TSemaphore.make(1))
-      .tap(semaphoresPerProject.put(key, _))
-      .commit
-
-  private def acquireWithTimeout(sem: TSemaphore): ZIO[Any, Option[Nothing], TSemaphore] =
-    sem.acquire.as(sem).commit.timeout(Duration.fromMillis(400)).some
-
-  def startBulkIngest(project: ProjectShortcode): ZIO[Any, Option[Nothing], Fiber.Runtime[IOException, IngestResult]] =
-    getSemaphore(project)
+  private def withSemaphoreFork[E, A](
+    key: ProjectShortcode,
+    zio: ProjectShortcode => IO[E, A],
+  ): IO[Option[Nothing], Fiber.Runtime[E, A]] = {
+    def getSemaphore =
+      semaphoresPerProject.getOrElseSTM(key, TSemaphore.make(1)).tap(semaphoresPerProject.put(key, _)).commit
+    def acquireWithTimeout(sem: TSemaphore) =
+      sem.acquire.as(sem).commit.timeout(Duration.fromMillis(400)).some
+    getSemaphore
       .flatMap(acquireWithTimeout)
-      .flatMap(sem => doBulkIngest(project).logError.ensuring(sem.release.commit).forkDaemon)
+      .flatMap(sem => zio.apply(key).logError.ensuring(sem.release.commit).forkDaemon)
+  }
+
+  def startBulkIngest(project: ProjectShortcode): IO[Option[Nothing], Fiber.Runtime[IOException, IngestResult]] =
+    withSemaphoreFork(project, doBulkIngest)
 
   private def doBulkIngest(project: ProjectShortcode) =
     for {
@@ -102,12 +104,8 @@ final case class BulkIngestService(
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 
-  def finalizeBulkIngest(
-    shortcode: ProjectShortcode,
-  ): ZIO[Any, Option[Nothing], Fiber.Runtime[IOException, Unit]] =
-    getSemaphore(shortcode)
-      .flatMap(acquireWithTimeout)
-      .flatMap(sem => doFinalize(shortcode).logError.ensuring(sem.release.commit).forkDaemon)
+  def finalizeBulkIngest(shortcode: ProjectShortcode): IO[Option[Nothing], Fiber.Runtime[IOException, Unit]] =
+    withSemaphoreFork(shortcode, doFinalize)
 
   private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =
     for {
