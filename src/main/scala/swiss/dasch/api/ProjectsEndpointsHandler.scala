@@ -10,12 +10,7 @@ import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
 import swiss.dasch.api.ApiProblem.{BadRequest, InternalServerError, TooManyRequests}
-import swiss.dasch.api.ProjectsEndpointsResponses.{
-  AssetCheckResultResponse,
-  AssetInfoResponse,
-  ProjectResponse,
-  UploadResponse,
-}
+import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.domain.*
 import zio.stream.ZStream
 import zio.{ZIO, ZLayer, stream}
@@ -87,14 +82,24 @@ final case class ProjectsEndpointsHandler(
           .startBulkIngest(code)
           .unsome
           .flatMap {
-            case None    => ZIO.fail(TooManyRequests(s"A bulk ingest is already in progress for project ${code.value}"))
+            case None    => failBulkIngestInProgress(code)
             case Some(_) => ZIO.succeed(ProjectResponse.from(code))
           },
     )
 
+  private def failBulkIngestInProgress(code: ProjectShortcode) =
+    ZIO.fail(TooManyRequests(s"A bulk ingest is currently in progress for project ${code.value}."))
+
   private val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize
     .serverLogic(_ =>
-      code => bulkIngestService.finalizeBulkIngest(code).logError.forkDaemon.as(ProjectResponse.from(code)),
+      code =>
+        bulkIngestService
+          .finalizeBulkIngest(code)
+          .unsome
+          .flatMap {
+            case None    => failBulkIngestInProgress(code)
+            case Some(_) => ZIO.succeed(ProjectResponse.from(code))
+          },
     )
 
   private val getBulkIngestMappingCsvEndpoint: ZServerEndpoint[Any, Any] =

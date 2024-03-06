@@ -8,7 +8,7 @@ package swiss.dasch.domain
 import swiss.dasch.config.Configuration.IngestConfig
 import zio.nio.file.{Files, Path}
 import zio.stm.{TMap, TSemaphore}
-import zio.{Cause, Duration, IO, Task, UIO, ZIO, ZLayer}
+import zio.{Cause, Duration, Fiber, IO, Task, UIO, ZIO, ZLayer}
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption
@@ -38,10 +38,10 @@ final case class BulkIngestService(
   private def acquireWithTimeout(sem: TSemaphore): ZIO[Any, Option[Nothing], TSemaphore] =
     sem.acquire.as(sem).commit.timeout(Duration.fromMillis(400)).some
 
-  def startBulkIngest(project: ProjectShortcode): ZIO[Any, Option[Nothing], Unit] =
+  def startBulkIngest(project: ProjectShortcode): ZIO[Any, Option[Nothing], Fiber.Runtime[IOException, IngestResult]] =
     getSemaphore(project)
       .flatMap(acquireWithTimeout)
-      .flatMap(sem => doBulkIngest(project).logError.ensuring(sem.release.commit).forkDaemon.unit)
+      .flatMap(sem => doBulkIngest(project).logError.ensuring(sem.release.commit).forkDaemon)
 
   private def doBulkIngest(project: ProjectShortcode) =
     for {
@@ -102,14 +102,20 @@ final case class BulkIngestService(
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 
-  def finalizeBulkIngest(shortcode: ProjectShortcode): Task[Unit] = for {
-    _         <- ZIO.logInfo(s"Finalizing bulk ingest for project $shortcode")
-    importDir <- getImportFolder(shortcode)
-    mappingCsv = getMappingCsvFile(importDir, shortcode)
-    _         <- storage.deleteRecursive(importDir)
-    _         <- storage.delete(mappingCsv)
-    _         <- ZIO.logInfo(s"Finished finalizing bulk ingest for project $shortcode")
-  } yield ()
+  def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[Any, Option[Nothing], Fiber.Runtime[Option[IOException], Unit]] =
+    getSemaphore(shortcode)
+      .flatMap(acquireWithTimeout)
+      .flatMap(sem => doFinalize(shortcode).asSomeError.ensuring(sem.release.commit).logError.forkDaemon)
+
+  private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =
+    for {
+      _         <- ZIO.logInfo(s"Finalizing bulk ingest for project $shortcode")
+      importDir <- getImportFolder(shortcode)
+      mappingCsv = getMappingCsvFile(importDir, shortcode)
+      _         <- storage.deleteRecursive(importDir)
+      _         <- storage.delete(mappingCsv)
+      _         <- ZIO.logInfo(s"Finished finalizing bulk ingest for project $shortcode")
+    } yield ()
 
   def getBulkIngestMappingCsv(shortcode: ProjectShortcode): Task[Option[String]] =
     for {

@@ -8,16 +8,18 @@ package swiss.dasch.domain
 import swiss.dasch.api.SipiClientMock
 import swiss.dasch.infrastructure.CommandExecutorMock
 import swiss.dasch.test.SpecConfigurations
-import zio.ZIO
 import zio.nio.file.Files
 import zio.test.{ZIOSpecDefault, assertTrue}
+import zio.{Fiber, ZIO}
 
 import java.io.IOException
 
 object BulkIngestServiceSpec extends ZIOSpecDefault {
 
   // accessor functions for testing
-  def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
+  def finalizeBulkIngest(
+    shortcode: ProjectShortcode,
+  ): ZIO[BulkIngestService, Option[Nothing], Fiber.Runtime[Option[IOException], Unit]] =
     ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
 
   def getBulkIngestMappingCsv(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Option[String]] =
@@ -35,8 +37,9 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
       _             <- Files.createFile(mappingCsvFile)
       // when
-      _ <- finalizeBulkIngest(shortcode)
+      fork <- finalizeBulkIngest(shortcode)
       // then
+      _                  <- fork.join
       importDirDeleted   <- Files.exists(importDir).negate
       mappingFileDeleted <- Files.exists(mappingCsvFile).negate
     } yield assertTrue(importDirDeleted && mappingFileDeleted)
