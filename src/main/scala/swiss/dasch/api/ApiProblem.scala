@@ -17,6 +17,12 @@ sealed trait ApiProblem
 
 object ApiProblem {
 
+  case class TooManyRequests(reason: String) extends ApiProblem
+  object TooManyRequests {
+    given codec: JsonCodec[TooManyRequests] = DeriveJsonCodec.gen[TooManyRequests]
+    given schema: Schema[TooManyRequests]   = DeriveSchema.gen[TooManyRequests]
+  }
+
   case class NotFound(id: String, `type`: String) extends ApiProblem
 
   object NotFound {

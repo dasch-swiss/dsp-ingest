@@ -7,11 +7,11 @@ package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
 import zio.nio.file.{Files, Path}
-import zio.{Cause, IO, Task, UIO, ZIO, ZLayer}
+import zio.stm.{STM, TMap, TSemaphore}
+import zio.{Cause, Duration, IO, Task, UIO, ZIO, ZLayer}
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption
-import java.nio.file.attribute.FileAttribute
 
 case class IngestResult(success: Int = 0, failed: Int = 0) {
   def +(other: IngestResult): IngestResult = IngestResult(success + other.success, failed + other.failed)
@@ -26,9 +26,29 @@ final case class BulkIngestService(
   storage: StorageService,
   ingestService: IngestService,
   config: IngestConfig,
+  bulkIngestForProjectRunning: TMap[ProjectShortcode, TSemaphore],
 ) {
 
-  def startBulkIngest(project: ProjectShortcode): Task[IngestResult] =
+  private def getSemaphoreWithTimeoutFor(key: ProjectShortcode): ZIO[Any, Nothing, Option[TSemaphore]] =
+    bulkIngestForProjectRunning
+      .get(key)
+      .flatMap {
+        case Some(sem) => STM.succeed(sem)
+        case None      => TSemaphore.make(1).tap(sem => bulkIngestForProjectRunning.put(key, sem))
+      }
+      .commit
+      .flatMap(s => s.acquire.commit.timeout(Duration.fromMillis(400)).map(_.map(_ => s)))
+
+  def startBulkIngest(project: ProjectShortcode): ZIO[Any, Nothing, Option[Unit]] =
+    for {
+      acquiredMaybe <- getSemaphoreWithTimeoutFor(project)
+      _ <- ZIO
+             .fromOption(acquiredMaybe)
+             .flatMap(sem => doBulkIngest(project).logError.ensuring(sem.release.commit).forkDaemon)
+             .unsome
+    } yield acquiredMaybe.map(_ => ())
+
+  private def doBulkIngest(project: ProjectShortcode) =
     for {
       _           <- ZIO.logInfo(s"Starting bulk ingest for project $project.")
       importDir   <- getImportFolder(project)
@@ -108,5 +128,10 @@ final case class BulkIngestService(
 }
 
 object BulkIngestService {
-  val layer = ZLayer.derive[BulkIngestService]
+  object Errors {
+    def ProjectAlreadyRunning(shortcode: ProjectShortcode) = new IllegalStateException(
+      s"Bulk-Ingest for project ${shortcode.value} is already in progress.",
+    )
+  }
+  val layer = ZLayer.fromZIO(TMap.empty[ProjectShortcode, TSemaphore].commit) >>> ZLayer.derive[BulkIngestService]
 }

@@ -82,7 +82,15 @@ final case class ProjectsEndpointsHandler(
 
   private val postBulkIngestEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngest
     .serverLogic(_ =>
-      code => bulkIngestService.startBulkIngest(code).logError.forkDaemon.as(ProjectResponse.from(code)),
+      code =>
+        bulkIngestService
+          .startBulkIngest(code)
+          .flatMap {
+            case None =>
+              ZIO.fail(ApiProblem.TooManyRequests(s"A bulk ingest is already in progress for project ${code.value}"))
+            case Some(_) => ZIO.unit
+          }
+          .as(ProjectResponse.from(code)),
     )
 
   private val postBulkIngestEndpointFinalize: ZServerEndpoint[Any, Any] = projectEndpoints.postBulkIngestFinalize

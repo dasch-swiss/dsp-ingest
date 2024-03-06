@@ -12,11 +12,11 @@ import zio.ZIO
 import zio.nio.file.Files
 import zio.test.{ZIOSpecDefault, assertTrue}
 
-object BulkIngestServiceSpec extends ZIOSpecDefault {
-  // accessor function for testing
-  def startBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, IngestResult] =
-    ZIO.serviceWithZIO[BulkIngestService](_.startBulkIngest(shortcode))
+import java.io.IOException
 
+object BulkIngestServiceSpec extends ZIOSpecDefault {
+
+  // accessor functions for testing
   def finalizeBulkIngest(shortcode: ProjectShortcode): ZIO[BulkIngestService, Throwable, Unit] =
     ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
 
