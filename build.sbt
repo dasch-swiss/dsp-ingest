@@ -72,7 +72,7 @@ lazy val root = (project in file("."))
     ),
     libraryDependencies ++= tapir ++ metrics ++ Seq(
       "com.github.jwt-scala" %% "jwt-zio-json"                      % "10.0.0",
-      "commons-io"            % "commons-io"                        % "2.15.1",
+      "commons-io"            % "commons-io"                        % "2.16.0",
       "dev.zio"              %% "zio"                               % zioVersion,
       "dev.zio"              %% "zio-config"                        % zioConfigVersion,
       "dev.zio"              %% "zio-config-magnolia"               % zioConfigVersion,
