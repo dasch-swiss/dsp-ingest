@@ -1,5 +1,5 @@
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.12.0")
-addSbtPlugin("com.github.sbt"    % "sbt-native-packager" % "1.9.16")
+addSbtPlugin("com.github.sbt"    % "sbt-native-packager" % "1.10.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header"          % "5.10.0")
 addSbtPlugin("org.typelevel"     % "sbt-tpolecat"        % "0.5.0")
 addSbtPlugin("io.spray"          % "sbt-revolver"        % "0.10.0")
