@@ -29,7 +29,7 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
         result <- AuthService.authenticate(token)
       } yield assertTrue(
         token.nonEmpty,
-        result._2 != AuthScope.from(AuthScope.ScopeValue.Write(ProjectShortcode.unsafeFrom("2345"))),
+        result._1 == AuthScope.from(AuthScope.ScopeValue.Write(ProjectShortcode.unsafeFrom("2345"))),
       )
     },
     test("Should validate contents") {

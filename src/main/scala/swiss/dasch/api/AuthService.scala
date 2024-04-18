@@ -23,8 +23,7 @@ object AuthService {
 
   case class JwtContents(scope: Option[String] = None)
 
-  implicit val decoder: JsonDecoder[JwtContents] = DeriveJsonDecoder.gen[JwtContents]
-  implicit val encoder: JsonEncoder[JwtContents] = DeriveJsonEncoder.gen[JwtContents]
+  implicit val JwtContentsCodec: JsonCodec[JwtContents] = DeriveJsonCodec.gen[JwtContents]
 }
 
 sealed trait AuthenticationError { def message: String }
@@ -82,18 +81,9 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
         )
         .mapError(AuthenticationError.invalidContents)
 
-    ZIO.fromEither(
-      Validation
-        .validateWith(authScope, issVal, audVal, subVal)(
-          (
-            authScope,
-            _,
-            _,
-            _,
-          ) => (authScope, claim),
-        )
-        .toEither,
-    )
+    Validation
+      .validateWith(authScope, issVal, audVal, subVal)((authScope, _, _, _) => (authScope, claim))
+      .toZIOParallelErrors
   }
 }
 
