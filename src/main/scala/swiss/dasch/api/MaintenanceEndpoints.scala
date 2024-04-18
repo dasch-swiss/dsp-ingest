@@ -61,32 +61,32 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
       )
   }
 
-  val postMaintenanceActionEndpoint = base.secureEndpoint.post
+  val postMaintenanceActionEndpoint = base.jwtAuthenticatedEndpoint.post
     .in(maintenance / actionNamePathVar)
     .in(restrictToProjectsQuery)
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val needsTopLeftCorrectionEndpoint = base.secureEndpoint.get
+  val needsTopLeftCorrectionEndpoint = base.jwtAuthenticatedEndpoint.get
     .in(maintenance / "needs-top-left-correction")
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val wasTopLeftCorrectionAppliedEndpoint = base.secureEndpoint.get
+  val wasTopLeftCorrectionAppliedEndpoint = base.jwtAuthenticatedEndpoint.get
     .in(maintenance / "was-top-left-correction-applied")
     .out(stringBody)
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val createOriginalsEndpoint = base.secureEndpoint.post
+  val createOriginalsEndpoint = base.jwtAuthenticatedEndpoint.post
     .in(maintenance / "create-originals" / shortcodePathVar)
     .in(jsonBody[Chunk[MappingEntry]])
     .out(statusCode(StatusCode.Accepted))
     .tag(maintenance)
 
-  val needsOriginalsEndpoint = base.secureEndpoint.get
+  val needsOriginalsEndpoint = base.jwtAuthenticatedEndpoint.get
     .in(maintenance / "needs-originals")
     .in(query[Option[Boolean]]("imagesOnly"))
     .out(stringBody)

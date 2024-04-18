@@ -6,24 +6,45 @@
 package swiss.dasch.api
 
 import pdi.jwt.*
-import swiss.dasch.api.AuthenticationError.{InvalidAudience, InvalidIssuer, JwtProblem, SubjectMissing}
+import swiss.dasch.api.AuthenticationError.*
 import swiss.dasch.api.SpecJwtTokens.*
 import swiss.dasch.config.Configuration.JwtConfig
+import swiss.dasch.domain.AuthScope
+import swiss.dasch.domain.ProjectShortcode
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConfigurations.jwtConfigLayer
 import zio.*
-import zio.test.{TestAspect, ZIOSpecDefault, assertTrue}
+import zio.test.TestAspect
+import zio.test.ZIOSpecDefault
+import zio.test.assertTrue
 
 import java.time.temporal.ChronoUnit
 
 object AuthServiceLiveSpec extends ZIOSpecDefault {
 
-  val spec = suite("AuthenticatorLive")(
+  val spec = suite("AuthServiceLive")(
+    test("Should extract AuthScope from contents") {
+      for {
+        token  <- createToken(scope = Some("write:project:2345"))
+        result <- AuthService.authenticate(token)
+      } yield assertTrue(
+        token.nonEmpty,
+        result._2 != AuthScope.from(AuthScope.ScopeValue.Write(ProjectShortcode.unsafeFrom("2345"))),
+      )
+    },
+    test("Should validate contents") {
+      for {
+        token  <- createToken(scope = Some("I once saw a duck"))
+        result <- AuthService.authenticate(token).exit
+      } yield assertTrue(
+        result == Exit.fail(NonEmptyChunk(InvalidContents("Invalid contents: failed to match scope item"))),
+      )
+    },
     test("A valid token should be verified") {
       for {
-        token <- validToken()
-        json  <- AuthService.authenticate(token)
-      } yield assertTrue(token.nonEmpty, json != null)
+        token  <- validToken()
+        result <- AuthService.authenticate(token)
+      } yield assertTrue(token.nonEmpty, result._2 != null)
     },
     test("An expired token should fail with a JwtProblem") {
       for {

@@ -148,28 +148,28 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
 
   private val projects = "projects"
 
-  val getProjectsEndpoint = base.secureEndpoint.get
+  val getProjectsEndpoint = base.jwtAuthenticatedEndpoint.get
     .in(projects)
     .out(jsonBody[Chunk[ProjectResponse]])
     .out(header[String](HeaderNames.ContentRange))
     .tag(projects)
 
-  val getProjectByShortcodeEndpoint = base.secureEndpoint.get
+  val getProjectByShortcodeEndpoint = base.jwtAuthenticatedEndpoint.get
     .in(projects / shortcodePathVar)
     .out(jsonBody[ProjectResponse])
     .tag(projects)
 
-  val getProjectsChecksumReport = base.secureEndpoint.get
+  val getProjectsChecksumReport = base.jwtAuthenticatedEndpoint.get
     .in(projects / shortcodePathVar / "checksumreport")
     .out(jsonBody[AssetCheckResultResponse])
     .tag(projects)
 
-  val getProjectsAssetsInfo = base.secureEndpoint.get
+  val getProjectsAssetsInfo = base.jwtAuthenticatedEndpoint.get
     .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
     .out(jsonBody[AssetInfoResponse])
     .tag("assets")
 
-  val postBulkIngest = base.secureEndpoint.post
+  val postBulkIngest = base.jwtAuthenticatedEndpoint.post
     .in(projects / shortcodePathVar / "bulk-ingest")
     .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
     .out(statusCode(StatusCode.Accepted))
@@ -180,7 +180,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     )
     .tag("bulk-ingest")
 
-  val postBulkIngestFinalize = base.secureEndpoint.post
+  val postBulkIngestFinalize = base.jwtAuthenticatedEndpoint.post
     .in(projects / shortcodePathVar / "bulk-ingest" / "finalize")
     .out(jsonBody[ProjectResponse].example(ProjectResponse("0001")))
     .description(
@@ -190,7 +190,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     )
     .tag("bulk-ingest")
 
-  val getBulkIngestMappingCsv = base.secureEndpoint.get
+  val getBulkIngestMappingCsv = base.jwtAuthenticatedEndpoint.get
     .in(projects / shortcodePathVar / "bulk-ingest" / "mapping.csv")
     .description(
       "Get the current result of the bulk ingest, may be incomplete. " +
@@ -202,14 +202,14 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(header(HeaderNames.ContentDisposition, "attachment; filename=mapping.csv"))
     .tag("bulk-ingest")
 
-  val postExport = base.secureEndpoint.post
+  val postExport = base.jwtAuthenticatedEndpoint.post
     .in(projects / shortcodePathVar / "export")
     .out(header[String]("Content-Disposition"))
     .out(header[String]("Content-Type"))
     .out(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
     .tag("import/export")
 
-  val getImport = base.secureEndpoint
+  val getImport = base.jwtAuthenticatedEndpoint
     .in(projects / shortcodePathVar / "import")
     .in(streamBinaryBody(ZioStreams)(CodecFormat.Zip()))
     .in(header("Content-Type", "application/zip"))
