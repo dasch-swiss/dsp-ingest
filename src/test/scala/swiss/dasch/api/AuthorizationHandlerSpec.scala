@@ -31,9 +31,11 @@ object AuthorizationHandlerSpec extends ZIOSpecDefault {
           error2 <- handler(_.ensureAdminScope(sessionRead)).either
           error3 <- handler(_.ensureAdminScope(sessionWrite)).either
         } yield {
-          assertTrue(error1 == Left(ApiProblem.Unauthorized("admin permissions required"))) &&
-          assertTrue(error2 == Left(ApiProblem.Unauthorized("admin permissions required"))) &&
-          assertTrue(error3 == Left(ApiProblem.Unauthorized("admin permissions required")))
+          assertTrue(
+            error1 == Left(ApiProblem.Unauthorized("Admin permissions required.")),
+            error2 == Left(ApiProblem.Unauthorized("Admin permissions required.")),
+            error3 == Left(ApiProblem.Unauthorized("Admin permissions required.")),
+          )
         }
       },
       test("should authorize project read with read or admin") {
@@ -45,12 +47,14 @@ object AuthorizationHandlerSpec extends ZIOSpecDefault {
           error5 <- handler(_.ensureProjectReadable(sessionWrite, projectShortcode1)).either
           error6 <- handler(_.ensureProjectReadable(sessionAdmin, projectShortcode1)).either
         } yield {
-          assertTrue(error1 == Left(ApiProblem.Unauthorized("no project access"))) &&
-          assertTrue(error2 == Left(ApiProblem.Unauthorized("no project access"))) &&
-          assertTrue(error3 == Left(ApiProblem.Unauthorized("no project access"))) &&
-          assertTrue(error4 == Right(())) &&
-          assertTrue(error5 == Right(())) &&
-          assertTrue(error6 == Right(()))
+          assertTrue(
+            error1 == Left(ApiProblem.Unauthorized("No project access.")),
+            error2 == Left(ApiProblem.Unauthorized("No project access.")),
+            error3 == Left(ApiProblem.Unauthorized("No project access.")),
+            error4 == Right(()),
+            error5 == Right(()),
+            error6 == Right(()),
+          )
         }
       },
     ).provide(
