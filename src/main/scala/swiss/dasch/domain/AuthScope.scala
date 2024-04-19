@@ -17,7 +17,7 @@ final case class AuthScope(values: Set[AuthScope.ScopeValue] = Set()) extends An
     hasAdmin || values.contains(Write(projectShortcode))
 
   def projectReadable(projectShortcode: ProjectShortcode): Boolean =
-    hasAdmin || projectWritable(projectShortcode) || values.contains(Read(projectShortcode))
+    projectWritable(projectShortcode) || values.contains(Read(projectShortcode))
 }
 
 object AuthScope {
