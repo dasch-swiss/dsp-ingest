@@ -18,10 +18,10 @@ trait AuthorizationHandler {
 
 class AuthorizationHandlerLive extends AuthorizationHandler {
   def ensureAdminScope(userSession: Principal): ZIO[Any, ApiProblem, Unit] =
-    ZIO.unless(userSession.scope.hasAdmin)(ZIO.fail(Unauthorized("admin permissions required"))).as(())
+    ZIO.unless(userSession.scope.hasAdmin)(ZIO.fail(Unauthorized("Admin permissions required."))).as(())
 
   def ensureProjectReadable(userSession: Principal, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit] =
-    ZIO.unless(userSession.scope.projectReadable(shortcode))(ZIO.fail(Unauthorized("no project access"))).as(())
+    ZIO.unless(userSession.scope.projectReadable(shortcode))(ZIO.fail(Unauthorized("No project access."))).as(())
 }
 
 object AuthorizationHandlerLive {
