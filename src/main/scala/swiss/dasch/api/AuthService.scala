@@ -14,11 +14,11 @@ import zio.prelude.Validation
 import swiss.dasch.api.AuthService.JwtContents
 
 trait AuthService {
-  def authenticate(jwtToken: String): ZIO[Any, NonEmptyChunk[AuthenticationError], (AuthScope, JwtClaim)]
+  def authenticate(jwtToken: String): ZIO[Any, NonEmptyChunk[AuthenticationError], Principal]
 }
 
 object AuthService {
-  def authenticate(token: String): ZIO[AuthService, NonEmptyChunk[AuthenticationError], (AuthScope, JwtClaim)] =
+  def authenticate(token: String): ZIO[AuthService, NonEmptyChunk[AuthenticationError], Principal] =
     ZIO.serviceWithZIO[AuthService](_.authenticate(token))
 
   case class JwtContents(scope: Option[String] = None)
@@ -50,9 +50,9 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
   private val audience = jwtConfig.audience
   private val issuer   = jwtConfig.issuer
 
-  def authenticate(jwtString: String): IO[NonEmptyChunk[AuthenticationError], (AuthScope, JwtClaim)] =
+  def authenticate(jwtString: String): IO[NonEmptyChunk[AuthenticationError], Principal] =
     if (jwtConfig.disableAuth) {
-      ZIO.succeed((AuthScope(Set(AuthScope.ScopeValue.Admin)), JwtClaim(subject = Some("developer"))))
+      ZIO.succeed(Principal("developer", AuthScope(Set(AuthScope.ScopeValue.Admin))))
     } else {
       ZIO
         .fromTry(JwtZIOJson.decode(jwtString, secret, alg))
@@ -60,15 +60,14 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
         .flatMap(verifyClaim)
     }
 
-  private def verifyClaim(claim: JwtClaim): IO[NonEmptyChunk[AuthenticationError], (AuthScope, JwtClaim)] = {
-    val audVal = if (claim.audience.getOrElse(Set.empty).contains(audience)) { Validation.succeed(claim) }
+  private def verifyClaim(claim: JwtClaim): IO[NonEmptyChunk[AuthenticationError], Principal] = {
+    val audVal = if (claim.audience.getOrElse(Set.empty).contains(audience)) { Validation.succeed(()) }
     else { Validation.fail(AuthenticationError.invalidAudience(jwtConfig)) }
 
-    val issVal = if (claim.issuer.contains(issuer)) { Validation.succeed(claim) }
+    val issVal = if (claim.issuer.contains(issuer)) { Validation.succeed(()) }
     else { Validation.fail(AuthenticationError.invalidIssuer(jwtConfig)) }
 
-    val subVal = if (claim.subject.isDefined) { Validation.succeed(claim) }
-    else { Validation.fail(AuthenticationError.subjectMissing()) }
+    val subVal = Validation.fromEither(claim.subject.toRight(AuthenticationError.subjectMissing()))
 
     val authScope =
       Validation
@@ -82,7 +81,7 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
         .mapError(AuthenticationError.invalidContents)
 
     Validation
-      .validateWith(authScope, issVal, audVal, subVal)((authScope, _, _, _) => (authScope, claim))
+      .validateWith(authScope, issVal, audVal, subVal)((authScope, _, _, subject) => Principal(subject, authScope))
       .toZIOParallelErrors
   }
 }

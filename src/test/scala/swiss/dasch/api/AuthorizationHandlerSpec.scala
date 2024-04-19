@@ -13,7 +13,7 @@ import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.domain.ProjectShortcode
 
 object AuthorizationHandlerSpec extends ZIOSpecDefault {
-  val sessionWith       = UserSession("blank subject", _)
+  val sessionWith       = Principal("blank subject", _)
   val projectShortcode1 = ProjectShortcode.unsafeFrom("1234")
   val projectShortcode2 = ProjectShortcode.unsafeFrom("5678")
   val sessionEmpty      = sessionWith(AuthScope.Empty)

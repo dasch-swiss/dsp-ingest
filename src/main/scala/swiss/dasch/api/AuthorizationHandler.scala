@@ -12,24 +12,24 @@ import zio.ZLayer
 import swiss.dasch.domain.ProjectShortcode
 
 trait AuthorizationHandler {
-  def ensureAdminScope(userSession: UserSession): ZIO[Any, ApiProblem, Unit]
-  def ensureProjectReadable(userSession: UserSession, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit]
+  def ensureAdminScope(userSession: Principal): ZIO[Any, ApiProblem, Unit]
+  def ensureProjectReadable(userSession: Principal, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit]
 }
 
 class AuthorizationHandlerLive extends AuthorizationHandler {
-  def ensureAdminScope(userSession: UserSession): ZIO[Any, ApiProblem, Unit] =
+  def ensureAdminScope(userSession: Principal): ZIO[Any, ApiProblem, Unit] =
     ZIO.unless(userSession.scope.hasAdmin)(ZIO.fail(Unauthorized("admin permissions required"))).as(())
 
-  def ensureProjectReadable(userSession: UserSession, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit] =
+  def ensureProjectReadable(userSession: Principal, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit] =
     ZIO.unless(userSession.scope.projectReadable(shortcode))(ZIO.fail(Unauthorized("no project access"))).as(())
 }
 
 object AuthorizationHandlerLive {
   val Empty: AuthorizationHandler = new AuthorizationHandler {
-    def ensureAdminScope(userSession: UserSession): ZIO[Any, ApiProblem, Unit] =
+    def ensureAdminScope(userSession: Principal): ZIO[Any, ApiProblem, Unit] =
       ZIO.succeed(())
 
-    def ensureProjectReadable(userSession: UserSession, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit] =
+    def ensureProjectReadable(userSession: Principal, shortcode: ProjectShortcode): ZIO[Any, ApiProblem, Unit] =
       ZIO.succeed(())
   }
 

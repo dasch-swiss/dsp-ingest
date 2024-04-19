@@ -5,11 +5,11 @@
 
 package swiss.dasch.api
 
-import pdi.jwt.*
 import swiss.dasch.api.AuthenticationError.*
 import swiss.dasch.api.SpecJwtTokens.*
 import swiss.dasch.config.Configuration.JwtConfig
 import swiss.dasch.domain.AuthScope
+import swiss.dasch.domain.AuthScope.ScopeValue.*
 import swiss.dasch.domain.ProjectShortcode
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConfigurations.jwtConfigLayer
@@ -21,7 +21,6 @@ import zio.test.assertTrue
 import java.time.temporal.ChronoUnit
 
 object AuthServiceLiveSpec extends ZIOSpecDefault {
-
   val spec = suite("AuthServiceLive")(
     test("Should extract AuthScope from contents") {
       for {
@@ -29,7 +28,7 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
         result <- AuthService.authenticate(token)
       } yield assertTrue(
         token.nonEmpty,
-        result._1 == AuthScope.from(AuthScope.ScopeValue.Write(ProjectShortcode.unsafeFrom("2345"))),
+        result == Principal("some-subject", AuthScope.from(Write(ProjectShortcode.unsafeFrom("2345")))),
       )
     },
     test("Should validate contents") {
@@ -44,7 +43,7 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
       for {
         token  <- validToken()
         result <- AuthService.authenticate(token)
-      } yield assertTrue(token.nonEmpty, result._2 != null)
+      } yield assertTrue(token.nonEmpty, result == Principal("some-subject"))
     },
     test("An expired token should fail with a JwtProblem") {
       for {
