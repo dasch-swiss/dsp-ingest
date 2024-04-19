@@ -14,7 +14,7 @@ final case class ReportEndpoints(baseEndpoints: BaseEndpoints) {
   private val maintenance = "maintenance"
 
   private[api] val postAssetOverviewReport =
-    baseEndpoints.jwtAuthenticatedEndpoint.post
+    baseEndpoints.secureEndpoint.post
       .in(report / "asset-overview")
       .out(stringBody)
       .out(statusCode(StatusCode.Accepted))

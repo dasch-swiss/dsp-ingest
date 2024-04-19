@@ -25,7 +25,7 @@ case class BaseEndpoints(authService: AuthService) {
   val publicEndpoint: PublicEndpoint[Unit, ApiProblem, Unit, Any] = endpoint
     .errorOut(defaultErrorOutputs)
 
-  val jwtAuthenticatedEndpoint: ZPartialServerEndpoint[Any, String, Principal, Unit, ApiProblem, Unit, Any] = endpoint
+  val secureEndpoint: ZPartialServerEndpoint[Any, String, Principal, Unit, ApiProblem, Unit, Any] = endpoint
     .errorOut(defaultErrorOutputs)
     .securityIn(auth.bearer[String](WWWAuthenticateChallenge.bearer))
     .zServerSecurityLogic[Any, Principal](handleAuth)
