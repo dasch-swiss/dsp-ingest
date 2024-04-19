@@ -14,7 +14,7 @@ object AuthScopeSpec extends ZIOSpecDefault {
   val spec = suite("AuthScopeSpec")(
     test("should parse the admin scope") {
       for {
-        result1 <- AuthScope.parse("admin")
+        result1 <- AuthScope.parse("admin profile")
         result2 <- AuthScope.parse("admin admin admin")
       } yield assertTrue(Set(result1, result2, AuthScope(Set(Admin))).size == 1)
     },
@@ -37,18 +37,19 @@ object AuthScopeSpec extends ZIOSpecDefault {
         result2 <- AuthScope.parse("read:project:2345")
         result3 <- AuthScope.parse("read:project:1234 write:project:2345")
       } yield {
-        List(
-          assertTrue(result1 == AuthScope(Set(Read(shortcode("1234"))))),
-          assertTrue(result2 == AuthScope(Set(Read(shortcode("2345"))))),
-          assertTrue(result3 == AuthScope(Set(Read(shortcode("1234")), Write(shortcode("2345"))))),
-        ).fold(assertTrue(true))(_ && _)
+        assertTrue(
+          result1 == AuthScope(Set(Read(shortcode("1234")))),
+          result2 == AuthScope(Set(Read(shortcode("2345")))),
+          result3 == AuthScope(Set(Read(shortcode("1234")), Write(shortcode("2345")))),
+        )
       }
     },
-    test("should not validate ") {
-      val msg = "failed to match scope item"
-      assertTrue(AuthScope.parse("write:project:1234x").left.toOption.contains(msg)) &&
-      assertTrue(AuthScope.parse("write project:1234").left.toOption.contains(msg)) &&
-      assertTrue(AuthScope.parse("write:project1234").left.toOption.contains(msg))
+    test("should ignore unknown keys, report bad project shortcodes") {
+      assertTrue(
+        AuthScope.parse("write:project:1234x") == Left("Predicate failed: \"1234X\".matches(\"^\\p{XDigit}{4,4}$\")."),
+        AuthScope.parse("write project:1234") == Right(AuthScope.Empty),
+        AuthScope.parse("write:project1234") == Right(AuthScope.Empty),
+      )
     },
   )
 }

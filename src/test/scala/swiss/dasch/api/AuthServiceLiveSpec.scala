@@ -34,9 +34,9 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
     test("Should validate contents") {
       for {
         token  <- createToken(scope = Some("I once saw a duck"))
-        result <- AuthService.authenticate(token).exit
+        result <- AuthService.authenticate(token)
       } yield assertTrue(
-        result == Exit.fail(NonEmptyChunk(InvalidContents("Invalid contents: failed to match scope item"))),
+        result == Principal("some-subject", AuthScope.Empty),
       )
     },
     test("A valid token should be verified") {

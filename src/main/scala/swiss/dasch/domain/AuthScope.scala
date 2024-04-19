@@ -31,17 +31,17 @@ object AuthScope {
 
   val Empty = AuthScope()
 
-  val WriteFormat = "^write:project:(\\p{XDigit}{4,4})$".r
-  val ReadFormat  = "^read:project:(\\p{XDigit}{4,4})$".r
+  val WriteFormat = "^write:project:([^ ]+)$".r
+  val ReadFormat  = "^read:project:([^ ]+)$".r
 
-  def parseScopeValue(value: String): Either[String, ScopeValue] =
+  def parseScopeValue(value: String): Either[String, Option[ScopeValue]] =
     value match {
-      case "admin"                => Right(ScopeValue.Admin)
-      case WriteFormat(shortcode) => ProjectShortcode.from(shortcode).map(ScopeValue.Write(_))
-      case ReadFormat(shortcode)  => ProjectShortcode.from(shortcode).map(ScopeValue.Read(_))
-      case _                      => Left("failed to match scope item")
+      case "admin"                => Right(Some(ScopeValue.Admin))
+      case WriteFormat(shortcode) => ProjectShortcode.from(shortcode).map(ScopeValue.Write(_).some)
+      case ReadFormat(shortcode)  => ProjectShortcode.from(shortcode).map(ScopeValue.Read(_).some)
+      case _                      => Right(None)
     }
 
   def parse(value: String): Either[String, AuthScope] =
-    value.split(' ').toList.traverse(parseScopeValue).map(v => AuthScope(Set.from(v)))
+    value.split(' ').toList.traverse(parseScopeValue).map(v => AuthScope(Set.from(v.flatten)))
 }
