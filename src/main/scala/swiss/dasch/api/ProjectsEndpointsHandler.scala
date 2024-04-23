@@ -10,7 +10,12 @@ import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
 import swiss.dasch.api.*
 import swiss.dasch.api.ApiProblem.{BadRequest, Conflict, InternalServerError, NotFound}
-import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
+import swiss.dasch.api.ProjectsEndpointsResponses.{
+  AssetCheckResultResponse,
+  AssetInfoResponse,
+  ProjectResponse,
+  UploadResponse,
+}
 import swiss.dasch.domain.*
 import zio.stream.{ZSink, ZStream}
 import zio.{ZIO, ZLayer, stream}
@@ -89,8 +94,9 @@ final case class ProjectsEndpointsHandler(
       authorizationHandler.ensureProjectWritable(principal, shortcode) *>
         ZIO.scoped {
           for {
-            prj    <- projectService.findProject(shortcode).some.mapError(projectNotFoundOrServerError(_, shortcode))
-            tmpDir <- storageService.createTempDirectoryScoped(s"${prj.shortcode}-ingest").mapError(InternalServerError(_))
+            prj <- projectService.findProject(shortcode).some.mapError(projectNotFoundOrServerError(_, shortcode))
+            tmpDir <-
+              storageService.createTempDirectoryScoped(s"${prj.shortcode}-ingest").mapError(InternalServerError(_))
             tmpFile = tmpDir / filename.value
             _      <- stream.run(ZSink.fromFile(tmpFile.toFile)).mapError(InternalServerError(_))
             asset  <- ingestService.ingestFile(tmpFile, shortcode).mapError(InternalServerError(_))
