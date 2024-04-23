@@ -29,7 +29,7 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         assertTrue(actual == Right(str))
       }
     },
-    test("should not allow invalid filenames missing an valid extension") {
+    test("should not allow invalid filenames missing a valid extension") {
       val filenamesWithoutValidExtension = Seq(
         "Foo",
         "Foo.",
