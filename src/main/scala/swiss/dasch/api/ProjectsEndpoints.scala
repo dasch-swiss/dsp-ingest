@@ -11,7 +11,7 @@ import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
-import sttp.tapir.{CodecFormat, EndpointInput}
+import sttp.tapir.{Codec, CodecFormat, EndpointInput}
 import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
 import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.domain.*
@@ -164,8 +164,9 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(jsonBody[AssetInfoResponse])
     .tag("assets")
 
+  given filenameCodec: Codec[String, AssetFilename, CodecFormat.TextPlain] = Codec.string.mapEither(AssetFilename.from)(_.value)
   val postProjectAsset = base.secureEndpoint.post
-    .in(projects / shortcodePathVar / "assets" / "ingest" / path[String]("filename"))
+    .in(projects / shortcodePathVar / "assets" / "ingest" / path[AssetFilename]("filename"))
     .in(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
     .out(jsonBody[AssetInfoResponse])
     .tag("assets")

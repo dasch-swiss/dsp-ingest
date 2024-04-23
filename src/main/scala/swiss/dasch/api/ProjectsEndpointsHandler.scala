@@ -90,8 +90,8 @@ final case class ProjectsEndpointsHandler(
         ZIO.scoped {
           for {
             prj    <- projectService.findProject(shortcode).some.mapError(projectNotFoundOrServerError(_, shortcode))
-            tmpDir <- storageService.createTempDirectoryScoped(s"${prj.shortcode}").mapError(InternalServerError(_))
-            tmpFile = tmpDir / filename
+            tmpDir <- storageService.createTempDirectoryScoped(s"${prj.shortcode}-ingest").mapError(InternalServerError(_))
+            tmpFile = tmpDir / filename.value
             _      <- stream.run(ZSink.fromFile(tmpFile.toFile)).mapError(InternalServerError(_))
             asset  <- ingestService.ingestFile(tmpFile, shortcode).mapError(InternalServerError(_))
             info   <- assetInfoService.findByAssetRef(asset.ref).someOrFailException.orDie
