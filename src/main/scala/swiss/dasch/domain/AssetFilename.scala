@@ -2,7 +2,7 @@ package swiss.dasch.domain
 
 import zio.nio.file.*
 
-final case class AssetFilename private (value: String)
+final case class AssetFilename private (value: String) extends AnyVal
 
 object AssetFilename {
   // Allow letters, numbers, underscores, hyphens, spaces, full stops, comma, single quote, apostrophe and braces
