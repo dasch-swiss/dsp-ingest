@@ -53,11 +53,11 @@ object AssetFilenameSpec extends ZIOSpecDefault {
       }
     },
     test("should not allow invalid characters ") {
-      val filenamesWithoutValidExtension = Seq(
+      val filenamesWithInvalidCharacters = Seq(
         "Foo >.png",
         "Foo <.png",
       )
-      check(Gen.fromIterable(filenamesWithoutValidExtension)) { str =>
+      check(Gen.fromIterable(filenamesWithInvalidCharacters)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
         assertTrue(actual == Left("Filename contains invalid characters"))
       }
