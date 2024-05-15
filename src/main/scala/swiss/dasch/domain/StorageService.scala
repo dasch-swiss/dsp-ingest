@@ -112,9 +112,7 @@ final case class StorageServiceLive(config: StorageConfig) extends StorageServic
     ZIO.succeed(AssetsBaseFolder.from(config))
 
   override def createProjectFolder(shortcode: ProjectShortcode): IO[IOException, ProjectFolder] =
-    getAssetsBaseFolder()
-      .map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
-      .tap(f => createDirectories(f.path))
+    getProjectFolder(shortcode).tap(f => createDirectories(f.path))
 
   override def getProjectFolder(shortcode: ProjectShortcode): UIO[ProjectFolder] =
     getAssetsBaseFolder().map(assetDir => ProjectFolder.unsafeFrom(assetDir / shortcode.toString))
