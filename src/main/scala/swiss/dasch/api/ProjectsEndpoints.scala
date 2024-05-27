@@ -166,6 +166,12 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .tag(projects)
     .description("Authorization: read:project:1234 scope required.")
 
+  val deleteProjectsErase = base.secureEndpoint.get
+    .in(projects / shortcodePathVar / "erase")
+    .out(jsonBody[ProjectResponse])
+    .tag(projects)
+    .description("Authorization: admin scope required.")
+
   val getProjectsAssetsInfo = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
     .out(jsonBody[AssetInfoResponse])
@@ -236,6 +242,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
       getProjectsEndpoint,
       getProjectByShortcodeEndpoint,
       getProjectsChecksumReport,
+      deleteProjectsErase,
       getProjectsAssetsInfo,
       postProjectAsset,
       postBulkIngest,

@@ -73,6 +73,18 @@ final case class ProjectsEndpointsHandler(
             ),
     )
 
+  private val deleteProjectsEraseEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.deleteProjectsErase
+    .serverLogic(userSession =>
+      shortcode =>
+        authorizationHandler.ensureAdminScope(userSession) *>
+          projectService
+            .deleteProject(shortcode)
+            .mapBoth(
+              InternalServerError(_),
+              _ => ProjectResponse.from(shortcode),
+            ),
+    )
+
   private val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
     .serverLogic(userSession =>
       (shortcode, assetId) =>
@@ -187,6 +199,7 @@ final case class ProjectsEndpointsHandler(
       getProjectsEndpoint,
       getProjectByShortcodeEndpoint,
       getProjectChecksumReportEndpoint,
+      deleteProjectsEraseEndpoint,
       getProjectsAssetsInfoEndpoint,
       postProjectAssetEndpoint,
       postBulkIngestEndpoint,
