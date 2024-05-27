@@ -5,6 +5,7 @@
 
 package swiss.dasch.api
 
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import sttp.tapir.server.ziohttp.ZioHttpServerOptions
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
@@ -281,10 +282,32 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       },
     )
 
+  private val projectsSuite = suite("/admin/projects/{shortcode}")(
+    test("DELETE erase should delete the projcet folder") {
+      val shortcode = ProjectShortcode.unsafeFrom("1111")
+      // given a project folder with a file exists
+      StorageService
+        .getProjectFolder(shortcode)
+        .map(_ / "as" / "df")
+        .tap(path => Files.createDirectories(path) *> Files.createFile(path / "asdf-test.txt"))
+        *> {
+          // when deleting the project via the api
+          val req = Request
+            .delete(URL(Root / "projects" / s"${shortcode.value}" / "erase"))
+            .addHeader("Authorization", "Bearer fakeToken")
+          for {
+            res              <- executeRequest(req)
+            folderWasRemoved <- StorageService.getProjectFolder(shortcode).flatMap(Files.exists(_)).negate
+          } yield assertTrue(res.status == Status.Ok, folderWasRemoved)
+        }
+    },
+  )
+
   val spec = suite("ProjectsEndpoint")(
     projectExportSuite,
     projectImportSuite,
     assetInfoSuite,
+    projectsSuite,
     test("GET /projects should list non-empty project in test folders") {
       val req = Request.get(URL(Root / "projects")).addHeader("Authorization", "Bearer fakeToken")
       for {
