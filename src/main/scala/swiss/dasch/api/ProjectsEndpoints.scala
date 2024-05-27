@@ -170,7 +170,11 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .in(projects / shortcodePathVar / "erase")
     .out(jsonBody[ProjectResponse])
     .tag(projects)
-    .description("Authorization: admin scope required.")
+    .description(
+      """|!ATTENTION! Erase a project with the given shortcode. 
+         |This will permanently and irrecoveraly remove the project and all of its assets.\n
+         |Authorization: admin scope required.""".stripMargin,
+    )
 
   val getProjectsAssetsInfo = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
