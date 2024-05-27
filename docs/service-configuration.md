@@ -39,4 +39,4 @@ The layout in these folders is explained in detail in the chapter ["Filesystem S
 
 | Variable              | Default | Description                                                                                                                                             |
 | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ALLOW_ERRASE_PROJECTS | `false` | If set to `true`, the endpoint `DELETE /projects/:shortcode/erase` will be enabled. This endpoint can remove all data related to a project permanently. |
+| ALLOW_ERASE_PROJECTS | `false` | If set to `true`, the endpoint `DELETE /projects/:shortcode/erase` will be enabled. This endpoint can remove all data related to a project permanently. |
