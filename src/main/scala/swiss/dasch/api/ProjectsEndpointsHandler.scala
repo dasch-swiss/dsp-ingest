@@ -21,6 +21,8 @@ import zio.stream.{ZSink, ZStream}
 import zio.{ZIO, ZLayer, stream}
 
 import java.io.IOException
+import swiss.dasch.config.Configuration.Features
+import swiss.dasch.api.ApiProblem.Unauthorized
 
 final case class ProjectsEndpointsHandler(
   bulkIngestService: BulkIngestService,
@@ -32,6 +34,7 @@ final case class ProjectsEndpointsHandler(
   storageService: StorageService,
   assetInfoService: AssetInfoService,
   authorizationHandler: AuthorizationHandler,
+  features: Features,
 ) extends HandlerFunctions {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsEndpoint
@@ -77,12 +80,18 @@ final case class ProjectsEndpointsHandler(
     .serverLogic(userSession =>
       shortcode =>
         authorizationHandler.ensureAdminScope(userSession) *>
-          projectService
-            .deleteProject(shortcode)
-            .mapBoth(
-              InternalServerError(_),
-              _ => ProjectResponse.from(shortcode),
-            ),
+          projectService.findProject(shortcode).some.mapError(projectNotFoundOrServerError(_, shortcode)) *> {
+            if (features.allowEraseProject) {
+              projectService
+                .deleteProject(shortcode)
+                .mapBoth(
+                  InternalServerError(_),
+                  _ => ProjectResponse.from(shortcode),
+                )
+            } else {
+              ZIO.fail(Unauthorized("Project erasure is not enabled."))
+            }
+          },
     )
 
   private val getProjectsAssetsInfoEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsAssetsInfo
