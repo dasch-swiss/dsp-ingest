@@ -26,6 +26,8 @@ import zio.json.*
 import zio.nio.file.Files
 import zio.test.ZIOSpecDefault
 import zio.test.assertTrue
+import zio.ZLayer
+import swiss.dasch.config.Configuration.Features
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -305,6 +307,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     CsvService.layer,
     CommandExecutorLive.layer,
     FileChecksumServiceLive.layer,
+    ZLayer.succeed(Features(allowEraseProject = true)),
     StillImageService.layer,
     ImportServiceLive.layer,
     IngestService.layer,
