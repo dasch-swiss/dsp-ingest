@@ -19,11 +19,11 @@ docs-install:
     pip install -r docs/requirements.txt
 
 # Build the documentation clean
-docs-build: docs-install
+docs-build: docs-install docs-openapi-generate
     mkdocs build --clean
 
 # Serve the documentation
-docs-serve: docs-install
+docs-serve: docs-install 
     mkdocs serve
 
 # Clean build, regenerate OpenApi, and serve the documentation
