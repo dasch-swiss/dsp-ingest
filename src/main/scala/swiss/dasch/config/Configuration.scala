@@ -45,7 +45,7 @@ object Configuration {
 
   final case class IngestConfig(bulkMaxParallel: Int)
 
-  final case class Features(allowEraseProject: Boolean)
+  final case class Features(allowEraseProject: Boolean = false)
 
   private val configDescriptor = deriveConfig[ApplicationConf].mapKey(toKebabCase)
 
