@@ -283,23 +283,22 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     )
 
   private val projectsSuite = suite("/admin/projects/{shortcode}")(
-    test("DELETE erase should delete the projcet folder") {
+    test("DELETE ./erase should delete the projcet folder") {
       val shortcode = ProjectShortcode.unsafeFrom("1111")
-      // given a project folder with a file exists
-      StorageService
-        .getProjectFolder(shortcode)
-        .map(_ / "as" / "df")
-        .tap(path => Files.createDirectories(path) *> Files.createFile(path / "asdf-test.txt"))
-        *> {
-          // when deleting the project via the api
-          val req = Request
-            .delete(URL(Root / "projects" / s"${shortcode.value}" / "erase"))
-            .addHeader("Authorization", "Bearer fakeToken")
-          for {
-            res              <- executeRequest(req)
-            folderWasRemoved <- StorageService.getProjectFolder(shortcode).flatMap(Files.exists(_)).negate
-          } yield assertTrue(res.status == Status.Ok, folderWasRemoved)
-        }
+      for {
+        prjFolder <- StorageService.getProjectFolder(shortcode)
+        // given a project folder with a file exists
+        assetFolder = prjFolder / "as" / "df"
+        _          <- Files.createDirectories(assetFolder)
+        _          <- Files.createFile(assetFolder / "asdf-test.txt")
+        // when deleting the project via the api
+        res <- executeRequest(
+                 Request
+                   .delete(URL(Root / "projects" / s"${shortcode.value}" / "erase"))
+                   .addHeader("Authorization", "Bearer fakeToken"),
+               )
+        prjFolderWasDeleted <- Files.exists(prjFolder).negate
+      } yield assertTrue(res.status == Status.Ok, prjFolderWasDeleted)
     },
   )
 
