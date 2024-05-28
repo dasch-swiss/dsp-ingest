@@ -22,7 +22,6 @@ import zio.{ZIO, ZLayer, stream}
 
 import java.io.IOException
 import swiss.dasch.config.Configuration.Features
-import swiss.dasch.api.ApiProblem.Unauthorized
 import swiss.dasch.api.ApiProblem.Forbidden
 
 final case class ProjectsEndpointsHandler(
