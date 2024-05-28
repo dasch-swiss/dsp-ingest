@@ -283,7 +283,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     )
 
   private val projectsSuite = suite("/admin/projects/{shortcode}")(
-    test("DELETE ./erase should delete the projcet folder") {
+    test("DELETE ./erase should delete the project folder") {
       val shortcode = ProjectShortcode.unsafeFrom("1111")
       for {
         prjFolder <- StorageService.getProjectFolder(shortcode)
