@@ -23,6 +23,7 @@ import zio.{ZIO, ZLayer, stream}
 import java.io.IOException
 import swiss.dasch.config.Configuration.Features
 import swiss.dasch.api.ApiProblem.Unauthorized
+import swiss.dasch.api.ApiProblem.Forbidden
 
 final case class ProjectsEndpointsHandler(
   bulkIngestService: BulkIngestService,
@@ -89,7 +90,7 @@ final case class ProjectsEndpointsHandler(
                   _ => ProjectResponse.from(shortcode),
                 )
             } else {
-              ZIO.fail(Unauthorized("Project erasure is not enabled."))
+              ZIO.fail(Forbidden("The feature to erase projects is not enabled."))
             }
           },
     )
