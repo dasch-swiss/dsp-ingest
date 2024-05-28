@@ -11,7 +11,7 @@ build-and-run-docker:
 
 # Updates the OpenApi yml files by generating these from the tAPIr specs
 docs-openapi-generate:
-    rm ./docs/openapi/openapi-*.yml
+    rm -f ./docs/openapi/openapi-*.yml
     sbt "runMain swiss.dasch.DocsGenerator ./docs/openapi"
 
 # Installs the necessary Python dependencies for building the documentation
