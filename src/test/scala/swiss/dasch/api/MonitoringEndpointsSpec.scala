@@ -9,7 +9,7 @@ import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
 import swiss.dasch.infrastructure.{Health, HealthCheckService, Metrics}
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.version.BuildInfo
-import zio.http.{Request, Root, Status, URL}
+import zio.http.{Path, Request, Status, URL}
 import zio.json.ast.Json
 import zio.json.{DecoderOps, EncoderOps}
 import zio.test.{ZIOSpecDefault, assertTrue}
