@@ -9,12 +9,12 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val sipiVersion                 = "v30.14.0"
-val tapirVersion                = "1.10.7"
+val tapirVersion                = "1.10.8"
 val testContainersVersion       = "0.40.15"
 val zioConfigVersion            = "4.0.2"
 val zioHttpVersion              = "3.0.0-RC8"
 val zioJsonVersion              = "0.6.2"
-val zioLoggingVersion           = "2.2.4"
+val zioLoggingVersion           = "2.3.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
