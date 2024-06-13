@@ -3,8 +3,8 @@ package swiss.dasch.db
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.getquill.*
 import io.getquill.jdbczio.*
-import zio.{ZIO, ZLayer}
 import swiss.dasch.config.Configuration.DbConfig
+import zio.{ZIO, ZLayer}
 
 import javax.sql.DataSource
 
@@ -12,8 +12,10 @@ object Db {
 
   private def create(dbConfig: DbConfig): HikariDataSource = {
     val poolConfig = new HikariConfig()
-    poolConfig.setJdbcUrl(dbConfig.url)
-    poolConfig.setConnectionInitSql(dbConfig.connectionInitSql)
+    poolConfig.setDriverClassName("org.postgresql.Driver")
+    poolConfig.setJdbcUrl(dbConfig.jdbcUrl)
+    poolConfig.setUsername(dbConfig.username)
+    poolConfig.setPassword(dbConfig.password)
     new HikariDataSource(poolConfig)
   }
 
@@ -28,7 +30,6 @@ object Db {
       }
     }
 
-  // Quill framework object used for specifying sql queries.
-  val quillLive: ZLayer[DataSource, Nothing, Quill.Sqlite[SnakeCase]] =
-    Quill.Sqlite.fromNamingStrategy(SnakeCase)
+  val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[SnakeCase]] =
+    Quill.Postgres.fromNamingStrategy(SnakeCase)
 }

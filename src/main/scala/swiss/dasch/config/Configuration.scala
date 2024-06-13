@@ -48,9 +48,7 @@ object Configuration {
 
   final case class Features(allowEraseProjects: Boolean)
 
-  final case class DbConfig(url: String) {
-    val connectionInitSql = "PRAGMA foreign_keys = ON"
-  }
+  final case class DbConfig(jdbcUrl: String, username: String, password: String)
 
   private val configDescriptor = deriveConfig[ApplicationConf].mapKey(toKebabCase)
 

@@ -10,6 +10,7 @@ addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val flywayVersion               = "10.15.0"
 val hikariVersion               = "5.1.0"
+val postgresVersion             = "42.3.1"
 val quillVersion                = "4.8.5"
 val sqliteVersion               = "3.46.0.0"
 val sipiVersion                 = "v30.14.0"
@@ -50,10 +51,12 @@ val metrics = Seq(
 )
 
 val db = Seq(
-  "org.xerial"   % "sqlite-jdbc"    % sqliteVersion,
-  "org.flywaydb" % "flyway-core"    % flywayVersion,
-  "com.zaxxer"   % "HikariCP"       % hikariVersion,
-  "io.getquill" %% "quill-jdbc-zio" % quillVersion,
+  "org.xerial"     % "sqlite-jdbc"    % sqliteVersion,
+  "org.postgresql" % "postgresql"     % postgresVersion,
+  "org.flywaydb"   % "flyway-core"    % flywayVersion,
+  "org.flywaydb"   % "flyway-database-postgresql"    % flywayVersion,
+  "com.zaxxer"     % "HikariCP"       % hikariVersion,
+  "io.getquill"   %% "quill-jdbc-zio" % quillVersion,
 )
 
 lazy val root = (project in file("."))
