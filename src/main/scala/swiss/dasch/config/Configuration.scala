@@ -59,7 +59,7 @@ object Configuration {
   val layer: ZLayer[Any, Config.Error, AllConfigs] = {
     val applicationConf = ZLayer.fromZIO(
       read(configDescriptor from ConfigProvider.fromTypesafeConfig(ConfigFactory.defaultApplication().resolve()))
-        .tap(c => ZIO.logInfo("Feature: ALLOW_ERASE_PROJECTS enabled").when(c.features.allowEraseProjects))
+        .tap(c => ZIO.logInfo("Feature: ALLOW_ERASE_PROJECTS enabled").when(c.features.allowEraseProjects)),
     )
     applicationConf.project(_.service) ++
       applicationConf.project(_.storage) ++
