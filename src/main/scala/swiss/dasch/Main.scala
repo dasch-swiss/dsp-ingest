@@ -10,10 +10,10 @@ import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{JwtConfig, ServiceConfig, StorageConfig}
 import swiss.dasch.domain.*
 import swiss.dasch.infrastructure.*
+import swiss.dasch.db.DbMigrator
+import swiss.dasch.db.Db
 import zio.*
 import zio.http.*
-
-import java.io.IOException
 
 object Main extends ZIOAppDefault {
 
@@ -21,7 +21,8 @@ object Main extends ZIOAppDefault {
     Configuration.layer >+> Logger.layer
 
   override val run: ZIO[Any, Any, Nothing] =
-    (FileSystemCheck.smokeTestOrDie() *>
+    (DbMigrator.migrate() *>
+      FileSystemCheck.smokeTestOrDie() *>
       IngestApiServer.startup() *>
       ZIO.never)
       .provide(
@@ -33,6 +34,9 @@ object Main extends ZIOAppDefault {
         CommandExecutorLive.layer,
         Configuration.layer,
         CsvService.layer,
+        Db.dataSourceLive,
+        // Db.quillLive,
+        DbMigrator.layer,
         Endpoints.layer,
         FileChecksumServiceLive.layer,
         FileSystemCheckLive.layer,

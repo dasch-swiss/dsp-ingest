@@ -21,6 +21,7 @@ object Configuration {
     sipi: SipiConfig,
     ingest: IngestConfig,
     features: Features,
+    db: DbConfig,
   )
 
   final case class JwtConfig(
@@ -47,6 +48,10 @@ object Configuration {
 
   final case class Features(allowEraseProjects: Boolean)
 
+  final case class DbConfig(url: String) {
+    val connectionInitSql = "PRAGMA foreign_keys = ON"
+  }
+
   private val configDescriptor = deriveConfig[ApplicationConf].mapKey(toKebabCase)
 
   private type AllConfigs = ServiceConfig
@@ -55,6 +60,7 @@ object Configuration {
     with SipiConfig
     with IngestConfig
     with Features
+    with DbConfig
 
   val layer: ZLayer[Any, Config.Error, AllConfigs] = {
     val applicationConf = ZLayer.fromZIO(
@@ -62,6 +68,7 @@ object Configuration {
         .tap(c => ZIO.logInfo("Feature: ALLOW_ERASE_PROJECTS enabled").when(c.features.allowEraseProjects)),
     )
     applicationConf.project(_.service) ++
+      applicationConf.project(_.db) ++
       applicationConf.project(_.storage) ++
       applicationConf.project(_.jwt) ++
       applicationConf.project(_.sipi) ++
