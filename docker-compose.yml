@@ -1,5 +1,4 @@
 services:
-
   ingest:
     image: daschswiss/dsp-ingest:latest
     ports:
@@ -19,3 +18,19 @@ services:
       - JWT_DISABLE_AUTH=true
       - INGEST_BULK_MAX_PARALLEL=10
       - SIPI_USE_LOCAL_DEV=false
+
+  db:
+    container_name: postgres-ingest
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: ingest
+    ports:
+      - 5432:5432
+    volumes:
+      - db-ingest:/var/lib/postgresql/data
+
+volumes:
+  db-ingest:
