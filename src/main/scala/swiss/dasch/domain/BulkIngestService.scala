@@ -7,8 +7,12 @@ package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
 import zio.*
-import zio.nio.file.{Files, Path}
-import zio.stm.{TMap, TSemaphore}
+import zio.nio.file.Files
+import zio.nio.file.Path
+import zio.stm.TMap
+import zio.stm.TSemaphore
+import zio.stream.ZSink
+import zio.stream.ZStream
 
 import java.io.IOException
 import java.nio.file.StandardOpenOption
@@ -78,6 +82,18 @@ final case class BulkIngestService(
 
   private def getImportFolder(shortcode: ProjectShortcode): UIO[Path] =
     storage.getTempFolder().map(_ / "import" / shortcode.toString)
+
+  def uploadSingleFile(
+    shortcode: ProjectShortcode,
+    filenames: List[String],
+    stream: ZStream[Any, Throwable, Byte],
+  ): Task[Unit] =
+    for {
+      importFolder <- getImportFolder(shortcode)
+      file          = importFolder / filenames.filter(f => f != "." && f != "..").mkString("/")
+      _            <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
+      _            <- stream.run(ZSink.fromFile(file.toFile))
+    } yield ()
 
   private def createMappingFile(project: ProjectShortcode, importDir: Path): IO[IOException, Path] = {
     val mappingFile = getMappingCsvFile(importDir, project)
