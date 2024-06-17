@@ -216,8 +216,9 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
   val getBulkIngestMappingCsv = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "bulk-ingest" / "mapping.csv")
     .description(
-      "Get the current result of the bulk ingest, may be incomplete. " +
+      "Get the current result of the bulk ingest. " +
         "The result is a csv with the following structure: `original,derivative`. " +
+        "Will return 409 Conflict if a bulk-ingest is currently running for the project." +
         "Authorization: admin scope required.",
     )
     .out(stringBody)
