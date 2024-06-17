@@ -9,16 +9,16 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
 val sipiVersion                 = "v30.14.0"
-val tapirVersion                = "1.10.8"
+val tapirVersion                = "1.10.9"
 val testContainersVersion       = "0.40.15"
 val zioConfigVersion            = "4.0.2"
-val zioJsonVersion              = "0.6.2"
+val zioJsonVersion              = "0.7.0"
 val zioLoggingVersion           = "2.3.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC27"
-val zioVersion                  = "2.1.1"
+val zioVersion                  = "2.1.3"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
 val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
@@ -83,7 +83,7 @@ lazy val root = (project in file("."))
       "dev.zio"              %% "zio-nio"                           % zioNioVersion,
       "dev.zio"              %% "zio-prelude"                       % zioPreludeVersion,
       "dev.zio"              %% "zio-streams"                       % zioVersion,
-      "eu.timepit"           %% "refined"                           % "0.11.1",
+      "eu.timepit"           %% "refined"                           % "0.11.2",
       // add the silencer lib for scala 2.13 in order to compile with scala 3.3.0 until https://github.com/zio/zio-config/pull/1171 is merged
       // resolves problems when `sbt doc` failed with
       // [error] -- Error: typesafe/shared/src/main/scala/zio/config/typesafe/TypesafeConfigSource.scala:15:0
