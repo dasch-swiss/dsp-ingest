@@ -174,7 +174,7 @@ final case class ProjectsEndpointsHandler(
       for {
         _ <- authorizationHandler.ensureAdminScope(principal)
         _ <- bulkIngestService.uploadSingleFile(shortcode, filenames, stream).mapError { e =>
-               InternalServerError(e.getOrElse(Throwable("ingest in progress")))
+               e.map(InternalServerError(_)).getOrElse(failBulkIngestInProgress(shortcode))
              }
       } yield ()
     })
