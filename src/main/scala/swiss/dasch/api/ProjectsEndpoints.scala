@@ -226,7 +226,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .tag("bulk-ingest")
 
   val postBulkIngestUpload = base.secureEndpoint.post
-    .in(projects / shortcodePathVar / "bulk-ingest" / "upload")
+    .in(projects / shortcodePathVar / "bulk-ingest" / "ingest")
     .in(paths)
     .in(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
     .description(
