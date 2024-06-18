@@ -9,6 +9,7 @@ import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Projects.*
+import swiss.dasch.util.TestDbUtil
 import zio.nio.file.Path
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 import zio.{Chunk, Scope, ZIO, ZLayer}
@@ -65,6 +66,8 @@ object ProjectServiceSpec extends ZIOSpecDefault {
       AssetInfoServiceLive.layer,
       FileChecksumServiceLive.layer,
       ProjectService.layer,
+      ProjectRepository.layer,
+      TestDbUtil.testDbLayerWithEmptyDb,
       SpecConfigurations.storageConfigLayer,
       StorageServiceLive.layer,
     )

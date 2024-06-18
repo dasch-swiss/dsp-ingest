@@ -29,6 +29,7 @@ import zio.test.ZIOSpecDefault
 import zio.test.assertTrue
 import zio.ZLayer
 import swiss.dasch.config.Configuration.Features
+import swiss.dasch.util.TestDbUtil
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -337,6 +338,8 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     MovingImageService.layer,
     OtherFilesService.layer,
     ProjectService.layer,
+    ProjectRepository.layer,
+    TestDbUtil.testDbLayerWithEmptyDb,
     ProjectsEndpoints.layer,
     ProjectsEndpointsHandler.layer,
     ReportService.layer,

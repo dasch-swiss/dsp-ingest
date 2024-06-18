@@ -13,6 +13,7 @@ import swiss.dasch.infrastructure.CommandExecutorMock
 import swiss.dasch.test.SpecConstants.*
 import swiss.dasch.test.SpecConstants.Projects.{existingProject, nonExistentProject}
 import swiss.dasch.test.{SpecConfigurations, SpecConstants}
+import swiss.dasch.util.TestDbUtil
 import zio.*
 import zio.http.*
 import zio.json.EncoderOps
@@ -179,6 +180,8 @@ object MaintenanceEndpointsSpec extends ZIOSpecDefault {
       MovingImageService.layer,
       OtherFilesService.layer,
       ProjectService.layer,
+      ProjectRepository.layer,
+      TestDbUtil.testDbLayerWithEmptyDb,
       SipiClientMock.layer,
       SpecConfigurations.jwtConfigDisableAuthLayer,
       SpecConfigurations.storageConfigLayer,

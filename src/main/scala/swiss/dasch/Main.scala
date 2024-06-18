@@ -8,10 +8,9 @@ package swiss.dasch
 import swiss.dasch.api.*
 import swiss.dasch.config.Configuration
 import swiss.dasch.config.Configuration.{JwtConfig, ServiceConfig, StorageConfig}
+import swiss.dasch.db.{Db, DbMigrator}
 import swiss.dasch.domain.*
 import swiss.dasch.infrastructure.*
-import swiss.dasch.db.DbMigrator
-import swiss.dasch.db.Db
 import zio.*
 import zio.http.*
 
@@ -35,7 +34,8 @@ object Main extends ZIOAppDefault {
         Configuration.layer,
         CsvService.layer,
         Db.dataSourceLive,
-        // Db.quillLive,
+        Db.quillLive,
+        ProjectRepository.layer,
         DbMigrator.layer,
         Endpoints.layer,
         FileChecksumServiceLive.layer,

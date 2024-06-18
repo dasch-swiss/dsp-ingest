@@ -17,6 +17,7 @@ import zio.schema.Schema
 import zio.stream.ZStream
 
 import java.io.IOException
+import java.sql.SQLException
 
 type ProjectShortcode = String Refined MatchesRegex["""^\p{XDigit}{4,4}$"""]
 
@@ -30,6 +31,7 @@ final case class ProjectService(
   assetInfos: AssetInfoService,
   storage: StorageService,
   checksum: FileChecksumService,
+  projectRepo: ProjectRepository,
 ) {
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
@@ -56,10 +58,12 @@ final case class ProjectService(
       .getProjectFolder(shortcode)
       .flatMap(path => ZIO.whenZIO(Files.isDirectory(path))(ZIO.succeed(path)))
 
-  def findOrCreateProject(shortcode: ProjectShortcode): IO[IOException, ProjectFolder] =
+  def findOrCreateProject(shortcode: ProjectShortcode): IO[IOException | SQLException, ProjectFolder] =
     findProject(shortcode).flatMap {
       case Some(prj) => ZIO.succeed(prj)
-      case None      => storage.createProjectFolder(shortcode)
+      case None =>
+        projectRepo.addProject(shortcode).orDie *>
+          storage.createProjectFolder(shortcode)
     }
 
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
@@ -80,6 +84,17 @@ final case class ProjectService(
 
   def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit] =
     findProject(shortcode).tapSome { case Some(prj) => Files.deleteRecursive(prj) }.unit
+
+  def addProjectToDb(shortcode: ProjectShortcode): ZIO[Any, Exception, Option[Project]] =
+    findProject(shortcode).flatMap {
+      case None => ZIO.none
+      case Some(_) =>
+        projectRepo
+          .addProject(shortcode)
+          .tap(p => ZIO.logInfo(s"Added $p"))
+          .whenZIO(projectRepo.findByShortcode(shortcode).map(_.isEmpty))
+          .asSome
+    }.map(_.flatten)
 }
 
 object ProjectService {
