@@ -173,7 +173,9 @@ final case class ProjectsEndpointsHandler(
     .serverLogic(principal => { case (shortcode, filenames, stream) =>
       for {
         _ <- authorizationHandler.ensureAdminScope(principal)
-        _ <- bulkIngestService.uploadSingleFile(shortcode, filenames, stream).mapError(InternalServerError(_))
+        _ <- bulkIngestService.uploadSingleFile(shortcode, filenames, stream).mapError { e =>
+               InternalServerError(e.getOrElse(Throwable("ingest in progress")))
+             }
       } yield ()
     })
 

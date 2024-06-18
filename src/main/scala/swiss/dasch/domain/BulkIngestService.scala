@@ -83,18 +83,6 @@ final case class BulkIngestService(
   private def getImportFolder(shortcode: ProjectShortcode): UIO[Path] =
     storage.getTempFolder().map(_ / "import" / shortcode.toString)
 
-  def uploadSingleFile(
-    shortcode: ProjectShortcode,
-    filenames: List[String],
-    stream: ZStream[Any, Throwable, Byte],
-  ): Task[Unit] =
-    for {
-      importFolder <- getImportFolder(shortcode)
-      file          = importFolder / filenames.filter(f => f != "." && f != "..").mkString("/")
-      _            <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
-      _            <- stream.run(ZSink.fromFile(file.toFile))
-    } yield ()
-
   private def createMappingFile(project: ProjectShortcode, importDir: Path): IO[IOException, Path] = {
     val mappingFile = getMappingCsvFile(importDir, project)
     ZIO
@@ -148,6 +136,20 @@ final case class BulkIngestService(
                      Files.readAllLines(mappingCsv).map(_.mkString("\n"))
                    }
       } yield mapping
+    }
+
+  def uploadSingleFile(
+    shortcode: ProjectShortcode,
+    filenames: List[String],
+    stream: ZStream[Any, Throwable, Byte],
+  ): IO[Option[Throwable], Unit] =
+    withSemaphore(shortcode) {
+      for {
+        importFolder <- getImportFolder(shortcode)
+        file          = importFolder / filenames.filter(f => f != "." && f != "..").mkString("/")
+        _            <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
+        _            <- stream.run(ZSink.fromFile(file.toFile))
+      } yield ()
     }
 }
 
