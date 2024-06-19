@@ -31,7 +31,7 @@ final case class ProjectService(
   assetInfos: AssetInfoService,
   storage: StorageService,
   checksum: FileChecksumService,
-  projectRepo: ProjectRepository,
+  projects: ProjectRepository,
 ) {
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
@@ -62,7 +62,7 @@ final case class ProjectService(
     findProject(shortcode).flatMap {
       case Some(prj) => ZIO.succeed(prj)
       case None =>
-        projectRepo.addProject(shortcode).orDie *>
+        projects.addProject(shortcode).orDie *>
           storage.createProjectFolder(shortcode)
     }
 
@@ -84,16 +84,16 @@ final case class ProjectService(
 
   def deleteProject(shortcode: ProjectShortcode): IO[IOException | SQLException, Unit] =
     findProject(shortcode).tapSome { case Some(prj) => Files.deleteRecursive(prj) }.unit *>
-      projectRepo.deleteProjectByShortcode(shortcode).unit
+      projects.deleteProjectByShortcode(shortcode).unit
 
   def addProjectToDb(shortcode: ProjectShortcode): ZIO[Any, Exception, Option[Project]] =
     findProject(shortcode).flatMap {
       case None => ZIO.none
       case Some(_) =>
-        projectRepo
+        projects
           .addProject(shortcode)
           .tap(p => ZIO.logInfo(s"Added $p"))
-          .whenZIO(projectRepo.findByShortcode(shortcode).map(_.isEmpty))
+          .whenZIO(projects.findByShortcode(shortcode).map(_.isEmpty))
           .asSome
     }.map(_.flatten)
 }

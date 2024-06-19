@@ -41,7 +41,7 @@ object Db {
     ZLayer.scoped {
       ZIO.fromAutoCloseable {
         for {
-          dbConfig <- ZIO.service[DbConfig]
+          dbConfig   <- ZIO.service[DbConfig]
           dataSource <- ZIO.succeed(createTestDs(dbConfig))
         } yield dataSource
       }
