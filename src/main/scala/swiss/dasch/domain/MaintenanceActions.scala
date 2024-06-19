@@ -18,7 +18,7 @@ import zio.json.{DeriveJsonCodec, EncoderOps, JsonCodec, JsonEncoder}
 import zio.nio.file
 import zio.nio.file.{Files, Path}
 import zio.stream.{ZSink, ZStream}
-import zio.{ZIO, *}
+import zio.*
 
 import java.io.IOException
 
