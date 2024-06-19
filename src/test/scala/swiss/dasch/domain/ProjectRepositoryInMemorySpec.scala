@@ -18,19 +18,25 @@ object ProjectRepositoryInMemorySpec extends ZIOSpecDefault {
       for {
         prj    <- repo(_.addProject(shortcode))
         actual <- repo(_.findByShortcode(shortcode))
-      } yield assertTrue(actual.map(_.shortcode).contains(shortcode))
+      } yield assertTrue(actual.contains(prj))
+    },
+    test("findById") {
+      for {
+        prj    <- repo(_.addProject(shortcode))
+        actual <- repo(_.findById(prj.id))
+      } yield assertTrue(actual.contains(prj))
     },
     test("deleteProjectById") {
       for {
         prj    <- repo(_.addProject(shortcode))
-        _      <- repo(_.deleteProjectById(prj.id))
+        _      <- repo(_.deleteById(prj.id))
         actual <- repo(_.findByShortcode(shortcode))
       } yield assertTrue(actual.isEmpty)
     },
     test("deleteProjectByShortcode") {
       for {
         prj    <- repo(_.addProject(shortcode))
-        _      <- repo(_.deleteProjectByShortcode(shortcode))
+        _      <- repo(_.deleteByShortcode(shortcode))
         actual <- repo(_.findByShortcode(shortcode))
       } yield assertTrue(actual.isEmpty)
     },

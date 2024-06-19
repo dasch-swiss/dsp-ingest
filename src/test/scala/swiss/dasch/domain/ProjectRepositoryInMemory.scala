@@ -9,10 +9,17 @@ import swiss.dasch.domain.ProjectId.toProjectIdUnsafe
 import zio.{Chunk, Clock, Ref, Task, ZLayer}
 
 final case class ProjectRepositoryInMemory(projects: Ref[Chunk[Project]], counter: Ref[Int]) extends ProjectRepository {
-  def deleteProjectByShortcode(shortcode: ProjectShortcode): Task[Unit] =
+
+  def findById(id: ProjectId): DbTask[Option[Project]] =
+    projects.get.map(_.find(_.id == id))
+
+  def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
+    projects.get.map(_.find(_.shortcode == shortcode))
+
+  def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit] =
     projects.update(_.filterNot(_.shortcode == shortcode))
 
-  def deleteProjectById(id: ProjectId): DbTask[Unit] =
+  def deleteById(id: ProjectId): DbTask[Unit] =
     projects.update(_.filterNot(_.id == id))
 
   def addProject(shortcode: ProjectShortcode): DbTask[Project] = for {
@@ -22,8 +29,6 @@ final case class ProjectRepositoryInMemory(projects: Ref[Chunk[Project]], counte
     _   <- projects.update(_.appended(prj))
   } yield prj
 
-  def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
-    projects.get.map(_.find(_.shortcode == shortcode))
 }
 
 object ProjectRepositoryInMemory {

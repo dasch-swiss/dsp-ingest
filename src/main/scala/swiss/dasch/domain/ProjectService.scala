@@ -70,7 +70,7 @@ final case class ProjectService(
 
   def deleteProject(shortcode: ProjectShortcode): Task[Unit] =
     findProject(shortcode).tapSome { case Some(folder) =>
-      Files.deleteRecursive(folder) *> projects.deleteProjectByShortcode(shortcode)
+      Files.deleteRecursive(folder) *> projects.deleteByShortcode(shortcode)
     }.unit
 
   def addProjectToDb(shortcode: ProjectShortcode): Task[Option[Project]] =
