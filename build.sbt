@@ -51,12 +51,12 @@ val metrics = Seq(
 )
 
 val db = Seq(
-  "org.xerial"     % "sqlite-jdbc"    % sqliteVersion,
-  "org.postgresql" % "postgresql"     % postgresVersion,
-  "org.flywaydb"   % "flyway-core"    % flywayVersion,
-  "org.flywaydb"   % "flyway-database-postgresql"    % flywayVersion,
-  "com.zaxxer"     % "HikariCP"       % hikariVersion,
-  "io.getquill"   %% "quill-jdbc-zio" % quillVersion,
+  "org.postgresql" % "postgresql"                 % postgresVersion,
+  "org.flywaydb"   % "flyway-core"                % flywayVersion,
+  "org.flywaydb"   % "flyway-database-postgresql" % flywayVersion,
+  "com.zaxxer"     % "HikariCP"                   % hikariVersion,
+  "io.getquill"   %% "quill-jdbc-zio"             % quillVersion,
+  "org.xerial"     % "sqlite-jdbc"                % sqliteVersion % Test,
 )
 
 lazy val root = (project in file("."))
