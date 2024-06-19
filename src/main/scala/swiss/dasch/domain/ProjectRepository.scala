@@ -7,7 +7,9 @@ package swiss.dasch.domain
 
 import io.getquill.*
 import io.getquill.jdbczio.*
-import zio.{Clock, IO, ZIO, ZLayer}
+import swiss.dasch.domain.ProjectId.toProjectIdUnsafe
+import swiss.dasch.domain.ProjectShortcode.toShortcodeUnsafe
+import zio.{Clock, IO, Task, ZIO, ZLayer}
 
 import java.sql.SQLException
 import java.time.Instant
@@ -22,7 +24,7 @@ final case class ProjectRepository(quill: Quill.Postgres[SnakeCase]) {
   private inline def queryProject = quote(querySchema[ProjectRow](entity = "project"))
 
   private def toProject(row: ProjectRow): Project =
-    Project(ProjectId.unsafeFrom(row.id), ProjectShortcode.unsafeFrom(row.shortcode), row.createdAt)
+    Project(row.id.toProjectIdUnsafe, row.shortcode.toShortcodeUnsafe, row.createdAt)
 
   def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
     run(queryProject.filter(prj => prj.shortcode == lift(shortcode.value))).map(_.map(toProject)).map(_.headOption)
@@ -31,15 +33,19 @@ final case class ProjectRepository(quill: Quill.Postgres[SnakeCase]) {
     now   <- Clock.instant
     row    = ProjectRow(0, shortcode = shortcode.value, createdAt = now)
     newId <- run(queryProject.insertValue(lift(row)).returningGenerated(_.id))
-  } yield Project(ProjectId.unsafeFrom(newId), shortcode, now)
+  } yield Project(newId.toProjectIdUnsafe, shortcode, now)
 
-  def deleteProject(id: ProjectId): DbTask[Long] =
-    run(queryProject.filter(prj => prj.id == lift(id.value)).delete).debug
+  def deleteProjectById(id: ProjectId): DbTask[Unit] =
+    run(queryProject.filter(prj => prj.id == lift(id.value)).delete).unit
 
-  def deleteProjectByShortcode(shortcode: ProjectShortcode): DbTask[Long] =
-    findByShortcode(shortcode).flatMap {
-      case Some(prj) => deleteProject(prj.id)
-      case None      => ZIO.succeed(0)
+  def deleteProjectByShortcode(shortcode: ProjectShortcode): Task[Unit] =
+    transaction {
+      run(queryProject.filter(_.shortcode == lift(shortcode.value)).map(_.id))
+        .map(_.headOption)
+        .flatMap {
+          case None     => ZIO.unit
+          case Some(id) => deleteProjectById(id.toProjectIdUnsafe)
+        }
     }
 }
 

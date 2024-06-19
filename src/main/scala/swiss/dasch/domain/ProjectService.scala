@@ -49,9 +49,7 @@ final case class ProjectService(
   def findOrCreateProject(shortcode: ProjectShortcode): IO[IOException | SQLException, ProjectFolder] =
     findProject(shortcode).flatMap {
       case Some(prj) => ZIO.succeed(prj)
-      case None =>
-        projects.addProject(shortcode).orDie *>
-          storage.createProjectFolder(shortcode)
+      case None      => projects.addProject(shortcode) *> storage.createProjectFolder(shortcode)
     }
 
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
@@ -70,11 +68,12 @@ final case class ProjectService(
       .map(_ / "zipped")
       .flatMap(targetFolder => ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_)))
 
-  def deleteProject(shortcode: ProjectShortcode): IO[IOException | SQLException, Unit] =
-    findProject(shortcode).tapSome { case Some(prj) => Files.deleteRecursive(prj) }.unit *>
-      projects.deleteProjectByShortcode(shortcode).unit
+  def deleteProject(shortcode: ProjectShortcode): Task[Unit] =
+    findProject(shortcode).tapSome { case Some(folder) =>
+      Files.deleteRecursive(folder) *> projects.deleteProjectByShortcode(shortcode)
+    }.unit
 
-  def addProjectToDb(shortcode: ProjectShortcode): ZIO[Any, Exception, Option[Project]] =
+  def addProjectToDb(shortcode: ProjectShortcode): Task[Option[Project]] =
     findProject(shortcode).flatMap {
       case None => ZIO.none
       case Some(_) =>
@@ -95,7 +94,7 @@ object ProjectService {
     ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
   def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]] =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException | SQLException, Unit] =
+  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Unit] =
     ZIO.serviceWithZIO[ProjectService](_.deleteProject(shortcode))
 
   val layer = ZLayer.derive[ProjectService]

@@ -317,8 +317,8 @@ final case class MaintenanceActionsLive(
     )
 
   override def importProjectsToDb(): Task[Unit] = for {
-    ps <- projectService.listAllProjects()
-    _  <- ZIO.foreachDiscard(ps.map(_.shortcode))(projectService.addProjectToDb)
+    prjFolders <- projectService.listAllProjects()
+    _          <- ZIO.foreachDiscard(prjFolders.map(_.shortcode))(projectService.addProjectToDb)
   } yield ()
 
 }
