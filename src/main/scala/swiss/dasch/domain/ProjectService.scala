@@ -82,8 +82,9 @@ final case class ProjectService(
       .map(_ / "zipped")
       .flatMap(targetFolder => ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_)))
 
-  def deleteProject(shortcode: ProjectShortcode): IO[IOException, Unit] =
-    findProject(shortcode).tapSome { case Some(prj) => Files.deleteRecursive(prj) }.unit
+  def deleteProject(shortcode: ProjectShortcode): IO[IOException | SQLException, Unit] =
+    findProject(shortcode).tapSome { case Some(prj) => Files.deleteRecursive(prj) }.unit *>
+      projectRepo.deleteProjectByShortcode(shortcode).unit
 
   def addProjectToDb(shortcode: ProjectShortcode): ZIO[Any, Exception, Option[Project]] =
     findProject(shortcode).flatMap {
@@ -106,7 +107,7 @@ object ProjectService {
     ZStream.serviceWithStream[ProjectService](_.findAssetInfosOfProject(shortcode))
   def zipProject(shortcode: ProjectShortcode): ZIO[ProjectService, Throwable, Option[Path]] =
     ZIO.serviceWithZIO[ProjectService](_.zipProject(shortcode))
-  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException, Unit] =
+  def deleteProject(shortcode: ProjectShortcode): ZIO[ProjectService, IOException | SQLException, Unit] =
     ZIO.serviceWithZIO[ProjectService](_.deleteProject(shortcode))
 
   val layer = ZLayer.derive[ProjectService]

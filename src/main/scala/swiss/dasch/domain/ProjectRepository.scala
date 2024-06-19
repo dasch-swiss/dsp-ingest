@@ -13,6 +13,8 @@ object ProjectId extends RefinedTypeOps[ProjectId, Int]
 
 final case class Project(id: ProjectId, shortcode: ProjectShortcode)
 
+type DbTask[A] = IO[SQLException, A]
+
 final case class ProjectRepository(quill: Quill.Postgres[SnakeCase]) {
   import quill.*
 
@@ -23,14 +25,23 @@ final case class ProjectRepository(quill: Quill.Postgres[SnakeCase]) {
   private def toProject(row: ProjectRow): Project =
     Project(ProjectId.unsafeFrom(row.id), ProjectShortcode.unsafeFrom(row.shortcode))
 
-  def findByShortcode(shortcode: ProjectShortcode): IO[SQLException, List[Project]] =
-    run(queryProject).map(_.map(toProject))
+  def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
+    run(queryProject.filter(prj => prj.shortcode == lift(shortcode.value))).map(_.map(toProject)).map(_.headOption)
 
-  def addProject(shortcode: ProjectShortcode): IO[SQLException, Project] = for {
+  def addProject(shortcode: ProjectShortcode): DbTask[Project] = for {
     now   <- Clock.instant
     row    = ProjectRow(0, shortcode = shortcode.value, createdAt = now)
     newId <- run(queryProject.insertValue(lift(row)).returningGenerated(_.id))
   } yield Project(ProjectId.unsafeFrom(newId), shortcode)
+
+  def deleteProject(id: ProjectId): DbTask[Long] =
+    run(queryProject.filter(prj => prj.id == lift(id.value)).delete).debug
+
+  def deleteProjectByShortcode(shortcode: ProjectShortcode): DbTask[Long] =
+    findByShortcode(shortcode).flatMap {
+      case Some(prj) => deleteProject(prj.id)
+      case None      => ZIO.succeed(0)
+    }
 }
 
 object ProjectRepository {
