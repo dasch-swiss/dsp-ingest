@@ -5,31 +5,19 @@
 
 package swiss.dasch.api
 
-import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
-import sttp.tapir.server.ziohttp.ZioHttpInterpreter
-import sttp.tapir.server.ziohttp.ZioHttpServerOptions
-import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
-import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
-import swiss.dasch.config.Configuration.StorageConfig
+import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
+import swiss.dasch.api.ProjectsEndpointsResponses.{AssetInfoResponse, ProjectResponse}
+import swiss.dasch.config.Configuration.{Features, StorageConfig}
 import swiss.dasch.domain.*
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.infrastructure.CommandExecutorLive
-import swiss.dasch.test.SpecConfigurations
-import swiss.dasch.test.SpecConstants.Projects.emptyProject
-import swiss.dasch.test.SpecConstants.Projects.existingProject
-import swiss.dasch.test.SpecConstants.Projects.nonExistentProject
-import swiss.dasch.test.SpecPaths
-import zio.Chunk
-import zio.UIO
-import zio.ZIO
-import zio.http
+import swiss.dasch.test.SpecConstants.Projects.{emptyProject, existingProject, nonExistentProject}
+import swiss.dasch.test.{SpecConfigurations, SpecPaths}
+import zio.{Chunk, UIO, ZIO, ZLayer, http}
 import zio.http.*
 import zio.json.*
 import zio.nio.file.Files
-import zio.test.ZIOSpecDefault
-import zio.test.assertTrue
-import zio.ZLayer
-import swiss.dasch.config.Configuration.Features
-import swiss.dasch.util.TestDbUtil
+import zio.test.{ZIOSpecDefault, assertTrue}
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -338,8 +326,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     MovingImageService.layer,
     OtherFilesService.layer,
     ProjectService.layer,
-    ProjectRepository.layer,
-    TestDbUtil.testDbLayerWithEmptyDb,
+    ProjectRepositoryInMemory.layer,
     ProjectsEndpoints.layer,
     ProjectsEndpointsHandler.layer,
     ReportService.layer,

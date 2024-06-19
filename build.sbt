@@ -56,7 +56,6 @@ val db = Seq(
   "org.flywaydb"   % "flyway-database-postgresql" % flywayVersion,
   "com.zaxxer"     % "HikariCP"                   % hikariVersion,
   "io.getquill"   %% "quill-jdbc-zio"             % quillVersion,
-  "org.xerial"     % "sqlite-jdbc"                % sqliteVersion % Test,
 )
 
 lazy val root = (project in file("."))

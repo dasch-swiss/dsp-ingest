@@ -35,23 +35,7 @@ object Db {
       }
     }
 
-  private def createTestDs(dbConfig: DbConfig): HikariDataSource = {
-    val poolConfig = new HikariConfig()
-    poolConfig.setJdbcUrl(dbConfig.jdbcUrl)
-    new HikariDataSource(poolConfig)
-  }
-
-  // Used for migration and executing queries.
-  val dataSourceTest: ZLayer[DbConfig, Nothing, DataSource] =
-    ZLayer.scoped {
-      ZIO.fromAutoCloseable {
-        for {
-          dbConfig   <- ZIO.service[DbConfig]
-          dataSource <- ZIO.succeed(createTestDs(dbConfig))
-        } yield dataSource
-      }
-    }
-
   val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[SnakeCase]] =
     Quill.Postgres.fromNamingStrategy(SnakeCase)
+
 }
