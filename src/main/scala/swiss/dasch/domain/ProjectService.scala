@@ -4,28 +4,16 @@
  */
 
 package swiss.dasch.domain
-import eu.timepit.refined.api.{Refined, RefinedTypeOps}
-import eu.timepit.refined.string.MatchesRegex
 import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.ProjectFolder
 import zio.*
-import zio.json.JsonCodec
 import zio.nio.file.Files.{isDirectory, newDirectoryStream}
 import zio.nio.file.{Files, Path}
 import zio.prelude.ForEachOps
-import zio.schema.Schema
 import zio.stream.ZStream
 
 import java.io.IOException
 import java.sql.SQLException
-
-type ProjectShortcode = String Refined MatchesRegex["""^\p{XDigit}{4,4}$"""]
-
-object ProjectShortcode extends RefinedTypeOps[ProjectShortcode, String] {
-  override def from(str: String): Either[String, ProjectShortcode] = super.from(str.toUpperCase)
-  given schema: Schema[ProjectShortcode]                           = Schema[String].transformOrFail(ProjectShortcode.from, id => Right(id.value))
-  given codec: JsonCodec[ProjectShortcode]                         = JsonCodec[String].transformOrFail(ProjectShortcode.from, _.value)
-}
 
 final case class ProjectService(
   assetInfos: AssetInfoService,
