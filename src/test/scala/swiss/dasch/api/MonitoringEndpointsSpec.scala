@@ -86,7 +86,7 @@ object MonitoringEndpointsSpec extends ZIOSpecDefault {
 }
 
 final class MockHealthCheckService(val statusRef: Ref[Health]) extends HealthCheckService {
-  override def check: UIO[AggregatedHealth] = statusRef.get.map(h => AggregatedHealth(h.status, Map.empty))
+  override def check: UIO[AggregatedHealth] = statusRef.get.map(h => AggregatedHealth(h.status, None))
 }
 object MockHealthCheckService {
   val layer: ULayer[MockHealthCheckService] = ZLayer {
