@@ -75,13 +75,13 @@ final case class ProjectService(
 
   def addProjectToDb(shortcode: ProjectShortcode): Task[Option[Project]] =
     findProject(shortcode).flatMap {
-      case None => ZIO.none
-      case Some(_) =>
-        projects
-          .addProject(shortcode)
-          .tap(p => ZIO.logInfo(s"Added $p"))
-          .whenZIO(projects.findByShortcode(shortcode).map(_.isEmpty))
-          .asSome
+      ZIO
+        .foreach(_)(_ =>
+          projects
+            .addProject(shortcode)
+            .tap(p => ZIO.logInfo(s"Added $p"))
+            .whenZIO(projects.findByShortcode(shortcode).map(_.isEmpty)),
+        )
     }.map(_.flatten)
 }
 
