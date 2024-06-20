@@ -15,27 +15,19 @@ import javax.sql.DataSource
 
 object Db {
 
-  private def create(dbConfig: DbConfig): HikariDataSource = {
-    val poolConfig = new HikariConfig()
-    poolConfig.setDriverClassName("org.postgresql.Driver")
-    poolConfig.setJdbcUrl(dbConfig.jdbcUrl)
-    poolConfig.setUsername(dbConfig.username)
-    poolConfig.setPassword(dbConfig.password)
-    new HikariDataSource(poolConfig)
+  private def makeDataSource(dbConfig: DbConfig): HikariDataSource = {
+    val config = new HikariConfig()
+    config.setDriverClassName("org.postgresql.Driver")
+    config.setJdbcUrl(dbConfig.jdbcUrl)
+    config.setUsername(dbConfig.username)
+    config.setPassword(dbConfig.password)
+    new HikariDataSource(config)
   }
 
   // Used for migration and executing queries.
   val dataSourceLive: ZLayer[DbConfig, Nothing, DataSource] =
-    ZLayer.scoped {
-      ZIO.fromAutoCloseable {
-        for {
-          dbConfig   <- ZIO.service[DbConfig]
-          dataSource <- ZIO.succeed(create(dbConfig))
-        } yield dataSource
-      }
-    }
+    ZLayer.scoped(ZIO.fromAutoCloseable(ZIO.serviceWith[DbConfig](makeDataSource)))
 
   val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[SnakeCase]] =
     Quill.Postgres.fromNamingStrategy(SnakeCase)
-
 }
