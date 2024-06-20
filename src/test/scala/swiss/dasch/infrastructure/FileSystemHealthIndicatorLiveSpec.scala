@@ -13,7 +13,7 @@ import zio.{Exit, Scope, ZIO, ZLayer}
 
 import java.io.IOException
 
-object FileSystemHealthIndicatorLiveSpec$ extends ZIOSpecDefault {
+object FileSystemHealthIndicatorLiveSpec extends ZIOSpecDefault {
 
   val createOnlyAssetAndTempFolder: ZIO[Scope, Throwable, (String, String)] = for {
     tempStorage <- Files.createTempDirectoryScoped(None, List.empty)
