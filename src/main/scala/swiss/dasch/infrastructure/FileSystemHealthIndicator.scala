@@ -9,21 +9,21 @@ import swiss.dasch.config.Configuration.StorageConfig
 import zio.nio.file.Files
 import zio.{IO, RIO, UIO, URLayer, ZIO, ZLayer}
 
-trait FileSystemCheck extends HealthIndicator {
+trait FileSystemHealthIndicator extends HealthIndicator {
   def checkExpectedFoldersExist(): UIO[Boolean]
   def smokeTest(): IO[IllegalStateException, Unit]
   final def health: UIO[Health] = checkExpectedFoldersExist()
     .map(if (_) Health.up else Health.down)
     .catchAllDefect(_ => ZIO.succeed(Health.down))
 }
-object FileSystemCheck {
-  def checkExpectedFoldersExist(): RIO[FileSystemCheck, Boolean] =
-    ZIO.serviceWithZIO[FileSystemCheck](_.checkExpectedFoldersExist())
-  def smokeTestOrDie(): RIO[FileSystemCheck, Unit] =
-    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTest()).orDie
+object FileSystemHealthIndicator {
+  def checkExpectedFoldersExist(): RIO[FileSystemHealthIndicator, Boolean] =
+    ZIO.serviceWithZIO[FileSystemHealthIndicator](_.checkExpectedFoldersExist())
+  def smokeTestOrDie(): RIO[FileSystemHealthIndicator, Unit] =
+    ZIO.serviceWithZIO[FileSystemHealthIndicator](_.smokeTest()).orDie
 }
 
-final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCheck {
+final case class FileSystemHealthIndicatorLive(config: StorageConfig) extends FileSystemHealthIndicator {
   override def checkExpectedFoldersExist(): UIO[Boolean] =
     Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath)
 
@@ -37,6 +37,6 @@ final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCh
   }
 }
 
-object FileSystemCheckLive {
-  val layer: URLayer[StorageConfig, FileSystemCheck] = ZLayer.derive[FileSystemCheckLive]
+object FileSystemHealthIndicatorLive {
+  val layer: URLayer[StorageConfig, FileSystemHealthIndicator] = ZLayer.derive[FileSystemHealthIndicatorLive]
 }

@@ -20,7 +20,7 @@ object Main extends ZIOAppDefault {
     Configuration.layer >+> Logger.layer
 
   override val run: ZIO[Any, Any, Nothing] =
-    (FileSystemCheck.smokeTestOrDie() *>
+    (FileSystemHealthIndicator.smokeTestOrDie() *>
       DbMigrator.migrateOrDie() *>
       IngestApiServer.startup() *>
       ZIO.never)
@@ -40,7 +40,7 @@ object Main extends ZIOAppDefault {
         DbMigrator.layer,
         Endpoints.layer,
         FileChecksumServiceLive.layer,
-        FileSystemCheckLive.layer,
+        FileSystemHealthIndicatorLive.layer,
         HealthCheckServiceLive.layer,
         ImportServiceLive.layer,
         IngestApiServer.layer,

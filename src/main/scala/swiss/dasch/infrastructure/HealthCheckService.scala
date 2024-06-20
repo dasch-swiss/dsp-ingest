@@ -19,13 +19,13 @@ trait HealthIndicator {
 }
 
 final case class HealthCheckServiceLive(indicators: Chunk[HealthIndicator]) extends HealthCheckService {
-  override def check: UIO[Health] = ZIO.foreach(indicators)(_.health).map(_.foldLeft(Health.up)(_ aggregate _))
+  override def check: UIO[Health] = ZIO.foreach(indicators)(_.health).map(_.reduce(_ aggregate _))
 }
 
 object HealthCheckServiceLive {
   val layer =
     ZLayer.fromZIO(for {
-      fs <- ZIO.service[FileSystemCheck]
+      fs <- ZIO.service[FileSystemHealthIndicator]
       db <- ZIO.service[DbHealthIndicator]
     } yield Chunk[HealthIndicator](fs, db)) >>> ZLayer.derive[HealthCheckServiceLive]
 }
