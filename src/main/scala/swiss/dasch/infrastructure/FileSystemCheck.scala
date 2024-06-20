@@ -7,7 +7,7 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.nio.file.Files
-import zio.{UIO, URLayer, ZIO, ZLayer}
+import zio.{RIO, UIO, URLayer, ZIO, ZLayer}
 
 import java.io.IOException
 
@@ -18,8 +18,8 @@ trait FileSystemCheck {
 object FileSystemCheck {
   def checkExpectedFoldersExist(): ZIO[FileSystemCheck, Nothing, Boolean] =
     ZIO.serviceWithZIO[FileSystemCheck](_.checkExpectedFoldersExist())
-  def smokeTestOrDie(): ZIO[FileSystemCheck, IOException, Unit] =
-    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTest())
+  def smokeTestOrDie(): RIO[FileSystemCheck, Unit] =
+    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTest()).orDie
 }
 
 final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCheck {
