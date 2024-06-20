@@ -78,8 +78,8 @@ object ApiProblem {
 
   case class Unhealthy(status: Status, components: Option[Map[String, Health]]) extends ApiProblem
   object Unhealthy {
-    def from(ag: AggregatedHealth)    = Unhealthy(ag.status, ag.components)
-    given codec: JsonCodec[Unhealthy] = DeriveJsonCodec.gen[Unhealthy]
+    def from(ag: AggregatedHealth): Unhealthy = Unhealthy(ag.status, ag.components)
+    given codec: JsonCodec[Unhealthy]         = DeriveJsonCodec.gen[Unhealthy]
   }
 
   case class Unauthorized(reason: String) extends ApiProblem
