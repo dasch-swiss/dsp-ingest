@@ -62,11 +62,7 @@ final case class ProjectRepositoryLive(private val quill: Quill.Postgres[SnakeCa
     run(queryProjectById(id).delete).unit
 
   override def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit] =
-    transaction {
-      run(queryProjectByShortcode(shortcode).map(_.id))
-        .map(_.headOption)
-        .flatMap(_.map(id => deleteById(id.toProjectIdUnsafe)).getOrElse(ZIO.unit))
-    }
+    run(queryProjectByShortcode(shortcode).delete).unit
 }
 
 object ProjectRepositoryLive {
