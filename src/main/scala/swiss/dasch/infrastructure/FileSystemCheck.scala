@@ -21,7 +21,7 @@ object FileSystemCheck {
 }
 
 final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCheck {
-  override def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean] =
+  override def checkExpectedFoldersExist(): UIO[Boolean] =
     Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath)
 
   override def smokeTest(): IO[IllegalStateException, Unit] = {

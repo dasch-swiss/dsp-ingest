@@ -5,38 +5,30 @@
 
 package swiss.dasch.infrastructure
 
-import zio.json.{DeriveJsonCodec, JsonCodec, JsonDecoder, JsonEncoder}
+import swiss.dasch.infrastructure.Health.Status
+import swiss.dasch.infrastructure.Health.Status.*
+import zio.json.{DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder}
 
-sealed trait Status { self =>
-  private def jsonString: String = {
-    val str = self.getClass.getSimpleName
-    if (str.endsWith("$")) { str.dropRight(1) }
-    else { str }
-  }
+import scala.util.Try
+
+final case class Health(status: Status) {
+  def isHealthy(): Boolean = status == UP
 }
-
-object Status {
-  case object UP   extends Status
-  case object DOWN extends Status
-  given codec: JsonCodec[Status] = {
-    val encoder: JsonEncoder[Status] = JsonEncoder[String].contramap(_.jsonString)
-    val decoder: JsonDecoder[Status] = JsonDecoder[String].map {
-      case "UP"   => UP
-      case "DOWN" => DOWN
-    }
-
-    new JsonCodec[Status](encoder, decoder)
-  }
-}
-
-trait HealthResponse {
-  def status: Status
-  def isHealthy: Boolean = status == Status.UP
-}
-final case class Health(status: Status) extends HealthResponse
 
 object Health {
-  given codec: JsonCodec[Health] = DeriveJsonCodec.gen[Health]
-  def up(): Health               = Health(Status.UP)
-  def down(): Health             = Health(Status.DOWN)
+  enum Status {
+    case UP   extends Status
+    case DOWN extends Status
+  }
+
+  object Status {
+    given encoder: JsonCodec[Status] = JsonCodec[String].transformOrFail(
+      str => Try(Status.valueOf(str)).toEither.left.map(_.getMessage),
+      _.toString,
+    )
+  }
+
+  given encoder: JsonCodec[Health] = DeriveJsonCodec.gen[Health]
+  def up(): Health                 = Health(UP)
+  def down(): Health               = Health(DOWN)
 }
