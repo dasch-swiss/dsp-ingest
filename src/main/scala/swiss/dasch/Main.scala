@@ -20,8 +20,8 @@ object Main extends ZIOAppDefault {
     Configuration.layer >+> Logger.layer
 
   override val run: ZIO[Any, Any, Nothing] =
-    (DbMigrator.migrate() *>
-      FileSystemCheck.smokeTestOrDie() *>
+    (FileSystemCheck.smokeTestOrDie() *>
+      DbMigrator.migrateOrDie() *>
       IngestApiServer.startup() *>
       ZIO.never)
       .provide(

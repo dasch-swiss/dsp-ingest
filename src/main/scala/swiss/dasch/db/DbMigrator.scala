@@ -7,7 +7,7 @@ package swiss.dasch.db
 
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateErrorResult
-import zio.{Task, ZIO, ZLayer}
+import zio.{RIO, Task, ZIO, ZLayer}
 
 import javax.sql.DataSource
 
@@ -33,6 +33,6 @@ class DbMigrator(ds: DataSource) {
 case class DbMigrationFailed(msg: String, stackTrace: String) extends RuntimeException(s"$msg\n$stackTrace")
 
 object DbMigrator {
-  def migrate(): ZIO[DbMigrator, Throwable, Unit] = ZIO.serviceWithZIO[DbMigrator](_.migrate())
-  def layer                                       = ZLayer.derive[DbMigrator]
+  def migrateOrDie(): RIO[DbMigrator, Unit] = ZIO.serviceWithZIO[DbMigrator](_.migrate()).orDie
+  def layer                            = ZLayer.derive[DbMigrator]
 }
