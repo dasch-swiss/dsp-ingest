@@ -4,10 +4,20 @@ default:
 
 alias dog := docs-openapi-generate
 
+# Start localdev
+localdev:
+     docker-compose up db -d
+     docker compose logs -f
+
+localdev-purge:
+    docker-compose down
+    docker volume rm dsp-ingest_db-ingest
+
 # Build a docker image locally and run it with docker-compose up
 build-and-run-docker:
     export DOCKER_BUILDKIT=1; sbt Docker/publishLocal
-    docker-compose up
+    docker-compose up -d
+    docker compose logs -f
 
 # Updates the OpenApi yml files by generating these from the tAPIr specs
 docs-openapi-generate:
