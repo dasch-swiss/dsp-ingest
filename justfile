@@ -9,6 +9,7 @@ localdev:
      docker-compose up db -d
      docker compose logs -f
 
+# Reset localdev, i.e. remove docker container, network and volume
 localdev-purge:
     docker-compose down
     docker volume rm dsp-ingest_db-ingest
