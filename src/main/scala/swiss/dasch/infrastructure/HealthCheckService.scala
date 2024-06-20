@@ -5,9 +5,6 @@
 
 package swiss.dasch.infrastructure
 
-import swiss.dasch.infrastructure.Health.Status
-import swiss.dasch.infrastructure.Health.Status.UP
-import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.{Chunk, UIO, URIO, ZIO, ZLayer}
 
 trait HealthCheckService {
@@ -21,22 +18,6 @@ type HealthIndicatorName = String
 trait HealthIndicator {
   def health: UIO[(HealthIndicatorName, Health)]
 }
-
-final case class AggregatedHealth(status: Status, components: Option[Map[HealthIndicatorName, Health]]) {
-  def isHealthy: Boolean = status == Status.UP
-}
-object AggregatedHealth {
-  given codec: JsonCodec[AggregatedHealth] = DeriveJsonCodec.gen[AggregatedHealth]
-  def from(all: Chunk[(HealthIndicatorName, Health)]): AggregatedHealth = {
-    val status = all.map(_._2).reduce(_ aggregate _).status
-    if (status == UP) {
-      AggregatedHealth(status, None)
-    } else {
-      AggregatedHealth(status, Some(all.toMap))
-    }
-  }
-}
-
 final case class HealthCheckServiceLive(indicators: Chunk[HealthIndicator]) extends HealthCheckService {
   override def check: UIO[AggregatedHealth] = ZIO.foreach(indicators)(_.health).map(AggregatedHealth.from)
 }
