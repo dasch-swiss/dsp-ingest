@@ -22,7 +22,7 @@ trait HealthIndicator {
   def health: UIO[(HealthIndicatorName, Health)]
 }
 
-final case class AggregatedHealth(status: Status, components: Option[Map[String, Health]]) {
+final case class AggregatedHealth(status: Status, components: Option[Map[HealthIndicatorName, Health]]) {
   def isHealthy: Boolean = status == Status.UP
 }
 object AggregatedHealth {
