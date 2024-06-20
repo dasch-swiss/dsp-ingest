@@ -57,15 +57,10 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
                      .getTempFolder()
                      .map(_ / "import" / shortcode.value)
                      .tap(Files.createDirectories(_))
-      _ <- Files.createFile(importDir / "0001.tif")
-      ingestResultFiber <-
-        blockIngestSemaphore.withPermit {
-          for {
-            ingestResultFiber <- bulkIngestService(_.startBulkIngest(shortcode))
-            _                 <- bulkIngestService(_.startBulkIngest(shortcode)).flip
-          } yield ingestResultFiber
-        }
-      ingestResult <- ingestResultFiber.join
+      _                 <- Files.createFile(importDir / "0001.tif")
+      ingestResultFiber <- bulkIngestService(_.startBulkIngest(shortcode))
+      _                 <- bulkIngestService(_.startBulkIngest(shortcode)).flip
+      ingestResult      <- ingestResultFiber.join
     } yield assertTrue(ingestResult == IngestResult(1, 0))
   })
 
@@ -137,9 +132,10 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     ZIO.succeed(
       new IngestService {
         override def ingestFile(fileToIngest: Path, project: ProjectShortcode): Task[Asset] =
-          blockIngestSemaphore.withPermit(
-            ZIO.succeed(TestData.stillImageAsset),
-          )
+          ZIO.sleep(Duration.fromMillis(200)).as(TestData.stillImageAsset)
+        // blockIngestSemaphore.withPermit(
+        //   ZIO.succeed(TestData.stillImageAsset),
+        // )
       },
     ),
   )
