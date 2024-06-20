@@ -11,7 +11,7 @@ import javax.sql.DataSource
 
 case class DbHealthIndicator(dataSource: DataSource) extends HealthIndicator {
 
-  def health: UIO[Health] = queryHealth.fold(_ => Health.down, _ => Health.up)
+  def health: UIO[(String, Health)] = queryHealth.fold(_ => Health.down, _ => Health.up).map(("db", _))
 
   private def queryHealth = ZIO.blocking {
     ZIO.scoped {

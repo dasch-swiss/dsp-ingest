@@ -12,9 +12,10 @@ import zio.{IO, RIO, UIO, URLayer, ZIO, ZLayer}
 trait FileSystemHealthIndicator extends HealthIndicator {
   def checkExpectedFoldersExist(): UIO[Boolean]
   def smokeTest(): IO[IllegalStateException, Unit]
-  final def health: UIO[Health] = checkExpectedFoldersExist()
+  final def health: UIO[(String, Health)] = checkExpectedFoldersExist()
     .map(if (_) Health.up else Health.down)
     .catchAllDefect(_ => ZIO.succeed(Health.down))
+    .map(("folders", _))
 }
 object FileSystemHealthIndicator {
   def checkExpectedFoldersExist(): RIO[FileSystemHealthIndicator, Boolean] =

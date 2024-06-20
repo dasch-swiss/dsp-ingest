@@ -7,8 +7,8 @@ package swiss.dasch.api
 
 import swiss.dasch.api.ApiProblem.BadRequest.Argument
 import swiss.dasch.domain.ProjectShortcode
-import swiss.dasch.infrastructure.Health
 import swiss.dasch.infrastructure.Health.Status
+import swiss.dasch.infrastructure.{AggregatedHealth, Health}
 import zio.http.Header.ContentType
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.schema.{DeriveSchema, Schema}
@@ -76,8 +76,9 @@ object ApiProblem {
     def apply(msg: String, t: Throwable): InternalServerError = InternalServerError(s"$msg: ${t.getMessage}")
   }
 
-  case class Unhealthy(status: Health.Status = Health.Status.DOWN) extends ApiProblem
+  case class Unhealthy(status: Status, component: Option[Map[String, Health]]) extends ApiProblem
   object Unhealthy {
+    def from(ag: AggregatedHealth)    = Unhealthy(ag.status, ag.components)
     given codec: JsonCodec[Unhealthy] = DeriveJsonCodec.gen[Unhealthy]
   }
 

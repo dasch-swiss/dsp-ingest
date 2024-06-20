@@ -6,7 +6,7 @@
 package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
-import swiss.dasch.infrastructure.{Health, HealthCheckService, Metrics}
+import swiss.dasch.infrastructure.{AggregatedHealth, Health, HealthCheckService, Metrics}
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.version.BuildInfo
 import zio.http.{Path, Request, Status, URL}
@@ -86,7 +86,7 @@ object MonitoringEndpointsSpec extends ZIOSpecDefault {
 }
 
 final class MockHealthCheckService(val statusRef: Ref[Health]) extends HealthCheckService {
-  override def check: UIO[Health] = statusRef.get
+  override def check: UIO[AggregatedHealth] = statusRef.get.map(h => AggregatedHealth(h.status, Map.empty))
 }
 object MockHealthCheckService {
   val layer: ULayer[MockHealthCheckService] = ZLayer {
