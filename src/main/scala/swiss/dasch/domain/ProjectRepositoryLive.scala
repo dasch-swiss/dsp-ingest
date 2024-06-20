@@ -31,34 +31,39 @@ trait ProjectRepository extends Repository[Project, ProjectId] {
   def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit]
 }
 
+private final case class ProjectRow(id: Int, shortcode: String, createdAt: Instant)
+
 final case class ProjectRepositoryLive(private val quill: Quill.Postgres[SnakeCase]) extends ProjectRepository {
   import quill.*
 
-  private final case class ProjectRow(id: Int, shortcode: String, createdAt: Instant)
-
-  private inline def queryProject = quote(querySchema[ProjectRow](entity = "project"))
+  private inline def queryProject =
+    quote(querySchema[ProjectRow](entity = "project"))
+  private inline def queryProjectById(id: ProjectId) =
+    quote(queryProject.filter(prj => prj.id == lift(id.value)))
+  private inline def queryProjectByShortcode(shortcode: ProjectShortcode) =
+    quote(queryProject.filter(prj => prj.shortcode == lift(shortcode.value)))
 
   private def toProject(row: ProjectRow): Project =
     Project(row.id.toProjectIdUnsafe, row.shortcode.toShortcodeUnsafe, row.createdAt)
 
   override def findById(id: ProjectId): DbTask[Option[Project]] =
-    run(quote(queryProject.filter(prj => prj.id == lift(id.value)).value)).map(_.map(toProject))
+    run(queryProjectById(id).value).map(_.map(toProject))
 
   override def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
-    run(queryProject.filter(prj => prj.shortcode == lift(shortcode.value)).value).map(_.map(toProject))
+    run(queryProjectByShortcode(shortcode).value).map(_.map(toProject))
 
   override def addProject(shortcode: ProjectShortcode): DbTask[Project] = for {
     now   <- Clock.instant
-    row    = ProjectRow(0, shortcode = shortcode.value, createdAt = now)
+    row    = ProjectRow(0, shortcode.value, now)
     newId <- run(queryProject.insertValue(lift(row)).returningGenerated(_.id))
   } yield Project(newId.toProjectIdUnsafe, shortcode, now)
 
   override def deleteById(id: ProjectId): DbTask[Unit] =
-    run(queryProject.filter(prj => prj.id == lift(id.value)).delete).unit
+    run(queryProjectById(id).delete).unit
 
   override def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit] =
     transaction {
-      run(queryProject.filter(_.shortcode == lift(shortcode.value)).map(_.id))
+      run(queryProjectByShortcode(shortcode).map(_.id))
         .map(_.headOption)
         .flatMap(_.map(id => deleteById(id.toProjectIdUnsafe)).getOrElse(ZIO.unit))
     }
