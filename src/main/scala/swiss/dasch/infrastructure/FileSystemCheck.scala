@@ -13,20 +13,20 @@ import java.io.IOException
 
 trait FileSystemCheck {
   def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean]
-  def smokeTest(): ZIO[Any, IOException, Unit]
+  def smokeTestOrDie(): ZIO[Any, IOException, Unit]
 }
 object FileSystemCheck {
   def checkExpectedFoldersExist(): ZIO[FileSystemCheck, Nothing, Boolean] =
     ZIO.serviceWithZIO[FileSystemCheck](_.checkExpectedFoldersExist())
   def smokeTestOrDie(): RIO[FileSystemCheck, Unit] =
-    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTest()).orDie
+    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTestOrDie())
 }
 
 final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCheck {
   override def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean] =
     Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath)
 
-  override def smokeTest(): UIO[Unit] =
+  override def smokeTestOrDie(): UIO[Unit] =
     checkExpectedFoldersExist()
       .filterOrDie(identity)(
         new IllegalStateException(
