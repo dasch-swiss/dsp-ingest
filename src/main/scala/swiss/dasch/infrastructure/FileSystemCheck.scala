@@ -7,33 +7,31 @@ package swiss.dasch.infrastructure
 
 import swiss.dasch.config.Configuration.StorageConfig
 import zio.nio.file.Files
-import zio.{RIO, UIO, URLayer, ZIO, ZLayer}
-
-import java.io.IOException
+import zio.{IO, RIO, UIO, URLayer, ZIO, ZLayer}
 
 trait FileSystemCheck {
-  def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean]
-  def smokeTestOrDie(): ZIO[Any, IOException, Unit]
+  def checkExpectedFoldersExist(): UIO[Boolean]
+  def smokeTest(): IO[IllegalStateException, Unit]
 }
 object FileSystemCheck {
-  def checkExpectedFoldersExist(): ZIO[FileSystemCheck, Nothing, Boolean] =
+  def checkExpectedFoldersExist(): RIO[FileSystemCheck, Boolean] =
     ZIO.serviceWithZIO[FileSystemCheck](_.checkExpectedFoldersExist())
   def smokeTestOrDie(): RIO[FileSystemCheck, Unit] =
-    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTestOrDie())
+    ZIO.serviceWithZIO[FileSystemCheck](_.smokeTest()).orDie
 }
 
 final case class FileSystemCheckLive(config: StorageConfig) extends FileSystemCheck {
   override def checkExpectedFoldersExist(): ZIO[Any, Nothing, Boolean] =
     Files.isDirectory(config.assetPath) && Files.isDirectory(config.tempPath)
 
-  override def smokeTestOrDie(): UIO[Unit] =
-    checkExpectedFoldersExist()
-      .filterOrDie(identity)(
-        new IllegalStateException(
-          s"Stopping the start up. Asset ${config.assetPath} and temp ${config.tempPath} directories not found.",
-        ),
-      )
-      .unit *> ZIO.logInfo(s"Serving from ${config.assetPath} and ${config.tempPath} directories.")
+  override def smokeTest(): IO[IllegalStateException, Unit] = {
+    val msg =
+      s"Stopping the start up. Asset ${config.assetPath} and temp ${config.tempPath} directories not found."
+    ZIO
+      .fail(new IllegalStateException(msg))
+      .whenZIO(checkExpectedFoldersExist().negate) *>
+      ZIO.logInfo(s"Serving from ${config.assetPath} and ${config.tempPath} directories.")
+  }
 }
 
 object FileSystemCheckLive {
