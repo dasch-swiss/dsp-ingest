@@ -90,9 +90,9 @@ final class MockHealthCheckService(val statusRef: Ref[Health]) extends HealthChe
 }
 object MockHealthCheckService {
   val layer: ULayer[MockHealthCheckService] = ZLayer {
-    Ref.make(Health.up()).map(new MockHealthCheckService(_))
+    Ref.make(Health.up).map(new MockHealthCheckService(_))
   }
 
-  def setHealthUp()   = ZIO.serviceWithZIO[MockHealthCheckService](_.statusRef.set(Health.up()))
-  def setHealthDown() = ZIO.serviceWithZIO[MockHealthCheckService](_.statusRef.set(Health.down()))
+  def setHealthUp()   = ZIO.serviceWithZIO[MockHealthCheckService](_.statusRef.set(Health.up))
+  def setHealthDown() = ZIO.serviceWithZIO[MockHealthCheckService](_.statusRef.set(Health.down))
 }

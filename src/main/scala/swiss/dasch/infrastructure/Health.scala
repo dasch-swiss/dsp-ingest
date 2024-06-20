@@ -12,7 +12,13 @@ import zio.json.{DeriveJsonCodec, DeriveJsonEncoder, JsonCodec, JsonEncoder}
 import scala.util.Try
 
 final case class Health(status: Status) {
-  def isHealthy(): Boolean = status == UP
+  def isHealthy: Boolean = status == UP
+
+  def aggregate(other: Health): Health =
+    (this, other) match {
+      case (Health(Status.UP), Health(Status.UP)) => Health.up
+      case _                                      => Health.down
+    }
 }
 
 object Health {
@@ -29,6 +35,6 @@ object Health {
   }
 
   given encoder: JsonCodec[Health] = DeriveJsonCodec.gen[Health]
-  def up(): Health                 = Health(UP)
-  def down(): Health               = Health(DOWN)
+  val up: Health                   = Health(UP)
+  val down: Health                 = Health(DOWN)
 }

@@ -42,7 +42,7 @@ final case class MonitoringEndpoints(base: BaseEndpoints) {
   val healthEndpoint: PublicEndpoint[Unit, ApiProblem, Health, Any] =
     base.publicEndpoint.get
       .in("health")
-      .out(jsonBody[Health].example(Health.up()))
+      .out(jsonBody[Health].example(Health.up))
       .tag(monitoring)
 
   val metricsEndpoint: PublicEndpoint[Unit, ApiProblem, String, Any] =

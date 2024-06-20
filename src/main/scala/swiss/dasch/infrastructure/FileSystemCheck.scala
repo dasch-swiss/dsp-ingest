@@ -9,9 +9,12 @@ import swiss.dasch.config.Configuration.StorageConfig
 import zio.nio.file.Files
 import zio.{IO, RIO, UIO, URLayer, ZIO, ZLayer}
 
-trait FileSystemCheck {
+trait FileSystemCheck extends HealthIndicator {
   def checkExpectedFoldersExist(): UIO[Boolean]
   def smokeTest(): IO[IllegalStateException, Unit]
+  final def health: UIO[Health] = checkExpectedFoldersExist()
+    .map(if (_) Health.up else Health.down)
+    .catchAllDefect(_ => ZIO.succeed(Health.down))
 }
 object FileSystemCheck {
   def checkExpectedFoldersExist(): RIO[FileSystemCheck, Boolean] =

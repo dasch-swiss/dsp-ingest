@@ -35,6 +35,7 @@ object Main extends ZIOAppDefault {
         CsvService.layer,
         Db.dataSourceLive,
         Db.quillLive,
+        DbHealthIndicator.layer,
         ProjectRepositoryLive.layer,
         DbMigrator.layer,
         Endpoints.layer,
