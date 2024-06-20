@@ -38,8 +38,8 @@ final case class BulkIngestService(
       _         <- semaphoresPerProject.put(key, semaphore)
     } yield semaphore).commit
 
-  private def acquireWithTimeout(sem: TSemaphore): UIO[Unit] =
-    sem.acquire.commit.timeout(Duration.fromMillis(400)).as(())
+  private def acquireWithTimeout(sem: TSemaphore): IO[Unit, Unit] =
+    sem.acquire.commit.timeout(Duration.fromMillis(400)).some.mapError(_ => ())
 
   private def withSemaphoreDaemon[E, A](key: ProjectShortcode)(
     zio: IO[E, A],
@@ -121,9 +121,9 @@ final case class BulkIngestService(
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 
-  def finalizeBulkIngest(shortcode: ProjectShortcode): IO[Option[Nothing], Fiber.Runtime[IOException, Unit]] =
-    withSemaphore(shortcode) {
-      doFinalize(shortcode).forkDaemon
+  def finalizeBulkIngest(shortcode: ProjectShortcode): IO[Unit, Fiber.Runtime[IOException, Unit]] =
+    withSemaphoreDaemon(shortcode) {
+      doFinalize(shortcode)
     }
 
   private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =

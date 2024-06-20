@@ -25,7 +25,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
   // accessor functions for testing
   private def finalizeBulkIngest(
     shortcode: ProjectShortcode,
-  ): ZIO[BulkIngestService, Option[Nothing], Fiber.Runtime[IOException, Unit]] =
+  ): ZIO[BulkIngestService, Unit, Fiber.Runtime[IOException, Unit]] =
     ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
 
   private def getBulkIngestMappingCsv(
