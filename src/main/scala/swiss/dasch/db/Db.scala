@@ -24,7 +24,6 @@ object Db {
     new HikariDataSource(config)
   }
 
-  // Used for migration and executing queries.
   val dataSourceLive: ZLayer[DbConfig, Nothing, DataSource] =
     ZLayer.scoped(ZIO.fromAutoCloseable(ZIO.serviceWith[DbConfig](makeDataSource)))
 
