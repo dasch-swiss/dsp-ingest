@@ -9,7 +9,7 @@ import io.getquill.*
 import io.getquill.jdbczio.*
 import swiss.dasch.domain.ProjectId.toProjectIdUnsafe
 import swiss.dasch.domain.ProjectShortcode.toShortcodeUnsafe
-import zio.{Chunk, Clock, IO, Task, ZIO, ZLayer}
+import zio.{Chunk, Clock, IO, ZIO, ZLayer}
 
 import java.sql.SQLException
 import java.time.Instant
@@ -28,7 +28,7 @@ trait Repository[Entity, Id] { self =>
 trait ProjectRepository extends Repository[Project, ProjectId] {
   def addProject(shortcode: ProjectShortcode): DbTask[Project]
   def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]]
-  def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit]
+  def deleteByShortcode(shortcode: ProjectShortcode): DbTask[Unit]
 }
 
 private final case class ProjectRow(id: Int, shortcode: String, createdAt: Instant)
@@ -61,7 +61,7 @@ final case class ProjectRepositoryLive(private val quill: Quill.Postgres[SnakeCa
   override def deleteById(id: ProjectId): DbTask[Unit] =
     run(queryProjectById(id).delete).unit
 
-  override def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit] =
+  override def deleteByShortcode(shortcode: ProjectShortcode): DbTask[Unit] =
     run(queryProjectByShortcode(shortcode).delete).unit
 }
 

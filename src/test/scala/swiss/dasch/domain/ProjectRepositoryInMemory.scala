@@ -6,7 +6,7 @@
 package swiss.dasch.domain
 
 import swiss.dasch.domain.ProjectId.toProjectIdUnsafe
-import zio.{Chunk, Clock, Ref, Task, ZLayer}
+import zio.{Chunk, Clock, Ref, ZLayer}
 
 final case class ProjectRepositoryInMemory(projects: Ref[Chunk[Project]], counter: Ref[Int]) extends ProjectRepository {
 
@@ -16,7 +16,7 @@ final case class ProjectRepositoryInMemory(projects: Ref[Chunk[Project]], counte
   def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
     projects.get.map(_.find(_.shortcode == shortcode))
 
-  def deleteByShortcode(shortcode: ProjectShortcode): Task[Unit] =
+  def deleteByShortcode(shortcode: ProjectShortcode): DbTask[Unit] =
     projects.update(_.filterNot(_.shortcode == shortcode))
 
   def deleteById(id: ProjectId): DbTask[Unit] =

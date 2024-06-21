@@ -6,11 +6,11 @@
 package swiss.dasch.domain
 import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.ProjectFolder
-import zio.*
 import zio.nio.file.Files.{isDirectory, newDirectoryStream}
 import zio.nio.file.{Files, Path}
 import zio.prelude.ForEachOps
 import zio.stream.ZStream
+import zio.{IO, *}
 
 import java.io.IOException
 import java.sql.SQLException
@@ -47,10 +47,7 @@ final case class ProjectService(
       .flatMap(path => ZIO.whenZIO(Files.isDirectory(path))(ZIO.succeed(path)))
 
   def findOrCreateProject(shortcode: ProjectShortcode): IO[IOException | SQLException, ProjectFolder] =
-    findProject(shortcode).flatMap {
-      case Some(prj) => ZIO.succeed(prj)
-      case None      => projectRepo.addProject(shortcode) *> storage.createProjectFolder(shortcode)
-    }
+    findProject(shortcode).someOrElseZIO(projectRepo.addProject(shortcode) *> storage.createProjectFolder(shortcode))
 
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
     ZStream
@@ -68,15 +65,20 @@ final case class ProjectService(
       .map(_ / "zipped")
       .flatMap(targetFolder => ZipUtility.zipFolder(projectPath, targetFolder).map(Some(_)))
 
-  def deleteProject(shortcode: ProjectShortcode): Task[Unit] =
+  def deleteProject(shortcode: ProjectShortcode): IO[IOException | SQLException, Unit] =
     findProject(shortcode).tapSome { case Some(folder) =>
-      Files.deleteRecursive(folder) *> projectRepo.deleteByShortcode(shortcode)
+      val delete: IO[IOException | SQLException, Unit] =
+        Files.deleteRecursive(folder) *> projectRepo.deleteByShortcode(shortcode)
+      delete
     }.unit
 
-  def addProjectToDb(shortcode: ProjectShortcode): Task[Unit] =
-    (findProject(shortcode) <&> projectRepo.findByShortcode(shortcode)).tapSome { case (Some(folder), None) =>
+  def addProjectToDb(shortcode: ProjectShortcode): IO[IOException | SQLException, Unit] = {
+    val zipped: IO[IOException | SQLException, (Option[ProjectFolder], Option[Project])] =
+      (findProject(shortcode) <&> projectRepo.findByShortcode(shortcode))
+    zipped.tapSome { case (Some(folder), None) =>
       projectRepo.addProject(folder.shortcode).flatMap(p => ZIO.logInfo(s"Imported $folder as $p to database."))
     }.unit
+  }
 }
 
 object ProjectService {
