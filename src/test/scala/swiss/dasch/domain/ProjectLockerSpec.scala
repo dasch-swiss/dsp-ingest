@@ -21,12 +21,10 @@ final case class ProjectLocker(private val semaphoresPerProject: TMap[ProjectSho
     .some
     .orElseFail(ProjectLocked(key))
 
-  def withSemaphore[E, A](key: ProjectShortcode)(zio: IO[E, A]): ZIO[Any, ProjectLocked | E, A] =
+  def withSemaphore[E, A](key: ProjectShortcode)(zio: IO[E, A]): IO[ProjectLocked | E, A] =
     getLock(key).flatMap(semaphore => zio.logError.ensuring(semaphore.release.commit))
 
-  def withSemaphoreForkDaemon[E, A](key: ProjectShortcode)(
-    zio: IO[E, A],
-  ): ZIO[Any, ProjectLocked, Fiber.Runtime[E, A]] =
+  def withSemaphoreForkDaemon[E, A](key: ProjectShortcode)(zio: IO[E, A]): IO[ProjectLocked, Fiber.Runtime[E, A]] =
     getLock(key).flatMap(semaphore => zio.logError.ensuring(semaphore.release.commit).forkDaemon)
 }
 
