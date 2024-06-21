@@ -12,14 +12,18 @@ import zio.test.*
 
 final case class ProjectLocker(private val semaphoresPerProject: TMap[ProjectShortcode, TSemaphore]) {
 
-  private def getLock(key: ProjectShortcode): IO[ProjectLocked, TSemaphore] = (for {
-    semaphore <- semaphoresPerProject.getOrElseSTM(key, TSemaphore.make(1))
-    _         <- semaphoresPerProject.put(key, semaphore)
-    _         <- semaphore.acquire
-  } yield semaphore).commit
-    .timeout(ProjectLocker.acquireTimeOut)
-    .some
-    .orElseFail(ProjectLocked(key))
+  private def getOrCreateSemaphoreFor(key: ProjectShortcode) =
+    semaphoresPerProject
+      .getOrElseSTM(key, TSemaphore.make(1))
+      .flatMap(sem => semaphoresPerProject.put(key, sem).as(sem))
+
+  private def getLock(key: ProjectShortcode) = {
+    val acquireSemaphore = (getOrCreateSemaphoreFor(key).flatMap(sem => sem.acquire.as(sem))).commit
+    acquireSemaphore.timeout(ProjectLocker.acquireTimeOut).some.orElseFail(ProjectLocked(key))
+  }
+
+  def isProjectLocked(key: ProjectShortcode): UIO[Boolean] =
+    (getOrCreateSemaphoreFor(key).flatMap(_.permits.get.map(_ < 1))).commit
 
   def withSemaphore[E, A](key: ProjectShortcode)(zio: IO[E, A]): IO[ProjectLocked | E, A] =
     getLock(key).flatMap(semaphore => zio.logError.ensuring(semaphore.release.commit))
@@ -36,22 +40,26 @@ object ProjectLocker {
 
 object ProjectLockerSpec extends ZIOSpecDefault {
 
-  private val shortcode: ProjectShortcode       = ProjectShortcode.unsafeFrom("0001")
-  private val lock                              = ZIO.serviceWithZIO[ProjectLocker]
-  private def withSemaphore[E](zio: IO[E, Int]) = lock(_.withSemaphore(shortcode)(zio))
-//  private def withSemaphoreForkDaemon(zio: UIO[Int])       = lock(_.withSemaphoreForkDaemon(shortcode)(zio))
+  private val shortcode: ProjectShortcode                  = ProjectShortcode.unsafeFrom("0001")
+  private val lock                                         = ZIO.serviceWithZIO[ProjectLocker]
+  private def withSemaphore[E](zio: IO[E, Int])            = lock(_.withSemaphore(shortcode)(zio))
+  private def withSemaphoreForkDaemon(zio: UIO[Int])       = lock(_.withSemaphoreForkDaemon(shortcode)(zio))
   private def slowSuccessTask(nr: Int, duration: Duration) = ZIO.succeed(nr).delay(duration)
   private def slowFailedTask(nr: Int, duration: Duration)  = ZIO.fail(nr).delay(duration)
+  private def isProjectLocked: RIO[ProjectLocker, Boolean] = lock(_.isProjectLocked(shortcode))
 
   val spec = suite("ProjectLocker")(
     suite("withSemaphore")(
       suite("with success task")(
         test("should run a success task") {
           for {
-            fork <- lock(_.withSemaphore(shortcode)(slowSuccessTask(1, 1.second))).fork
-            _    <- TestClock.adjust(1.second)
-            exit <- fork.join
-          } yield assertTrue(exit == 1)
+            fork          <- withSemaphore(slowSuccessTask(1, 1.second)).fork
+            _             <- TestClock.adjust(500.millis)
+            lockedDuring  <- isProjectLocked
+            _             <- TestClock.adjust(500.millis)
+            exit          <- fork.join
+            unlockedAfter <- isProjectLocked.negate
+          } yield assertTrue(exit == 1, lockedDuring, unlockedAfter)
         },
         test("should prevent another task to run if lock is not acquired within acquireTimeout") {
           for {
@@ -103,6 +111,20 @@ object ProjectLockerSpec extends ZIOSpecDefault {
           } yield assertTrue(exit1 == Exit.fail(1), exit2 == Exit.fail(2))
         },
       ),
+      suite("withSemaphoreForkDaemon")(
+        suite("with success task")(
+          test("should run a success task") {
+            for {
+              fork          <- withSemaphoreForkDaemon(slowSuccessTask(1, 1.second))
+              _             <- TestClock.adjust(500.millis)
+              lockedDuring  <- isProjectLocked
+              _             <- TestClock.adjust(500.millis)
+              unlockedAfter <- isProjectLocked.negate
+              exit          <- fork.join
+            } yield assertTrue(exit == 1, lockedDuring, unlockedAfter)
+          },
+        ),
+      ),
     ),
-  ).provide(ProjectLocker.layer)
+  ).provide(ProjectLocker.layer) @@ TestAspect.timeout(10.seconds)
 }
