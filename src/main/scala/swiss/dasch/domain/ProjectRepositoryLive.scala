@@ -47,10 +47,10 @@ final case class ProjectRepositoryLive(private val quill: Quill.Postgres[SnakeCa
     Project(row.id.toProjectIdUnsafe, row.shortcode.toShortcodeUnsafe, row.createdAt)
 
   override def findById(id: ProjectId): DbTask[Option[Project]] =
-    run(queryProjectById(id).value).map(_.map(toProject))
+    run(queryProjectById(id).take(1)).map(_.headOption.map(toProject))
 
   override def findByShortcode(shortcode: ProjectShortcode): DbTask[Option[Project]] =
-    run(queryProjectByShortcode(shortcode).value).map(_.map(toProject))
+    run(queryProjectByShortcode(shortcode).take(1)).map(_.headOption.map(toProject))
 
   override def addProject(shortcode: ProjectShortcode): DbTask[Project] = for {
     now   <- Clock.instant
