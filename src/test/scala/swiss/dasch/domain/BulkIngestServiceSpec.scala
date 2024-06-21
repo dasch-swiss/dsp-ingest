@@ -5,21 +5,21 @@
 
 package swiss.dasch.domain
 
-// import swiss.dasch.api.SipiClientMock
-// import swiss.dasch.infrastructure.CommandExecutorMock
+import eu.timepit.refined.types.string.NonEmptyString
+import swiss.dasch.domain.Asset.StillImageAsset
+import swiss.dasch.domain.AugmentedPath.JpxDerivativeFile
+import swiss.dasch.domain.AugmentedPath.OrigFile
 import swiss.dasch.test.SpecConfigurations
-import zio.nio.file.Files
-import zio.test.{ZIOSpecDefault, assertTrue}
 import zio.*
+import zio.nio.file.Files
+import zio.nio.file.Path
+import zio.stream.ZStream
+import zio.test.TestAspect
+import zio.test.TestClock
+import zio.test.ZIOSpecDefault
+import zio.test.assertTrue
 
 import java.io.IOException
-import zio.test.TestAspect
-import zio.stream.ZStream
-import zio.nio.file.Path
-import swiss.dasch.domain.Asset.StillImageAsset
-import swiss.dasch.domain.AugmentedPath.OrigFile
-import eu.timepit.refined.types.string.NonEmptyString
-import swiss.dasch.domain.AugmentedPath.JpxDerivativeFile
 
 object BulkIngestServiceSpec extends ZIOSpecDefault {
   // accessor functions for testing
@@ -48,19 +48,23 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     )
   }
 
-  val blockIngestSemaphore: Semaphore =
-    Unsafe.unsafe(implicit unsafe => runtime.unsafe.run(Semaphore.make(1)).getOrThrowFiberFailure())
-
   private val startBulkIngestSuite = suite("start ingest")(test("lock project while ingesting") {
     for {
+      // given
       importDir <- StorageService
                      .getTempFolder()
                      .map(_ / "import" / shortcode.value)
                      .tap(Files.createDirectories(_))
-      _                 <- Files.createFile(importDir / "0001.tif")
-      ingestResultFiber <- bulkIngestService(_.startBulkIngest(shortcode))
-      _                 <- bulkIngestService(_.startBulkIngest(shortcode)).flip
-      ingestResult      <- ingestResultFiber.join
+      _ <- Files.createFile(importDir / "0001.tif")
+
+      // when
+      ingestFiber  <- bulkIngestService(_.startBulkIngest(shortcode))
+      failureFiber <- bulkIngestService(_.startBulkIngest(shortcode)).fork
+      _            <- TestClock.adjust(700.second)
+
+      // then
+      _            <- failureFiber.join.flip
+      ingestResult <- ingestFiber.join
     } yield assertTrue(ingestResult == IngestResult(1, 0))
   })
 
@@ -132,10 +136,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     ZIO.succeed(
       new IngestService {
         override def ingestFile(fileToIngest: Path, project: ProjectShortcode): Task[Asset] =
-          ZIO.sleep(Duration.fromMillis(200)).as(TestData.stillImageAsset)
-        // blockIngestSemaphore.withPermit(
-        //   ZIO.succeed(TestData.stillImageAsset),
-        // )
+          ZIO.sleep(Duration.fromMillis(600)).as(TestData.stillImageAsset)
       },
     ),
   )
@@ -152,12 +153,5 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     SpecConfigurations.ingestConfigLayer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
-    // SipiClientMock.layer,
-    // CommandExecutorMock.layer,
-    // AssetInfoServiceLive.layer,
-    // MovingImageService.layer,
-    // StillImageService.layer,
-    // OtherFilesService.layer,
-    // MimeTypeGuesser.layer,
   ) @@ TestAspect.timeout(1.second)
 }
