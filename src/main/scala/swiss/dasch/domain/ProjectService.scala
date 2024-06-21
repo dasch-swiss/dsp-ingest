@@ -16,10 +16,10 @@ import java.io.IOException
 import java.sql.SQLException
 
 final case class ProjectService(
-  assetInfos: AssetInfoService,
-  storage: StorageService,
-  checksum: FileChecksumService,
-  projects: ProjectRepository,
+                                 assetInfos: AssetInfoService,
+                                 storage: StorageService,
+                                 checksum: FileChecksumService,
+                                 projects: ProjectRepository,
 ) {
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
@@ -73,16 +73,10 @@ final case class ProjectService(
       Files.deleteRecursive(folder) *> projects.deleteByShortcode(shortcode)
     }.unit
 
-  def addProjectToDb(shortcode: ProjectShortcode): Task[Option[Project]] =
-    findProject(shortcode).flatMap {
-      ZIO
-        .foreach(_)(_ =>
-          projects
-            .addProject(shortcode)
-            .tap(p => ZIO.logInfo(s"Added $p"))
-            .whenZIO(projects.findByShortcode(shortcode).map(_.isEmpty)),
-        )
-    }.map(_.flatten)
+  def addProjectToDb(shortcode: ProjectShortcode): Task[Unit] =
+    (findProject(shortcode) <&> projects.findByShortcode(shortcode)).tapSome { case (Some(folder), None) =>
+      projects.addProject(folder.shortcode).flatMap(p => ZIO.logInfo(s"Imported $folder as $p to database."))
+    }.unit
 }
 
 object ProjectService {
