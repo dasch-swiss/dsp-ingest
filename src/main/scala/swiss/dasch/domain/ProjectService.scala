@@ -16,10 +16,10 @@ import java.io.IOException
 import java.sql.SQLException
 
 final case class ProjectService(
-  assetInfos: AssetInfoService,
-  storage: StorageService,
-  checksum: FileChecksumService,
-  projects: ProjectRepository,
+  private val assetInfos: AssetInfoService,
+  private val storage: StorageService,
+  private val checksum: FileChecksumService,
+  private val projectRepo: ProjectRepository,
 ) {
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
@@ -49,7 +49,7 @@ final case class ProjectService(
   def findOrCreateProject(shortcode: ProjectShortcode): IO[IOException | SQLException, ProjectFolder] =
     findProject(shortcode).flatMap {
       case Some(prj) => ZIO.succeed(prj)
-      case None      => projects.addProject(shortcode) *> storage.createProjectFolder(shortcode)
+      case None      => projectRepo.addProject(shortcode) *> storage.createProjectFolder(shortcode)
     }
 
   def findAssetInfosOfProject(shortcode: ProjectShortcode): ZStream[Any, Throwable, AssetInfo] =
@@ -70,12 +70,12 @@ final case class ProjectService(
 
   def deleteProject(shortcode: ProjectShortcode): Task[Unit] =
     findProject(shortcode).tapSome { case Some(folder) =>
-      Files.deleteRecursive(folder) *> projects.deleteByShortcode(shortcode)
+      Files.deleteRecursive(folder) *> projectRepo.deleteByShortcode(shortcode)
     }.unit
 
   def addProjectToDb(shortcode: ProjectShortcode): Task[Unit] =
-    (findProject(shortcode) <&> projects.findByShortcode(shortcode)).tapSome { case (Some(folder), None) =>
-      projects.addProject(folder.shortcode).flatMap(p => ZIO.logInfo(s"Imported $folder as $p to database."))
+    (findProject(shortcode) <&> projectRepo.findByShortcode(shortcode)).tapSome { case (Some(folder), None) =>
+      projectRepo.addProject(folder.shortcode).flatMap(p => ZIO.logInfo(s"Imported $folder as $p to database."))
     }.unit
 }
 
