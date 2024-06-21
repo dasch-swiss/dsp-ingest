@@ -16,10 +16,10 @@ import java.io.IOException
 import java.sql.SQLException
 
 final case class ProjectService(
-                                 assetInfos: AssetInfoService,
-                                 storage: StorageService,
-                                 checksum: FileChecksumService,
-                                 projects: ProjectRepository,
+  assetInfos: AssetInfoService,
+  storage: StorageService,
+  checksum: FileChecksumService,
+  projects: ProjectRepository,
 ) {
 
   def listAllProjects(): IO[IOException, Chunk[ProjectFolder]] =
