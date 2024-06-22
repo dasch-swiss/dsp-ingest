@@ -11,6 +11,7 @@ import zio.nio.file.Files
 import zio.nio.file.Path
 import zio.stm.TMap
 import zio.stm.TSemaphore
+import zio.stm.ZSTM
 import zio.stream.ZSink
 import zio.stream.ZStream
 
@@ -32,20 +33,19 @@ final case class BulkIngestService(
   config: IngestConfig,
   semaphoresPerProject: TMap[ProjectShortcode, TSemaphore],
 ) {
-  private def getSemaphore(key: ProjectShortcode): UIO[TSemaphore] =
+  private def acquireSemaphore(key: ProjectShortcode): ZSTM[Any, Nothing, TSemaphore] =
     (for {
       semaphore <- semaphoresPerProject.getOrElseSTM(key, TSemaphore.make(1))
       _         <- semaphoresPerProject.put(key, semaphore)
-    } yield semaphore).commit
-
-  private def acquireWithTimeout(sem: TSemaphore): IO[Unit, Unit] =
-    sem.acquire.commit.timeout(Duration.fromMillis(400)).some.mapError(_ => ())
+      _         <- semaphore.acquire
+    } yield semaphore)
 
   private def withSemaphoreDaemon[E, A](key: ProjectShortcode)(
     zio: IO[E, A],
   ): IO[Unit, Fiber.Runtime[E, A]] =
-    getSemaphore(key)
-      .tap(acquireWithTimeout(_).asSomeError)
+    acquireSemaphore(key).commit
+      .timeout(Duration.fromMillis(400))
+      .someOrFail(())
       .flatMap(sem => zio.logError.ensuring(sem.release.commit).forkDaemon)
       .mapError(_ => ())
 
