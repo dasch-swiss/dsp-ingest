@@ -13,6 +13,7 @@ import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPa
 import swiss.dasch.infrastructure.CommandExecutorLive
 import swiss.dasch.test.SpecConstants.Projects.{emptyProject, existingProject, nonExistentProject}
 import swiss.dasch.test.{SpecConfigurations, SpecPaths}
+import swiss.dasch.util.TestUtils
 import zio.{Chunk, UIO, ZIO, ZLayer, http}
 import zio.http.*
 import zio.json.*
@@ -326,7 +327,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     MovingImageService.layer,
     OtherFilesService.layer,
     ProjectService.layer,
-    ProjectRepositoryInMemory.layer,
+    ProjectRepositoryLive.layer,
     ProjectsEndpoints.layer,
     ProjectsEndpointsHandler.layer,
     ReportService.layer,
@@ -336,5 +337,6 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     SpecConfigurations.sipiConfigLayer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
+    TestUtils.testDbLayerWithEmptyDb,
   )
 }

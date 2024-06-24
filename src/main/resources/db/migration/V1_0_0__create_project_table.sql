@@ -1,6 +1,6 @@
 CREATE TABLE project
 (
-    id         SERIAL PRIMARY KEY,
-    shortcode  VARCHAR(4)  NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL
+    id         INTEGER PRIMARY KEY,
+    shortcode  TEXT    NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL
 );

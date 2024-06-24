@@ -37,11 +37,9 @@ The layout in these folders is explained in detail in the chapter ["Filesystem S
 
 ## Database
 
-| Variable      | Default                                   | Description                              |
-|---------------|-------------------------------------------|------------------------------------------|
-| `DB_JDBC_URL` | `jdbc:postgresql://localhost:5432/ingest` | Url to an existing Database in Postgres. |
-| `DB_USERNAME` | `admin`                                   | The username for the database.           |
-| `DB_PASSWORD` | `test`                                    | The password for the database.           |
+| Variable      | Default                                         | Description                                                                                                         |
+|---------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `DB_JDBC_URL` | `jdbc:sqlite:localdev/storage/db/ingest.sqlite` | Jdbc Url for the sqlite database. Everything after `jdbc:sqlite:` is the path to the file where the data is stored. |
 
 ## Features
 

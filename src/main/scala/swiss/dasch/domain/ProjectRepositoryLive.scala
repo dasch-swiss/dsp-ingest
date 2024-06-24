@@ -33,7 +33,7 @@ trait ProjectRepository extends Repository[Project, ProjectId] {
 
 private final case class ProjectRow(id: Int, shortcode: String, createdAt: Instant)
 
-final case class ProjectRepositoryLive(private val quill: Quill.Postgres[SnakeCase]) extends ProjectRepository {
+final case class ProjectRepositoryLive(private val quill: Quill.Sqlite[SnakeCase]) extends ProjectRepository {
   import quill.*
 
   private inline def queryProject =

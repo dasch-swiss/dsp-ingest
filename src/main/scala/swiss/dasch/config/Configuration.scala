@@ -48,7 +48,7 @@ object Configuration {
 
   final case class Features(allowEraseProjects: Boolean)
 
-  final case class DbConfig(jdbcUrl: String, username: String, password: String)
+  final case class DbConfig(jdbcUrl: String)
 
   private val configDescriptor = deriveConfig[ApplicationConf].mapKey(toKebabCase)
 

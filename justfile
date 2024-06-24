@@ -4,15 +4,9 @@ default:
 
 alias dog := docs-openapi-generate
 
-# Start localdev
-localdev:
-     docker-compose up db -d
-     docker compose logs -f
-
-# Reset localdev, i.e. remove docker container, network and volume
-localdev-purge:
-    docker-compose down
-    docker volume rm dsp-ingest_db-ingest
+# Remove the sqlite database file
+localdev-cleandb:
+    rm ./localdev/storage/db/ingest.sqlite
 
 # Build a docker image locally and run it with docker-compose up
 build-and-run-docker:

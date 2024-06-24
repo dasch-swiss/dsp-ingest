@@ -9,7 +9,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.getquill.*
 import io.getquill.jdbczio.*
 import swiss.dasch.config.Configuration.DbConfig
-import zio.{ZIO, ZLayer}
+import zio.{URLayer, ZIO, ZLayer}
 
 import javax.sql.DataSource
 
@@ -17,16 +17,14 @@ object Db {
 
   private def makeDataSource(dbConfig: DbConfig): HikariDataSource = {
     val config = new HikariConfig()
-    config.setDriverClassName("org.postgresql.Driver")
     config.setJdbcUrl(dbConfig.jdbcUrl)
-    config.setUsername(dbConfig.username)
-    config.setPassword(dbConfig.password)
+    config.setConnectionInitSql("PRAGMA foreign_keys = ON")
     new HikariDataSource(config)
   }
 
-  val dataSourceLive: ZLayer[DbConfig, Nothing, DataSource] =
+  val dataSourceLive: URLayer[DbConfig, DataSource] =
     ZLayer.scoped(ZIO.fromAutoCloseable(ZIO.serviceWith[DbConfig](makeDataSource)))
 
-  val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[SnakeCase]] =
-    Quill.Postgres.fromNamingStrategy(SnakeCase)
+  val quillLive: URLayer[DataSource, Quill.Sqlite[SnakeCase]] =
+    Quill.Sqlite.fromNamingStrategy(SnakeCase)
 }
