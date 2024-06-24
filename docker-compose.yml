@@ -22,5 +22,3 @@ services:
       - SIPI_USE_LOCAL_DEV=false
       - DB_JDBC_URL=jdbc:sqlite:/opt/db/ingest.sqlite
 
-volumes:
-  db-ingest:
