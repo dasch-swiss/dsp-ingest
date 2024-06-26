@@ -7,17 +7,13 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.Asset.StillImageAsset
-import swiss.dasch.domain.AugmentedPath.JpxDerivativeFile
-import swiss.dasch.domain.AugmentedPath.OrigFile
+import swiss.dasch.domain.AugmentedPath.{JpxDerivativeFile, OrigFile}
 import swiss.dasch.test.SpecConfigurations
+import swiss.dasch.util.TestUtils
 import zio.*
-import zio.nio.file.Files
-import zio.nio.file.Path
+import zio.nio.file.{Files, Path}
 import zio.stream.ZStream
-import zio.test.TestAspect
-import zio.test.TestClock
-import zio.test.ZIOSpecDefault
-import zio.test.assertTrue
+import zio.test.{TestAspect, TestClock, ZIOSpecDefault, assertTrue}
 
 import java.io.IOException
 
@@ -65,7 +61,8 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       // then
       _            <- failureFiber.join.flip
       ingestResult <- ingestFiber.join
-    } yield assertTrue(ingestResult == IngestResult(1, 0))
+      project      <- ZIO.serviceWithZIO[ProjectRepository](_.findByShortcode(shortcode))
+    } yield assertTrue(ingestResult == IngestResult(1, 0), project.nonEmpty)
   })
 
   private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
@@ -148,10 +145,15 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     checkSemaphoresReleased,
     postBulkIngestEndpointSuite,
   ).provide(
+    AssetInfoServiceLive.layer,
     BulkIngestService.layer,
+    FileChecksumServiceLive.layer,
     MockIngestServiceLayer,
+    ProjectRepositoryLive.layer,
+    ProjectService.layer,
     SpecConfigurations.ingestConfigLayer,
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
+    TestUtils.testDbLayerWithEmptyDb,
   ) @@ TestAspect.timeout(1.second)
 }
