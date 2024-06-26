@@ -33,6 +33,6 @@ class DbMigrator(ds: DataSource) {
 case class DbMigrationFailed(msg: String, stackTrace: String) extends RuntimeException(s"$msg\n$stackTrace")
 
 object DbMigrator {
-  def migrateOrDie(): RIO[DbMigrator, Unit] = ZIO.serviceWithZIO[DbMigrator](_.migrate()).orDie
+  def migrateOrDie(): RIO[DbMigrator, Unit] = ZIO.serviceWithZIO[DbMigrator](_.migrate()).logError.orDie
   def layer                                 = ZLayer.derive[DbMigrator]
 }

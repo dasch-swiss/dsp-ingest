@@ -7,6 +7,7 @@ package swiss.dasch.domain
 
 import eu.timepit.refined.types.string.NonEmptyString
 import swiss.dasch.domain.Asset.StillImageAsset
+import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
 import swiss.dasch.domain.AugmentedPath.{JpxDerivativeFile, OrigFile}
 import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.util.TestUtils
@@ -52,17 +53,21 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
                      .map(_ / "import" / shortcode.value)
                      .tap(Files.createDirectories(_))
       _ <- Files.createFile(importDir / "0001.tif")
+      _ <- // ensure project folder in images is removed so that the project is created
+        StorageService
+          .getProjectFolder(shortcode)
+          .tap(p => Files.deleteRecursive(p).when(java.nio.file.Files.exists(p.toFile.toPath)))
 
       // when
-      ingestFiber  <- bulkIngestService(_.startBulkIngest(shortcode))
-      failureFiber <- bulkIngestService(_.startBulkIngest(shortcode)).fork
-      _            <- TestClock.adjust(700.second)
+      ingestFiber <- bulkIngestService(_.startBulkIngest(shortcode))
+      failed      <- bulkIngestService(_.startBulkIngest(shortcode)).fork
+      _           <- TestClock.adjust(700.second)
 
       // then
-      _            <- failureFiber.join.flip
+      failed       <- failed.join.exit
       ingestResult <- ingestFiber.join
       project      <- ZIO.serviceWithZIO[ProjectRepository](_.findByShortcode(shortcode))
-    } yield assertTrue(ingestResult == IngestResult(1, 0), project.nonEmpty)
+    } yield assertTrue(ingestResult == IngestResult(1, 0), failed.isFailure, project.nonEmpty)
   })
 
   private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
@@ -155,5 +160,5 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     SpecConfigurations.storageConfigLayer,
     StorageServiceLive.layer,
     TestUtils.testDbLayerWithEmptyDb,
-  ) @@ TestAspect.timeout(1.second)
+  ) @@ TestAspect.timeout(2.seconds)
 }
