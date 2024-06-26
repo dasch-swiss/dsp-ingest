@@ -20,27 +20,20 @@ import java.io.IOException
 
 object BulkIngestServiceSpec extends ZIOSpecDefault {
   // accessor functions for testing
-  private def finalizeBulkIngest(
-    shortcode: ProjectShortcode,
-  ): ZIO[BulkIngestService, Unit, Fiber.Runtime[IOException, Unit]] =
-    ZIO.serviceWithZIO[BulkIngestService](_.finalizeBulkIngest(shortcode))
-
-  private def getBulkIngestMappingCsv(
-    shortcode: ProjectShortcode,
-  ): ZIO[BulkIngestService, Option[IOException], Option[String]] =
-    ZIO.serviceWithZIO[BulkIngestService](_.getBulkIngestMappingCsv(shortcode))
-
-  private def bulkIngestService = ZIO.serviceWithZIO[BulkIngestService]
+  private val bulkIngestService =
+    ZIO.serviceWithZIO[BulkIngestService]
+  private def finalizeBulkIngest(shortcode: ProjectShortcode) =
+    bulkIngestService(_.finalizeBulkIngest(shortcode))
+  private def getBulkIngestMappingCsv(shortcode: ProjectShortcode) =
+    bulkIngestService(_.getBulkIngestMappingCsv(shortcode))
 
   private val shortcode = ProjectShortcode.unsafeFrom("0001")
 
   object TestData {
-    val path    = zio.http.Path("a/b/c.tiff")
-    val assetId = AssetId.from("aaaa").toOption.get
-    val stillImageAsset = StillImageAsset(
-      AssetRef(assetId, ProjectShortcode.unsafeFrom("0001")),
-      Original(OrigFile.from("original.jpg.orig").toOption.get, NonEmptyString.from("original.jpg").toOption.get),
-      JpxDerivativeFile.from("original.jpx").toOption.get,
+    val stillImageAsset: StillImageAsset = StillImageAsset(
+      AssetRef(AssetId.unsafeFrom("aaaa"), ProjectShortcode.unsafeFrom("0001")),
+      Original(OrigFile.unsafeFrom("original.jpg.orig"), NonEmptyString.unsafeFrom("original.jpg")),
+      JpxDerivativeFile.unsafeFrom("original.jpx"),
       StillImageMetadata(Dimensions.unsafeFrom(6, 6), None, None),
     )
   }
@@ -53,10 +46,6 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
                      .map(_ / "import" / shortcode.value)
                      .tap(Files.createDirectories(_))
       _ <- Files.createFile(importDir / "0001.tif")
-      _ <- // ensure project folder in images is removed so that the project is created
-        StorageService
-          .getProjectFolder(shortcode)
-          .tap(p => Files.deleteRecursive(p).when(java.nio.file.Files.exists(p.toFile.toPath)))
 
       // when
       ingestFiber <- bulkIngestService(_.startBulkIngest(shortcode))
@@ -67,7 +56,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       failed       <- failed.join.exit
       ingestResult <- ingestFiber.join
       project      <- ZIO.serviceWithZIO[ProjectRepository](_.findByShortcode(shortcode))
-    } yield assertTrue(ingestResult == IngestResult(1, 0), failed.isFailure, project.nonEmpty)
+    } yield assertTrue(ingestResult == IngestResult.success, failed.isFailure, project.nonEmpty)
   })
 
   private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
@@ -134,22 +123,25 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     } yield assertTrue(file == Chunk(0))
   })
 
-  val MockIngestServiceLayer = ZLayer[Any, Nothing, IngestService](
-    ZIO.succeed(
-      new IngestService {
-        override def ingestFile(fileToIngest: Path, project: ProjectShortcode): Task[Asset] =
-          ZIO.sleep(Duration.fromMillis(600)).as(TestData.stillImageAsset)
-      },
-    ),
-  )
+  val MockIngestServiceLayer: ULayer[IngestService] = ZLayer.succeed {
+    new IngestService {
+      override def ingestFile(fileToIngest: Path, project: ProjectShortcode): Task[Asset] =
+        ZIO.sleep(Duration.fromMillis(600)).as(TestData.stillImageAsset)
+    }
+  }
 
-  val spec = suite("BulkIngestServiceLive")(
+  private val deleteProjectFolder =
+    StorageService
+      .getProjectFolder(shortcode)
+      .tap(p => Files.deleteRecursive(p).whenZIO(Files.exists(p)))
+
+  val spec = (suite("BulkIngestServiceLive")(
     startBulkIngestSuite,
     finalizeBulkIngestSuite,
     getBulkIngestMappingCsvSuite,
     checkSemaphoresReleased,
     postBulkIngestEndpointSuite,
-  ).provide(
+  ) @@ TestAspect.before(deleteProjectFolder)).provide(
     AssetInfoServiceLive.layer,
     BulkIngestService.layer,
     FileChecksumServiceLive.layer,
