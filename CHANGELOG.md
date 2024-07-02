@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.11.0...v0.12.0) (2024-07-02)
+
+
+### Enhancements
+
+* Add database (sqlite) persistence (DEV-3735) ([#237](https://github.com/dasch-swiss/dsp-ingest/issues/237)) ([437fbbf](https://github.com/dasch-swiss/dsp-ingest/commit/437fbbf3f6fc0f9ad9ccadd9d266ffd24a10191b))
+
+
+### Maintenance
+
+* Minor dependency updates ([#239](https://github.com/dasch-swiss/dsp-ingest/issues/239)) ([47cf977](https://github.com/dasch-swiss/dsp-ingest/commit/47cf977405520b01e307a94e9400955f0a19f9c9))
+* Patch dependency updates ([#238](https://github.com/dasch-swiss/dsp-ingest/issues/238)) ([7881f2e](https://github.com/dasch-swiss/dsp-ingest/commit/7881f2e41f2302d251c3f0ddb72f04167dbfdb04))
+
 ## [0.11.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.10.1...v0.11.0) (2024-06-24)
 
 
