@@ -27,6 +27,7 @@ import zio.stream.ZSink
 import zio.stream.ZStream
 
 import java.io.IOException
+import zio.nio.file.Files
 
 final case class ProjectsEndpointsHandler(
   bulkIngestService: BulkIngestService,
@@ -122,10 +123,12 @@ final case class ProjectsEndpointsHandler(
             prj <- projectService.findOrCreateProject(shortcode).mapError(InternalServerError(_))
             tmpDir <-
               storageService.createTempDirectoryScoped(s"${prj.shortcode}-ingest").mapError(InternalServerError(_))
-            tmpFile = tmpDir / filename.value
-            _      <- stream.run(ZSink.fromFile(tmpFile.toFile)).mapError(InternalServerError(_))
-            asset  <- ingestService.ingestFile(tmpFile, shortcode).mapError(InternalServerError(_))
-            info   <- assetInfoService.findByAssetRef(asset.ref).someOrFailException.orDie
+            tmpFile   = tmpDir / filename.value
+            _        <- stream.run(ZSink.fromFile(tmpFile.toFile)).mapError(InternalServerError(_))
+            fileSize <- Files.size(tmpFile).map(_ == 0).mapError(InternalServerError(_))
+            _        <- ZIO.fail(InternalServerError("file size zero")).when(fileSize)
+            asset    <- ingestService.ingestFile(tmpFile, shortcode).mapError(InternalServerError(_))
+            info     <- assetInfoService.findByAssetRef(asset.ref).someOrFailException.orDie
           } yield AssetInfoResponse.from(info)
         }
     })
