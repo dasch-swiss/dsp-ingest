@@ -111,6 +111,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       _ <- getBulkIngestMappingCsv(shortcode)
       _ <- bulkIngestService(_.finalizeBulkIngest(shortcode))
       _ <- getBulkIngestMappingCsv(shortcode)
+      _ <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
       _ <- bulkIngestService(_.finalizeBulkIngest(shortcode))
 
     } yield assertTrue(true)
