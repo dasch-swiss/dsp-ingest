@@ -284,7 +284,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
         val req = Request
           .post(URL(Path.root / "projects" / "0666" / "assets" / "ingest" / "sample.mp3"), Body.empty)
           .addHeader("Authorization", "Bearer fakeToken")
-        executeRequest(req).map(response => assertTrue(response.status.isServerError))
+        executeRequest(req).map(response => assertTrue(response.status.isClientError))
       },
     )
 
