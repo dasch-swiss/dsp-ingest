@@ -135,8 +135,7 @@ final case class ProjectsEndpointsHandler(
             .mapBoth(
               {
                 case BulkIngestInProgress => failBulkIngestInProgress(code)
-                case ImportFolderDoesNotExist =>
-                  BadRequest.invalidPathVariable("shortcode", code.value, "Import folder does not exist.")
+                case ImportFolderDoesNotExist => NotFound(code.value, "Import folder not found.")
               },
               _ => ProjectResponse.from(code),
             ),
