@@ -14,7 +14,7 @@ import swiss.dasch.util.TestUtils
 import zio.*
 import zio.nio.file.{Files, Path}
 import zio.stream.ZStream
-import zio.test.{TestAspect, TestClock, ZIOSpecDefault, assertTrue}
+import zio.test.{TestAspect, TestClock, ZIOSpecDefault, assertCompletes, assertTrue}
 
 import java.io.IOException
 
@@ -113,8 +113,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       _ <- getBulkIngestMappingCsv(shortcode)
       _ <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
       _ <- bulkIngestService(_.finalizeBulkIngest(shortcode))
-
-    } yield assertTrue(true)
+    } yield assertCompletes
   })
 
   private val postBulkIngestEndpointSuite = suite("postBulkIngestEndpoint")(test("test bulk-ingest individual upload") {
