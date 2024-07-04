@@ -61,12 +61,11 @@ final case class BulkIngestService(
 
   def startBulkIngest(
     shortcode: ProjectShortcode,
-  ): IO[
-    ImportFolderDoesNotExist.type | BulkIngestInProgress.type ,
-    Fiber.Runtime[IoError, IngestResult],
-  ] = for {
-    _ <-
-      storage.getImportFolder(shortcode).flatMap(Files.isDirectory(_)).filterOrFail(identity)(ImportFolderDoesNotExist)
+  ): IO[ImportFolderDoesNotExist.type | BulkIngestInProgress.type, Fiber.Runtime[IoError, IngestResult]] = for {
+    _ <- storage
+           .getImportFolder(shortcode)
+           .flatMap(Files.isDirectory(_))
+           .filterOrFail(identity)(ImportFolderDoesNotExist)
     fiber <- withSemaphoreDaemon(shortcode)(doBulkIngest(shortcode).mapError {
                case _: IOException  => IoError("Unable to access file system")
                case _: SQLException => IoError("Unable to access database")
