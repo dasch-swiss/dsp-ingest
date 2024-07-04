@@ -23,6 +23,7 @@ import zio.stream.{ZSink, ZStream}
 import zio.{ZIO, ZLayer, stream}
 
 import java.io.IOException
+import zio.nio.file.Files
 
 final case class ProjectsEndpointsHandler(
   bulkIngestService: BulkIngestService,
@@ -120,6 +121,7 @@ final case class ProjectsEndpointsHandler(
               storageService.createTempDirectoryScoped(s"${prj.shortcode}-ingest").mapError(InternalServerError(_))
             tmpFile = tmpDir / filename.value
             _      <- stream.run(ZSink.fromFile(tmpFile.toFile)).mapError(InternalServerError(_))
+            _      <- Files.size(tmpFile).orDie.filterOrFail(_ > 0)(BadRequest.invalidBody("The uploaded file is empty."))
             asset  <- ingestService.ingestFile(tmpFile, shortcode).mapError(InternalServerError(_))
             info   <- assetInfoService.findByAssetRef(asset.ref).someOrFailException.orDie
           } yield AssetInfoResponse.from(info)
