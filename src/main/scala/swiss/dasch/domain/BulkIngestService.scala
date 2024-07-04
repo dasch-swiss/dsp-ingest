@@ -58,7 +58,7 @@ final case class BulkIngestService(
   private def doBulkIngest(project: ProjectShortcode): IO[IOException | SQLException, IngestResult] =
     for {
       _           <- ZIO.logInfo(s"Starting bulk ingest for project $project.")
-      importDir   <- getImportFolder(project)
+      importDir   <- storage.getImportFolder(project)
       _           <- ZIO.fail(new IOException(s"Import directory '$importDir' does not exist")).unlessZIO(Files.exists(importDir))
       mappingFile <- createMappingFile(project, importDir)
       _           <- ZIO.logInfo(s"Import dir: $importDir, mapping file: $mappingFile")
@@ -82,9 +82,6 @@ final case class BulkIngestService(
         )
       }
     } yield sum
-
-  private def getImportFolder(shortcode: ProjectShortcode): UIO[Path] =
-    storage.getImportFolder(shortcode)
 
   private def createMappingFile(project: ProjectShortcode, importDir: Path): IO[IOException, Path] = {
     val mappingFile = getMappingCsvFile(importDir, project)
@@ -128,7 +125,7 @@ final case class BulkIngestService(
   private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =
     for {
       _         <- ZIO.logInfo(s"Finalizing bulk ingest for project $shortcode")
-      importDir <- getImportFolder(shortcode)
+      importDir <- storage.getImportFolder(shortcode)
       mappingCsv = getMappingCsvFile(importDir, shortcode)
       _         <- storage.deleteRecursive(importDir)
       _         <- storage.delete(mappingCsv)
@@ -138,7 +135,7 @@ final case class BulkIngestService(
   def getBulkIngestMappingCsv(shortcode: ProjectShortcode): IO[Option[IOException], Option[String]] =
     withSemaphore(shortcode) {
       for {
-        importDir <- getImportFolder(shortcode)
+        importDir <- storage.getImportFolder(shortcode)
         mappingCsv = getMappingCsvFile(importDir, shortcode)
         mapping <- ZIO.whenZIO(Files.exists(mappingCsv)) {
                      Files.readAllLines(mappingCsv).map(_.mkString("\n"))
@@ -153,7 +150,7 @@ final case class BulkIngestService(
   ): IO[Option[Throwable], Unit] =
     withSemaphore(shortcode) {
       for {
-        importFolder <- getImportFolder(shortcode)
+        importFolder <- storage.getImportFolder(shortcode)
         file          = importFolder / filenames.filter(f => f != "." && f != "..").mkString("/")
         _            <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
         _            <- stream.run(ZSink.fromFile(file.toFile))
