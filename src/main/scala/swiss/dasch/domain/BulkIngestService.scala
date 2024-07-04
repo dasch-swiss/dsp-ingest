@@ -6,7 +6,7 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
-import swiss.dasch.domain.BulkIngestError.{BulkIngestInProgress, ImportFolderDoesNotExist}
+import swiss.dasch.domain.BulkIngestError.*
 import zio.*
 import zio.nio.file.{Files, Path}
 import zio.stm.{TMap, TSemaphore, ZSTM}
@@ -25,9 +25,11 @@ object IngestResult {
   val failed: IngestResult  = IngestResult(failed = 1)
 }
 
-enum BulkIngestError {
-  case ImportFolderDoesNotExist extends BulkIngestError
-  case BulkIngestInProgress     extends BulkIngestError
+sealed trait BulkIngestError
+object BulkIngestError {
+  case class ImportFolderDoesNotExist() extends BulkIngestError
+  case class BulkIngestInProgress()     extends BulkIngestError
+  case class IoError(msg: String)       extends BulkIngestError
 }
 
 final case class BulkIngestService(
@@ -39,11 +41,11 @@ final case class BulkIngestService(
 ) {
 
   private def acquireSemaphore(key: ProjectShortcode): ZSTM[Any, Nothing, TSemaphore] =
-    (for {
+    for {
       semaphore <- semaphoresPerProject.getOrElseSTM(key, TSemaphore.make(1))
       _         <- semaphoresPerProject.put(key, semaphore)
       _         <- semaphore.acquire
-    } yield semaphore)
+    } yield semaphore
 
   private def withSemaphoreDaemon[E, A](key: ProjectShortcode)(
     zio: IO[E, A],
@@ -60,16 +62,16 @@ final case class BulkIngestService(
   def startBulkIngest(
     shortcode: ProjectShortcode,
   ): IO[
-    BulkIngestError,
-    Fiber.Runtime[IOException | SQLException, IngestResult],
-  ] =
-    storage
-      .getImportFolder(shortcode)
-      .flatMap(Files.isDirectory(_))
-      .filterOrFail(identity)(ImportFolderDoesNotExist) *>
-      withSemaphoreDaemon(shortcode) {
-        doBulkIngest(shortcode)
-      }.orElseFail(BulkIngestInProgress)
+    ImportFolderDoesNotExist.type | BulkIngestInProgress.type ,
+    Fiber.Runtime[IoError, IngestResult],
+  ] = for {
+    _ <-
+      storage.getImportFolder(shortcode).flatMap(Files.isDirectory(_)).filterOrFail(identity)(ImportFolderDoesNotExist)
+    fiber <- withSemaphoreDaemon(shortcode)(doBulkIngest(shortcode).mapError {
+               case _: IOException  => IoError("Unable to access file system")
+               case _: SQLException => IoError("Unable to access database")
+             }).orElseFail(BulkIngestInProgress)
+  } yield fiber
 
   private def doBulkIngest(project: ProjectShortcode): IO[IOException | SQLException, IngestResult] =
     for {

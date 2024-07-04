@@ -13,9 +13,9 @@ import swiss.dasch.api.ApiProblem.*
 import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.config.Configuration.Features
 import swiss.dasch.domain.*
-import swiss.dasch.domain.BulkIngestError.BulkIngestInProgress
-import zio.{ZIO, ZLayer, stream}
+import swiss.dasch.domain.BulkIngestError.{BulkIngestInProgress, ImportFolderDoesNotExist}
 import zio.stream.{ZSink, ZStream}
+import zio.{ZIO, ZLayer, stream}
 
 import java.io.IOException
 
@@ -130,7 +130,7 @@ final case class ProjectsEndpointsHandler(
             .mapBoth(
               {
                 case BulkIngestInProgress => failBulkIngestInProgress(code)
-                case BulkIngestError.ImportFolderDoesNotExist =>
+                case ImportFolderDoesNotExist =>
                   BadRequest.invalidPathVariable("shortcode", code.value, "Import folder does not exist.")
               },
               _ => ProjectResponse.from(code),
@@ -157,10 +157,11 @@ final case class ProjectsEndpointsHandler(
             bulkIngestService
               .getBulkIngestMappingCsv(code)
               .mapError {
-                case None => failBulkIngestInProgress(code)
+                case None                           => failBulkIngestInProgress(code)
                 case Some(ioException: IOException) => InternalServerError(ioException)
               }
-              .some.orElseFail(NotFound(code)),
+              .some
+              .orElseFail(NotFound(code)),
       )
 
   private val postBulkIngestUploadEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.postBulkIngestUpload
