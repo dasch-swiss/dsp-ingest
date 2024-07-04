@@ -22,8 +22,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
   // accessor functions for testing
   private val storageService    = ZIO.serviceWithZIO[StorageService]
   private val bulkIngestService = ZIO.serviceWithZIO[BulkIngestService]
-  private def finalizeBulkIngest(shortcode: ProjectShortcode) =
-    bulkIngestService(_.finalizeBulkIngest(shortcode))
+
   private def getBulkIngestMappingCsv(shortcode: ProjectShortcode) =
     bulkIngestService(_.getBulkIngestMappingCsv(shortcode))
 
@@ -64,21 +63,29 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     },
   )
 
-  private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
-    for {
-      // given
-      importDir     <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
-      _             <- Files.createFile(importDir / "0001.tif")
-      mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
-      _             <- Files.createFile(mappingCsvFile)
-      // when
-      fork <- finalizeBulkIngest(shortcode)
-      // then
-      _                  <- fork.join
-      importDirDeleted   <- Files.exists(importDir).negate
-      mappingFileDeleted <- Files.exists(mappingCsvFile).negate
-    } yield assertTrue(importDirDeleted && mappingFileDeleted)
-  })
+  private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(
+    test("remove all files") {
+      for {
+        // given
+        importDir     <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
+        _             <- Files.createFile(importDir / "0001.tif")
+        mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
+        _             <- Files.createFile(mappingCsvFile)
+        // when
+        fork <- bulkIngestService(_.finalizeBulkIngest(shortcode))
+        // then
+        _                  <- fork.join
+        importDirDeleted   <- Files.exists(importDir).negate
+        mappingFileDeleted <- Files.exists(mappingCsvFile).negate
+      } yield assertTrue(importDirDeleted && mappingFileDeleted)
+    },
+    test("fail when import folder does not exist") {
+      for {
+        _    <- storageService(_.getImportFolder(shortcode).tap(Files.deleteIfExists(_)))
+        exit <- bulkIngestService(_.finalizeBulkIngest(shortcode)).exit
+      } yield assertTrue(exit == Exit.fail(BulkIngestError.ImportFolderDoesNotExist))
+    },
+  )
 
   private val getBulkIngestMappingCsvSuite = suite("getBulkIngestMappingCsv")(test("return the mapping csv file") {
     val shortcode = ProjectShortcode.unsafeFrom("0001")
@@ -102,9 +109,9 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
       _         <- Files.createFile(importDir.parent.head / s"mapping-$shortcode.csv")
 
       _ <- getBulkIngestMappingCsv(shortcode)
-      _ <- finalizeBulkIngest(shortcode)
+      _ <- bulkIngestService(_.finalizeBulkIngest(shortcode))
       _ <- getBulkIngestMappingCsv(shortcode)
-      _ <- finalizeBulkIngest(shortcode)
+      _ <- bulkIngestService(_.finalizeBulkIngest(shortcode))
 
     } yield assertTrue(true)
   })

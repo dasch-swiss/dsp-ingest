@@ -62,15 +62,18 @@ final case class BulkIngestService(
   def startBulkIngest(
     shortcode: ProjectShortcode,
   ): IO[ImportFolderDoesNotExist.type | BulkIngestInProgress.type, Fiber.Runtime[IoError, IngestResult]] = for {
-    _ <- storage
-           .getImportFolder(shortcode)
-           .flatMap(Files.isDirectory(_))
-           .filterOrFail(identity)(ImportFolderDoesNotExist)
+    _ <- ensureImportFolderExists(shortcode)
     fiber <- withSemaphoreDaemon(shortcode)(doBulkIngest(shortcode).mapError {
                case _: IOException  => IoError("Unable to access file system")
                case _: SQLException => IoError("Unable to access database")
              }).orElseFail(BulkIngestInProgress)
   } yield fiber
+
+  private def ensureImportFolderExists(shortcode: ProjectShortcode) =
+    storage
+      .getImportFolder(shortcode)
+      .flatMap(Files.isDirectory(_))
+      .filterOrFail(identity)(ImportFolderDoesNotExist)
 
   private def doBulkIngest(project: ProjectShortcode): IO[IOException | SQLException, IngestResult] =
     for {
@@ -109,7 +112,7 @@ final case class BulkIngestService(
       .as(mappingFile)
   }
 
-  private def getMappingCsvFile(importDir: _root_.zio.nio.file.Path, project: ProjectShortcode) =
+  private def getMappingCsvFile(importDir: Path, project: ProjectShortcode) =
     importDir.parent.head / s"mapping-$project.csv"
 
   private def ingestFileAndUpdateMapping(
@@ -134,10 +137,13 @@ final case class BulkIngestService(
       Files.writeLines(csv, Seq(line), openOptions = Set(StandardOpenOption.APPEND))
     }
 
-  def finalizeBulkIngest(shortcode: ProjectShortcode): IO[Unit, Fiber.Runtime[IOException, Unit]] =
-    withSemaphoreDaemon(shortcode) {
-      doFinalize(shortcode)
-    }
+  def finalizeBulkIngest(
+    shortcode: ProjectShortcode,
+  ): IO[ImportFolderDoesNotExist.type | BulkIngestInProgress.type, Fiber.Runtime[IoError, Unit]] =
+    ensureImportFolderExists(shortcode) *>
+      withSemaphoreDaemon(shortcode) {
+        doFinalize(shortcode).orElseFail(IoError("Unable to access file system"))
+      }.orElseFail(BulkIngestInProgress)
 
   private def doFinalize(shortcode: ProjectShortcode): ZIO[Any, IOException, Unit] =
     for {
