@@ -5,6 +5,7 @@
 
 package swiss.dasch.api
 
+import zio.nio.file.Files;
 import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
@@ -134,6 +135,16 @@ final case class ProjectsEndpointsHandler(
     .serverLogic(userSession =>
       code =>
         authorizationHandler.ensureAdminScope(userSession) *>
+          storageService
+            .getImportFolder(code)
+            .flatMap(Files.isDirectory(_))
+            .filterOrFail(identity)(
+              BadRequest.invalidPathVariable(
+                "shortcode",
+                code.value,
+                s"Import folder for project ${code.value} does not exist.",
+              ),
+            ) *>
           bulkIngestService
             .startBulkIngest(code)
             .mapBoth(
