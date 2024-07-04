@@ -20,8 +20,8 @@ import java.io.IOException
 
 object BulkIngestServiceSpec extends ZIOSpecDefault {
   // accessor functions for testing
-  private val bulkIngestService =
-    ZIO.serviceWithZIO[BulkIngestService]
+  private val storageService    = ZIO.serviceWithZIO[StorageService]
+  private val bulkIngestService = ZIO.serviceWithZIO[BulkIngestService]
   private def finalizeBulkIngest(shortcode: ProjectShortcode) =
     bulkIngestService(_.finalizeBulkIngest(shortcode))
   private def getBulkIngestMappingCsv(shortcode: ProjectShortcode) =
@@ -38,34 +38,36 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     )
   }
 
-  private val startBulkIngestSuite = suite("start ingest")(test("lock project while ingesting") {
-    for {
-      // given
-      importDir <- StorageService
-                     .getTempFolder()
-                     .map(_ / "import" / shortcode.value)
-                     .tap(Files.createDirectories(_))
-      _ <- Files.createFile(importDir / "0001.tif")
+  private val startBulkIngestSuite = suite("start ingest")(
+    test("lock project while ingesting") {
+      for {
+        // given
+        importDir <- storageService(_.getImportFolder(shortcode).tap(Files.createDirectories(_)))
+        _         <- Files.createFile(importDir / "0001.tif")
 
-      // when
-      ingestFiber <- bulkIngestService(_.startBulkIngest(shortcode))
-      failed      <- bulkIngestService(_.startBulkIngest(shortcode)).fork
-      _           <- TestClock.adjust(700.second)
+        // when
+        ingestFiber <- bulkIngestService(_.startBulkIngest(shortcode))
+        failed      <- bulkIngestService(_.startBulkIngest(shortcode)).fork
+        _           <- TestClock.adjust(700.second)
 
-      // then
-      failed       <- failed.join.exit
-      ingestResult <- ingestFiber.join
-      project      <- ZIO.serviceWithZIO[ProjectRepository](_.findByShortcode(shortcode))
-    } yield assertTrue(ingestResult == IngestResult.success, failed.isFailure, project.nonEmpty)
-  })
+        // then
+        failed       <- failed.join.exit
+        ingestResult <- ingestFiber.join
+        project      <- ZIO.serviceWithZIO[ProjectRepository](_.findByShortcode(shortcode))
+      } yield assertTrue(ingestResult == IngestResult.success, failed.isFailure, project.nonEmpty)
+    },
+    test("fail when import folder does not exist") {
+      for {
+        _    <- storageService(_.getImportFolder(shortcode).tap(Files.deleteIfExists(_)))
+        exit <- bulkIngestService(_.startBulkIngest(shortcode)).exit
+      } yield assertTrue(exit == Exit.fail(BulkIngestError.ImportFolderDoesNotExist))
+    },
+  )
 
   private val finalizeBulkIngestSuite = suite("finalize bulk ingest should")(test("remove all files") {
     for {
       // given
-      importDir <- StorageService
-                     .getTempFolder()
-                     .map(_ / "import" / shortcode.value)
-                     .tap(Files.createDirectories(_))
+      importDir     <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
       _             <- Files.createFile(importDir / "0001.tif")
       mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
       _             <- Files.createFile(mappingCsvFile)
@@ -82,10 +84,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     val shortcode = ProjectShortcode.unsafeFrom("0001")
     for {
       // given
-      importDir <- StorageService
-                     .getTempFolder()
-                     .map(_ / "import" / shortcode.value)
-                     .tap(Files.createDirectories(_))
+      importDir     <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
       mappingCsvFile = importDir.parent.head / s"mapping-$shortcode.csv"
       _             <- Files.createFile(mappingCsvFile)
       _             <- Files.writeLines(mappingCsvFile, List("1,2,3"))
@@ -99,7 +98,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
   private val checkSemaphoresReleased = suite("check semaphores released")(test("check semaphores") {
     for {
       shortcode <- ZIO.succeed(ProjectShortcode.unsafeFrom("0001"))
-      importDir <- StorageService.getTempFolder().map(_ / "import" / shortcode.value).tap(Files.createDirectories(_))
+      importDir <- storageService(_.getImportFolder(shortcode)).tap(Files.createDirectories(_))
       _         <- Files.createFile(importDir.parent.head / s"mapping-$shortcode.csv")
 
       _ <- getBulkIngestMappingCsv(shortcode)
@@ -114,7 +113,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
     val shortcode = ProjectShortcode.unsafeFrom("0001")
     for {
       // given
-      importDir <- StorageService.getTempFolder().map(_ / "import" / shortcode.value)
+      importDir <- storageService(_.getImportFolder(shortcode))
       filenames  = List("one", "..", "two", "out.txt")
       // when
       _ <- ZIO.serviceWithZIO[BulkIngestService](_.uploadSingleFile(shortcode, filenames, ZStream(0)))
@@ -131,9 +130,7 @@ object BulkIngestServiceSpec extends ZIOSpecDefault {
   }
 
   private val deleteProjectFolder =
-    StorageService
-      .getProjectFolder(shortcode)
-      .tap(p => Files.deleteRecursive(p).whenZIO(Files.exists(p)))
+    storageService(_.getProjectFolder(shortcode)).tap(p => Files.deleteRecursive(p).whenZIO(Files.exists(p)))
 
   val spec = (suite("BulkIngestServiceLive")(
     startBulkIngestSuite,
