@@ -134,7 +134,7 @@ final case class ProjectsEndpointsHandler(
             .startBulkIngest(code)
             .mapBoth(
               {
-                case BulkIngestInProgress => failBulkIngestInProgress(code)
+                case BulkIngestInProgress     => failBulkIngestInProgress(code)
                 case ImportFolderDoesNotExist => NotFound(code.value, "Import folder not found.")
               },
               _ => ProjectResponse.from(code),
