@@ -5,27 +5,17 @@
 
 package swiss.dasch.api
 
-import zio.nio.file.Files;
 import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
-import swiss.dasch.api.ApiProblem.BadRequest
-import swiss.dasch.api.ApiProblem.Conflict
-import swiss.dasch.api.ApiProblem.Forbidden
-import swiss.dasch.api.ApiProblem.InternalServerError
-import swiss.dasch.api.ApiProblem.NotFound
-import swiss.dasch.api.ProjectsEndpointsResponses.AssetCheckResultResponse
-import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
-import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
-import swiss.dasch.api.ProjectsEndpointsResponses.UploadResponse
 import swiss.dasch.api.*
+import swiss.dasch.api.ApiProblem.*
+import swiss.dasch.api.ProjectsEndpointsResponses.{AssetCheckResultResponse, AssetInfoResponse, ProjectResponse, UploadResponse}
 import swiss.dasch.config.Configuration.Features
 import swiss.dasch.domain.*
-import zio.ZIO
-import zio.ZLayer
-import zio.stream
-import zio.stream.ZSink
-import zio.stream.ZStream
+import swiss.dasch.domain.BulkIngestError.BulkIngestInProgress
+import zio.{ZIO, ZLayer, stream}
+import zio.stream.{ZSink, ZStream}
 
 import java.io.IOException
 
@@ -135,20 +125,14 @@ final case class ProjectsEndpointsHandler(
     .serverLogic(userSession =>
       code =>
         authorizationHandler.ensureAdminScope(userSession) *>
-          storageService
-            .getImportFolder(code)
-            .flatMap(Files.isDirectory(_))
-            .filterOrFail(identity)(
-              BadRequest.invalidPathVariable(
-                "shortcode",
-                code.value,
-                s"Import folder for project ${code.value} does not exist.",
-              ),
-            ) *>
           bulkIngestService
             .startBulkIngest(code)
             .mapBoth(
-              _ => failBulkIngestInProgress(code),
+              {
+                case BulkIngestInProgress => failBulkIngestInProgress(code)
+                case BulkIngestError.ImportFolderDoesNotExist =>
+                  BadRequest.invalidPathVariable("shortcode", code.value, "Import folder does not exist.")
+              },
               _ => ProjectResponse.from(code),
             ),
     )
@@ -173,11 +157,10 @@ final case class ProjectsEndpointsHandler(
             bulkIngestService
               .getBulkIngestMappingCsv(code)
               .mapError {
-                case None                           => failBulkIngestInProgress(code)
+                case None => failBulkIngestInProgress(code)
                 case Some(ioException: IOException) => InternalServerError(ioException)
               }
-              .some
-              .mapError(_ => NotFound(code)),
+              .some.orElseFail(NotFound(code)),
       )
 
   private val postBulkIngestUploadEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.postBulkIngestUpload

@@ -6,6 +6,7 @@
 package swiss.dasch.domain
 
 import swiss.dasch.config.Configuration.IngestConfig
+import swiss.dasch.domain.BulkIngestError.{BulkIngestInProgress, ImportFolderDoesNotExist}
 import zio.*
 import zio.nio.file.{Files, Path}
 import zio.stm.{TMap, TSemaphore, ZSTM}
@@ -24,6 +25,11 @@ object IngestResult {
   val failed: IngestResult  = IngestResult(failed = 1)
 }
 
+enum BulkIngestError {
+  case ImportFolderDoesNotExist extends BulkIngestError
+  case BulkIngestInProgress     extends BulkIngestError
+}
+
 final case class BulkIngestService(
   storage: StorageService,
   ingestService: IngestService,
@@ -31,6 +37,7 @@ final case class BulkIngestService(
   projectService: ProjectService,
   semaphoresPerProject: TMap[ProjectShortcode, TSemaphore],
 ) {
+
   private def acquireSemaphore(key: ProjectShortcode): ZSTM[Any, Nothing, TSemaphore] =
     (for {
       semaphore <- semaphoresPerProject.getOrElseSTM(key, TSemaphore.make(1))
@@ -45,15 +52,24 @@ final case class BulkIngestService(
       .timeout(Duration.fromMillis(400))
       .someOrFail(())
       .flatMap(sem => zio.logError.ensuring(sem.release.commit).forkDaemon)
-      .mapError(_ => ())
+      .orElseFail(())
 
   private def withSemaphore[E, A](key: ProjectShortcode)(zio: IO[E, A]): IO[Option[E], A] =
-    withSemaphoreDaemon(key)(zio).mapError(_ => None: Option[Nothing]).flatMap(f => f.join.mapError(Some(_)))
+    withSemaphoreDaemon(key)(zio).orElseFail(None: Option[Nothing]).flatMap(f => f.join.mapError(Some(_)))
 
-  def startBulkIngest(shortcode: ProjectShortcode): IO[Unit, Fiber.Runtime[IOException | SQLException, IngestResult]] =
-    withSemaphoreDaemon(shortcode) {
-      doBulkIngest(shortcode)
-    }
+  def startBulkIngest(
+    shortcode: ProjectShortcode,
+  ): IO[
+    BulkIngestError,
+    Fiber.Runtime[IOException | SQLException, IngestResult],
+  ] =
+    storage
+      .getImportFolder(shortcode)
+      .flatMap(Files.isDirectory(_))
+      .filterOrFail(identity)(ImportFolderDoesNotExist) *>
+      withSemaphoreDaemon(shortcode) {
+        doBulkIngest(shortcode)
+      }.orElseFail(BulkIngestInProgress)
 
   private def doBulkIngest(project: ProjectShortcode): IO[IOException | SQLException, IngestResult] =
     for {
