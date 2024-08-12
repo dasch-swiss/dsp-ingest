@@ -19,6 +19,7 @@ import zio.http.*
 import zio.json.*
 import zio.nio.file.Files
 import zio.test.{ZIOSpecDefault, assertTrue}
+import java.net.URLDecoder
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
 
@@ -279,6 +280,16 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           .post(URL(Path.root / "projects" / "0666" / "assets" / "ingest" / "sample.mp3"), Body.fromString("tegxd"))
           .addHeader("Authorization", "Bearer fakeToken")
         executeRequest(req).map(response => assertTrue(response.status == Status.Ok))
+      },
+      test("should ingest decoded filenames") {
+        val encoded = "le%20%C3%B6%20%C3%A4%20%C3%BC.jpg"
+        val req = Request
+          .post(URL(Path.root / "projects" / "0666" / "assets" / "ingest" / encoded), Body.fromString("tegxd"))
+          .addHeader("Authorization", "Bearer fakeToken")
+        executeRequest(req).map { response =>
+          assertTrue(response.status == Status.Ok) &&
+          assertTrue(URLDecoder.decode(encoded, "UTF-8") == "le ö ä ü.jpg")
+        }
       },
       test("should refuse ingesting without content") {
         val req = Request
