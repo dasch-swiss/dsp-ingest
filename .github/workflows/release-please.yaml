@@ -21,12 +21,12 @@ jobs:
           draft-pull-request: true
           release-type: simple
           changelog-types: '[
-            {"type": "build", "section": "Maintenances",
-            {"type": "chore", "section": "Maintenances",
-            {"type": "docs", "section": "Documentation",
-            {"type": "feat", "section": "Enhancements",
-            {"type": "fix", "section": "Bug Fixes",
-            {"type": "perf", "section": "Performance Improvements",
-            {"type": "refactor", "section": "Maintenances",
-            {"type": "test", "section": "Tests",
+            {"type": "build", "section": "Maintenances"},
+            {"type": "chore", "section": "Maintenances"},
+            {"type": "docs", "section": "Documentation"},
+            {"type": "feat", "section": "Enhancements"},
+            {"type": "fix", "section": "Bug Fixes"},
+            {"type": "perf", "section": "Performance Improvements"},
+            {"type": "refactor", "section": "Maintenances"},
+            {"type": "test", "section": "Tests"}
           ]'
