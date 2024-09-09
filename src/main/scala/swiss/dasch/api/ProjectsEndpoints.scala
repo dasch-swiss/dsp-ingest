@@ -182,6 +182,14 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .tag("assets")
     .description("Authorization: read:project:1234 scope required.")
 
+  val getProjectsAssetsOriginal = base.secureEndpoint2.get
+    .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId") / "original")
+    .out(header[String]("Content-Disposition"))
+    .out(header[String]("Content-Type"))
+    .out(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
+    .tag("assets")
+    .description("Authorization: JWT bearer token")
+
   given filenameCodec: Codec[String, AssetFilename, CodecFormat.TextPlain] =
     Codec.string.mapEither(AssetFilename.from)(_.value)
   val postProjectAsset = base.secureEndpoint.post
@@ -261,6 +269,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
       getProjectsChecksumReport,
       deleteProjectsErase,
       getProjectsAssetsInfo,
+      getProjectsAssetsOriginal,
       postProjectAsset,
       postBulkIngest,
       postBulkIngestFinalize,

@@ -7,6 +7,7 @@ package swiss.dasch.api
 
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import sttp.tapir.server.ziohttp.ZioHttpServerOptions
+import swiss.dasch.FetchAssetPermissionsMock
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
 import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
 import swiss.dasch.config.Configuration.Features
@@ -366,6 +367,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     BulkIngestService.layer,
     CsvService.layer,
     CommandExecutorLive.layer,
+    FetchAssetPermissionsMock.layer,
     FileChecksumServiceLive.layer,
     ZLayer.succeed(Features(allowEraseProjects = true)),
     StillImageService.layer,

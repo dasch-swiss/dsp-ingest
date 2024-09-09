@@ -5,6 +5,7 @@
 
 package swiss.dasch.api
 
+import swiss.dasch.FetchAssetPermissions
 import sttp.capabilities.zio.ZioStreams
 import sttp.model.headers.ContentRange
 import sttp.tapir.ztapir.ZServerEndpoint
@@ -21,9 +22,12 @@ import swiss.dasch.domain.*
 import swiss.dasch.domain.BulkIngestError.{BulkIngestInProgress, ImportFolderDoesNotExist}
 import zio.stream.{ZSink, ZStream}
 import zio.{ZIO, ZLayer, stream}
+import zio.*
 
 import java.io.IOException
 import zio.nio.file.Files
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 final case class ProjectsEndpointsHandler(
   bulkIngestService: BulkIngestService,
@@ -36,6 +40,7 @@ final case class ProjectsEndpointsHandler(
   assetInfoService: AssetInfoService,
   authorizationHandler: AuthorizationHandler,
   features: Features,
+  fetchAssetPermissions: FetchAssetPermissions,
 ) extends HandlerFunctions {
 
   val getProjectsEndpoint: ZServerEndpoint[Any, Any] = projectEndpoints.getProjectsEndpoint
@@ -109,6 +114,26 @@ final case class ProjectsEndpointsHandler(
             )
       },
     )
+
+  private val getProjectsAssetsOriginalEndpoint: ZServerEndpoint[Any, ZioStreams] =
+    projectEndpoints.getProjectsAssetsOriginal
+      .serverLogic(userSession =>
+        (shortcode, assetId) => {
+          for {
+            ref            <- ZIO.succeed(AssetRef(assetId, shortcode))
+            assetInfo      <- assetInfoService.findByAssetRef(ref).some.mapError(assetRefNotFoundOrServerError(_, ref))
+            filenameEncoded = URLEncoder.encode(assetInfo.originalFilename.value, StandardCharsets.UTF_8.toString)
+            permissionCode <- fetchAssetPermissions
+                                .getPermissionCode(userSession.claim, shortcode, assetId.value)
+                                .mapError(_ => InternalServerError("error fetching permissions"))
+            _ <- ZIO.fail(InternalServerError("permission denied")).unless(permissionCode >= 2)
+          } yield (
+            s"attachment; filename*=\"${filenameEncoded}\"",
+            assetInfo.metadata.originalMimeType.map(m => m.stringValue).getOrElse("application/octet-stream"),
+            ZStream.fromFile(assetInfo.original.file.toFile),
+          )
+        },
+      )
 
   private val postProjectAssetEndpoint: ZServerEndpoint[Any, ZioStreams] = projectEndpoints.postProjectAsset
     .serverLogic(principal => { case (shortcode, filename, stream) =>
@@ -226,6 +251,7 @@ final case class ProjectsEndpointsHandler(
       getProjectChecksumReportEndpoint,
       deleteProjectsEraseEndpoint,
       getProjectsAssetsInfoEndpoint,
+      getProjectsAssetsOriginalEndpoint,
       postProjectAssetEndpoint,
       postBulkIngestEndpoint,
       postBulkIngestEndpointFinalize,
