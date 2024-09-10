@@ -124,7 +124,7 @@ final case class ProjectsEndpointsHandler(
             assetInfo      <- assetInfoService.findByAssetRef(ref).some.mapError(assetRefNotFoundOrServerError(_, ref))
             filenameEncoded = URLEncoder.encode(assetInfo.originalFilename.value, StandardCharsets.UTF_8.toString)
             permissionCode <- fetchAssetPermissions
-                                .getPermissionCode(userSession.claim, shortcode, assetId.value)
+                                .getPermissionCode(userSession.claim, assetInfo)
                                 .mapError(_ => InternalServerError("error fetching permissions"))
             _ <- ZIO.fail(InternalServerError("permission denied")).unless(permissionCode >= 2)
           } yield (

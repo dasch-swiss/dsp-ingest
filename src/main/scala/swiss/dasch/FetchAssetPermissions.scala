@@ -11,19 +11,18 @@ import sttp.client3.SttpBackend
 import sttp.capabilities.zio.ZioStreams
 import zio.*
 import swiss.dasch.config.Configuration
-import swiss.dasch.domain.ProjectShortcode
 import zio.json.DecoderOps
 import zio.json.JsonDecoder
 import zio.json.DeriveJsonDecoder
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import scala.concurrent.duration._
 import FetchAssetPermissions.PermissionResponse
+import swiss.dasch.domain.AssetInfo
 
 trait FetchAssetPermissions {
   def getPermissionCode(
     jwt: String,
-    shortcode: ProjectShortcode,
-    identifier: String,
+    assetInfo: AssetInfo,
   ): Task[Int]
 }
 
@@ -33,11 +32,13 @@ class FetchAssetPermissionsLive(
 ) extends FetchAssetPermissions {
   def getPermissionCode(
     jwt: String,
-    shortcode: ProjectShortcode,
-    identifier: String,
+    assetInfo: AssetInfo,
   ): Task[Int] =
     (for {
-      uri         <- ZIO.succeed(uri"http://${apiConfig.host}:${apiConfig.port}/admin/files/$shortcode/$identifier")
+      uri <-
+        ZIO.succeed(
+          uri"http://${apiConfig.host}:${apiConfig.port}/admin/files/${assetInfo.assetRef.belongsToProject}/${assetInfo.derivative.filename}",
+        )
       response    <- sttp.send(basicRequest.get(uri).header("Authorization", s"Bearer ${jwt}"))
       successBody <- ZIO.fromEither(response.body).mapError(httpError(uri.toString, response.code.code, _))
       permissionCode <-

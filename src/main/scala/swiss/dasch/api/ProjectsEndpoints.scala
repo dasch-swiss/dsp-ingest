@@ -182,7 +182,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .tag("assets")
     .description("Authorization: read:project:1234 scope required.")
 
-  val getProjectsAssetsOriginal = base.secureEndpoint2.get
+  val getProjectsAssetsOriginal = base.secureEndpoint.get
     .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId") / "original")
     .out(header[String]("Content-Disposition"))
     .out(header[String]("Content-Type"))

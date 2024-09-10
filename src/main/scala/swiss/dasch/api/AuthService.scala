@@ -51,7 +51,7 @@ final case class AuthServiceLive(jwtConfig: JwtConfig) extends AuthService {
   private val issuer   = jwtConfig.issuer
 
   def authenticate(jwtString: String): IO[NonEmptyChunk[AuthenticationError], Principal] =
-    if (true || jwtConfig.disableAuth) {
+    if (jwtConfig.disableAuth) {
       ZIO.succeed(Principal("developer", AuthScope(Set(AuthScope.ScopeValue.Admin)), "fake jwt claim"))
     } else {
       ZIO

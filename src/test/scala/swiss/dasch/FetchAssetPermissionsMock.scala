@@ -6,13 +6,12 @@
 package swiss.dasch
 
 import zio.*
-import swiss.dasch.domain.ProjectShortcode
+import swiss.dasch.domain.AssetInfo
 
 class FetchAssetPermissionsMock extends FetchAssetPermissions {
   def getPermissionCode(
     jwt: String,
-    shortcode: ProjectShortcode,
-    identifier: String,
+    assetInfo: AssetInfo,
   ): Task[Int] =
     ZIO.succeed(2)
 }
