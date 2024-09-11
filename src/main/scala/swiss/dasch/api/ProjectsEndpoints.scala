@@ -15,7 +15,7 @@ import sttp.tapir.codec.refined.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.jsonBody
 import sttp.tapir.ztapir.*
-import swiss.dasch.api.ProjectsEndpoints.shortcodePathVar
+import swiss.dasch.api.ProjectsEndpoints.{shortcodePathVar, assetIdPathVar}
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetCheckResultResponse
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
 import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
@@ -181,13 +181,13 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     )
 
   val getProjectsAssetsInfo = base.secureEndpoint.get
-    .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId"))
+    .in(projects / shortcodePathVar / "assets" / assetIdPathVar)
     .out(jsonBody[AssetInfoResponse])
     .tag("assets")
     .description("Authorization: read:project:1234 scope required.")
 
   val getProjectsAssetsOriginal = base.secureEndpoint.get
-    .in(projects / shortcodePathVar / "assets" / path[AssetId]("assetId") / "original")
+    .in(projects / shortcodePathVar / "assets" / assetIdPathVar / "original")
     .out(header[String]("Content-Disposition"))
     .out(header[String]("Content-Type"))
     .out(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
@@ -288,11 +288,15 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
 }
 
 object ProjectsEndpoints {
-
   val shortcodePathVar: EndpointInput.PathCapture[ProjectShortcode] = path[ProjectShortcode]
     .name("shortcode")
     .description("The shortcode of the project must be an exactly 4 characters long hexadecimal string.")
     .example(ProjectShortcode.from("0001").getOrElse(throw Exception("Invalid shortcode.")))
+
+  val assetIdPathVar: EndpointInput.PathCapture[AssetId] = path[AssetId]
+    .name("assetId")
+    .description("The id of the asset")
+    .example(AssetId.from("5RMOnH7RmAY-qKzgr431bg7").getOrElse(throw Exception("Invalid AssetId.")))
 
   val layer = ZLayer.derive[ProjectsEndpoints]
 }
