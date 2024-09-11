@@ -26,6 +26,9 @@ import zio.UIO
 import zio.ZIO
 import zio.ZLayer
 import zio.http
+import zio.http.Header.ContentDisposition
+import zio.http.Header.ContentDisposition.Attachment
+import zio.http.Header.ContentType
 import zio.http.*
 import zio.json.*
 import zio.nio.file.Files
@@ -167,6 +170,41 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       },
     )
   }
+
+  private val assetOriginalSuite =
+    suite("/projects/<shortcode>/asset/<assetId>/original")(
+      test("given the info file does not exist, it should return Not Found") {
+        val req = Request
+          .get(URL(Path.root / "projects" / "0666" / "assets" / "7l5QJAtPnv5-lLmBPfO7U40" / "original"))
+          .addHeader("Authorization", "Bearer fakeToken")
+        executeRequest(req).map(response => assertTrue(response.status == Status.NotFound))
+      },
+      test("return the original contents") {
+        for {
+          contents <- ZIO.succeed("123".toList.map(_.toByte))
+          ref <- AssetInfoFileTestHelper
+                   .createInfoFile(
+                     "txt",
+                     "txt",
+                     customJsonProps = Some(""""originalMimeType": "text/plain""""),
+                     contentsOrig = Some(contents),
+                   )
+                   .map(_.assetRef)
+          req = Request
+                  .get(URL(Path.root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value / "original"))
+                  .addHeader("Authorization", "Bearer fakeToken")
+          // when
+          response <- executeRequest(req)
+          // then
+          body <- response.body.asString
+        } yield assertTrue(
+          response.status == Status.Ok,
+          body == "123",
+          response.header(ContentDisposition).get == Attachment(None),
+          response.header(ContentType).get.mediaType.fullType == "text/plain",
+        )
+      },
+    )
 
   private val assetInfoSuite =
     suite("/projects/<shortcode>/asset/<assetId>")(
@@ -357,6 +395,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     projectImportSuite,
     assetInfoSuite,
     assetIngestSuite,
+    assetOriginalSuite,
     projectsSuite,
     projectShouldListTest,
   ).provide(

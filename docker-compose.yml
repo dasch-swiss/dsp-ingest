@@ -20,6 +20,5 @@ services:
       - INGEST_BULK_MAX_PARALLEL=10
       - SIPI_USE_LOCAL_DEV=false
       - DB_JDBC_URL=jdbc:sqlite:/opt/db/ingest.sqlite
-      # TODO: good naming?
       - KNORA_WEBAPI_KNORA_API_EXTERNAL_HOST=0.0.0.0
       - KNORA_WEBAPI_KNORA_API_EXTERNAL_PORT=3333
