@@ -18,7 +18,6 @@ import sttp.tapir.statusCode
 import sttp.tapir.ztapir.*
 import swiss.dasch.api.ApiProblem.Unauthorized
 import swiss.dasch.api.BaseEndpoints.defaultErrorOutputs
-import swiss.dasch.domain.AuthScope
 import zio.ZLayer
 import zio._
 
@@ -30,12 +29,6 @@ case class BaseEndpoints(authService: AuthService) {
     .errorOut(defaultErrorOutputs)
     .securityIn(auth.bearer[String](WWWAuthenticateChallenge.bearer))
     .zServerSecurityLogic[Any, Principal](handleAuth)
-
-  val secureEndpoint2: ZPartialServerEndpoint[Any, Unit, Principal, Unit, ApiProblem, Unit, Any] = endpoint
-    .errorOut(defaultErrorOutputs)
-    .zServerSecurityLogic[Any, Principal](_ =>
-      ZIO.succeed(Principal("developer", AuthScope(Set(AuthScope.ScopeValue.Admin)), "fake token")),
-    )
 
   private def handleAuth(token: String): IO[Unauthorized, Principal] = authService
     .authenticate(token)

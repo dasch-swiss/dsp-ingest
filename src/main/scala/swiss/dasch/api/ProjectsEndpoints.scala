@@ -192,7 +192,10 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(header[String]("Content-Type"))
     .out(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
     .tag("assets")
-    .description("Authorization: JWT bearer token")
+    .description(
+      """|Offers the original file for upload, provided the API permisisons allow.
+         |Authorization: JWT bearer token.""".stripMargin,
+    )
 
   given filenameCodec: Codec[String, AssetFilename, CodecFormat.TextPlain] =
     Codec.string.mapEither(AssetFilename.from)(_.value)

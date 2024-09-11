@@ -44,13 +44,8 @@ object AssetInfoFileTestHelper {
       _        <- StorageService.saveJsonFile[AssetInfoFileContent](assetDir / s"${assetRef.id}.info", info)
 
       _ <- ZIO.whenCase(contentsOrig) { case Some(bytes) =>
-             Files.writeBytes(
-               assetDir / s"${assetRef.id}.txt.orig",
-               Chunk.from(bytes),
-               WRITE,
-               CREATE,
-               TRUNCATE_EXISTING,
-             )
+             val filename = assetDir / s"${assetRef.id}.txt.orig"
+             Files.writeBytes(filename, Chunk.from(bytes), WRITE, CREATE, TRUNCATE_EXISTING)
            }
     } yield assetDir
 }
