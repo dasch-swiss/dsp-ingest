@@ -43,7 +43,7 @@ object AuthServiceLiveSpec extends ZIOSpecDefault {
       for {
         token  <- validToken()
         result <- AuthService.authenticate(token)
-      } yield assertTrue(token.nonEmpty, result == Principal("some-subject", claim = token))
+      } yield assertTrue(token.nonEmpty, result == Principal("some-subject", jwtRaw = token))
     },
     test("An expired token should fail with a JwtProblem") {
       for {
