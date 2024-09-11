@@ -57,6 +57,6 @@ object FetchAssetPermissions {
   implicit val decoder: JsonDecoder[PermissionResponse] = DeriveJsonDecoder.gen[PermissionResponse]
 
   val layer =
-    HttpClientZioBackend.layer(SttpBackendOptions.connectionTimeout(30.minutes)).orDie >+>
+    HttpClientZioBackend.layer(SttpBackendOptions.connectionTimeout(5.seconds)).orDie >+>
       ZLayer.derive[FetchAssetPermissionsLive]
 }
