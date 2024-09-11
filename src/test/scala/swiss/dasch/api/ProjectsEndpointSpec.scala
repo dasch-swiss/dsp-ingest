@@ -37,6 +37,7 @@ import zio.http.Header.ContentType
 import zio.http.*
 import zio.json.*
 import zio.nio.file.Files
+import zio.test.Spec
 import zio.test.ZIOSpecDefault
 import zio.test.assertTrue
 
@@ -44,13 +45,20 @@ import java.net.URLDecoder
 import java.text.Normalizer
 
 object ProjectsEndpointSpec extends ZIOSpecDefault {
-
   private def executeRequest(request: Request) = for {
     app <- ZIO.serviceWith[ProjectsEndpointsHandler](handler =>
              ZioHttpInterpreter(ZioHttpServerOptions.default).toHttp(handler.endpoints),
            )
     response <- app.runZIO(request).logError
   } yield response
+
+  val fakeSttp = {
+    val stub = SttpBackendStub(new RIOMonadAsyncError[Any]).whenRequestMatchesPartial {
+      case r if r.uri.path.mkString("/").contains("admin/files/0001") => Response.ok("""{"permissionCode": 1}""")
+      case _                                                          => ???
+    }
+    ZLayer.succeed(new FetchAssetPermissionsLive(stub, ApiConfig("", 80)))
+  }
 
   private val projectExportSuite = {
     def postExport(shortcode: String | ProjectShortcode) = {
@@ -201,6 +209,10 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           response.header(ContentType).get.mediaType.fullType == "text/plain",
         )
       },
+    )
+
+  private val assetOriginalSuiteFakeSttp =
+    suite("/projects/<shortcode>/asset/<assetId>/original")(
       test("fail by no permissions") {
         for {
           contents   <- ZIO.succeed("123".toList.map(_.toByte))
@@ -213,14 +225,8 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           body     <- response.body.asString
         } yield assertTrue(
           response.status != Status.Ok,
-          body == "123",
+          body == """{"errorMessage":"permission denied"}""",
         )
-      }.provideSomeLayer {
-        val fakeHttp = SttpBackendStub(new RIOMonadAsyncError[Any]).whenRequestMatchesPartial {
-          case r if r.uri.path.endsWith(List("original")) => Response.ok("""{"permissionCode": 1}""")
-          case _                                          => ???
-        }
-        ZLayer.succeed(new FetchAssetPermissionsLive(fakeHttp, ApiConfig("", 80)))
       },
     )
 
@@ -425,6 +431,38 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     CsvService.layer,
     CommandExecutorLive.layer,
     FetchAssetPermissionsMock.layer(2),
+    FileChecksumServiceLive.layer,
+    ZLayer.succeed(Features(allowEraseProjects = true)),
+    StillImageService.layer,
+    ImportServiceLive.layer,
+    IngestService.layer,
+    MimeTypeGuesser.layer,
+    MovingImageService.layer,
+    OtherFilesService.layer,
+    ProjectService.layer,
+    ProjectRepositoryLive.layer,
+    ProjectsEndpoints.layer,
+    ProjectsEndpointsHandler.layer,
+    ReportService.layer,
+    SipiClientMock.layer,
+    SpecConfigurations.ingestConfigLayer,
+    SpecConfigurations.jwtConfigDisableAuthLayer,
+    SpecConfigurations.sipiConfigLayer,
+    SpecConfigurations.storageConfigLayer,
+    StorageServiceLive.layer,
+    TestUtils.testDbLayerWithEmptyDb,
+  ) + suite("ProjectsEndpoint with SttpStub")(
+    // NOTE: only difference in the provide()s is the fakeSttp. Whoever can help me refactor this gets a beer.
+    assetOriginalSuiteFakeSttp,
+  ).provide(
+    AssetInfoServiceLive.layer,
+    AuthServiceLive.layer,
+    AuthorizationHandlerLive.layer,
+    BaseEndpoints.layer,
+    BulkIngestService.layer,
+    CsvService.layer,
+    CommandExecutorLive.layer,
+    fakeSttp,
     FileChecksumServiceLive.layer,
     ZLayer.succeed(Features(allowEraseProjects = true)),
     StillImageService.layer,
