@@ -14,7 +14,7 @@ import swiss.dasch.FetchAssetPermissionsLive
 import swiss.dasch.FetchAssetPermissionsMock
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
 import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
-import swiss.dasch.config.Configuration.ApiConfig
+import swiss.dasch.config.Configuration.DspApiConfig
 import swiss.dasch.config.Configuration.Features
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
@@ -57,7 +57,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       case r if r.uri.path.mkString("/").contains("admin/files/0001") => Response.ok("""{"permissionCode": 1}""")
       case _                                                          => ???
     }
-    ZLayer.succeed(new FetchAssetPermissionsLive(stub, ApiConfig("", 80)))
+    ZLayer.succeed(new FetchAssetPermissionsLive(stub, DspApiConfig("")))
   }
 
   private val projectExportSuite = {

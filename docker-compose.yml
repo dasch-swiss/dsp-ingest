@@ -20,5 +20,4 @@ services:
       - INGEST_BULK_MAX_PARALLEL=10
       - SIPI_USE_LOCAL_DEV=false
       - DB_JDBC_URL=jdbc:sqlite:/opt/db/ingest.sqlite
-      - KNORA_WEBAPI_KNORA_API_EXTERNAL_HOST=0.0.0.0
-      - KNORA_WEBAPI_KNORA_API_EXTERNAL_PORT=3333
+      - DSP_API_URL=http://localhost:3333

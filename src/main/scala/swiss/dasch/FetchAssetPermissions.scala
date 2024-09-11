@@ -30,7 +30,7 @@ trait FetchAssetPermissions {
 
 class FetchAssetPermissionsLive(
   sttp: SttpBackend[Task, ZioStreams],
-  apiConfig: Configuration.ApiConfig,
+  apiConfig: Configuration.DspApiConfig,
 ) extends FetchAssetPermissions {
   def getPermissionCode(
     jwt: String,
@@ -39,7 +39,7 @@ class FetchAssetPermissionsLive(
     (for {
       uri <-
         ZIO.succeed(
-          uri"http://${apiConfig.host}:${apiConfig.port}/admin/files/${assetInfo.assetRef.belongsToProject}/${assetInfo.derivative.filename}",
+          uri"${apiConfig.url}/admin/files/${assetInfo.assetRef.belongsToProject}/${assetInfo.derivative.filename}",
         )
       response    <- sttp.send(basicRequest.get(uri).header("Authorization", s"Bearer ${jwt}"))
       successBody <- ZIO.fromEither(response.body).mapError(httpError(uri.toString, response.code.code, _))
