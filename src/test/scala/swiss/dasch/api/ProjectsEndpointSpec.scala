@@ -224,8 +224,8 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
           response <- executeRequest(req)
           body     <- response.body.asString
         } yield assertTrue(
-          response.status != Status.Ok,
-          body == """{"errorMessage":"permission denied"}""",
+          response.status == Status.Forbidden,
+          body == """{"reason":"permission denied"}""",
         )
       },
     )

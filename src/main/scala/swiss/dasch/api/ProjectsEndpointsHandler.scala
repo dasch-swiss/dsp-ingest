@@ -128,7 +128,7 @@ final case class ProjectsEndpointsHandler(
             permissionCode <- fetchAssetPermissions
                                 .getPermissionCode(userSession.claim, assetInfo)
                                 .mapError(_ => InternalServerError("error fetching permissions"))
-            _ <- ZIO.fail(InternalServerError("permission denied")).unless(permissionCode >= 2)
+            _ <- ZIO.fail(Forbidden("permission denied")).unless(permissionCode >= 2)
           } yield (
             s"attachment; filename*=\"${filenameEncoded}\"",
             assetInfo.metadata.originalMimeType.map(m => m.stringValue).getOrElse("application/octet-stream"),
