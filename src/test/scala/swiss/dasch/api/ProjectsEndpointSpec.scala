@@ -5,11 +5,16 @@
 
 package swiss.dasch.api
 
+import sttp.client3.Response
+import sttp.client3.impl.zio.RIOMonadAsyncError
+import sttp.client3.testing.SttpBackendStub
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import sttp.tapir.server.ziohttp.ZioHttpServerOptions
+import swiss.dasch.FetchAssetPermissionsLive
 import swiss.dasch.FetchAssetPermissionsMock
 import swiss.dasch.api.ProjectsEndpointsResponses.AssetInfoResponse
 import swiss.dasch.api.ProjectsEndpointsResponses.ProjectResponse
+import swiss.dasch.config.Configuration.ApiConfig
 import swiss.dasch.config.Configuration.Features
 import swiss.dasch.config.Configuration.StorageConfig
 import swiss.dasch.domain.AugmentedPath.Conversions.given_Conversion_AugmentedPath_Path
@@ -181,28 +186,41 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
       },
       test("return the original contents") {
         for {
-          contents <- ZIO.succeed("123".toList.map(_.toByte))
-          ref <- AssetInfoFileTestHelper
-                   .createInfoFile(
-                     "txt",
-                     "txt",
-                     customJsonProps = Some(""""originalMimeType": "text/plain""""),
-                     contentsOrig = Some(contents),
-                   )
-                   .map(_.assetRef)
+          contents   <- ZIO.succeed("123".toList.map(_.toByte))
+          contentType = Some(""""originalMimeType": "text/plain"""")
+          ref        <- AssetInfoFileTestHelper.createInfoFile("txt", "txt", contentType, Some(contents)).map(_.assetRef)
           req = Request
                   .get(URL(Path.root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value / "original"))
                   .addHeader("Authorization", "Bearer fakeToken")
-          // when
           response <- executeRequest(req)
-          // then
-          body <- response.body.asString
+          body     <- response.body.asString
         } yield assertTrue(
           response.status == Status.Ok,
           body == "123",
           response.header(ContentDisposition).get == Attachment(None),
           response.header(ContentType).get.mediaType.fullType == "text/plain",
         )
+      },
+      test("fail by no permissions") {
+        for {
+          contents   <- ZIO.succeed("123".toList.map(_.toByte))
+          contentType = Some(""""originalMimeType": "text/plain"""")
+          ref        <- AssetInfoFileTestHelper.createInfoFile("txt", "txt", contentType, Some(contents)).map(_.assetRef)
+          req = Request
+                  .get(URL(Path.root / "projects" / ref.belongsToProject.value / "assets" / ref.id.value / "original"))
+                  .addHeader("Authorization", "Bearer fakeToken")
+          response <- executeRequest(req)
+          body     <- response.body.asString
+        } yield assertTrue(
+          response.status != Status.Ok,
+          body == "123",
+        )
+      }.provideSomeLayer {
+        val fakeHttp = SttpBackendStub(new RIOMonadAsyncError[Any]).whenRequestMatchesPartial {
+          case r if r.uri.path.endsWith(List("original")) => Response.ok("""{"permissionCode": 1}""")
+          case _                                          => ???
+        }
+        ZLayer.succeed(new FetchAssetPermissionsLive(fakeHttp, ApiConfig("", 80)))
       },
     )
 
@@ -406,7 +424,7 @@ object ProjectsEndpointSpec extends ZIOSpecDefault {
     BulkIngestService.layer,
     CsvService.layer,
     CommandExecutorLive.layer,
-    FetchAssetPermissionsMock.layer,
+    FetchAssetPermissionsMock.layer(2),
     FileChecksumServiceLive.layer,
     ZLayer.succeed(Features(allowEraseProjects = true)),
     StillImageService.layer,

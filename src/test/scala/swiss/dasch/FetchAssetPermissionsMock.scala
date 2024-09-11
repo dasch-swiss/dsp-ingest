@@ -8,14 +8,15 @@ package swiss.dasch
 import zio.*
 import swiss.dasch.domain.AssetInfo
 
-class FetchAssetPermissionsMock extends FetchAssetPermissions {
+class FetchAssetPermissionsMock(permissionCode: Int) extends FetchAssetPermissions {
   def getPermissionCode(
     jwt: String,
     assetInfo: AssetInfo,
   ): Task[Int] =
-    ZIO.succeed(2)
+    ZIO.succeed(permissionCode)
 }
 
 object FetchAssetPermissionsMock {
-  val layer = ZLayer.derive[FetchAssetPermissionsMock]
+  def layer(permissionCode: Int): ULayer[FetchAssetPermissions] =
+    ZLayer.succeed(new FetchAssetPermissionsMock(permissionCode))
 }

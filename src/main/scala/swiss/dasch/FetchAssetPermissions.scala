@@ -44,7 +44,7 @@ class FetchAssetPermissionsLive(
       response    <- sttp.send(basicRequest.get(uri).header("Authorization", s"Bearer ${jwt}"))
       successBody <- ZIO.fromEither(response.body).mapError(httpError(uri.toString, response.code.code, _))
       permissionCode <-
-        ZIO.fromEither(successBody.fromJson[PermissionResponse].bimap(e => throw new Exception(e), _.permissionCode))
+        ZIO.fromEither(successBody.fromJson[PermissionResponse].bimap(e => new Exception(e), _.permissionCode))
     } yield permissionCode).tapError(e => ZIO.logError(s"FetchAssetPermissions failure: ${e.getMessage}"))
 
   def httpError(uri: String, code: Int, body: String): Throwable =
