@@ -21,7 +21,7 @@ val zioLoggingVersion           = "2.3.1"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC30"
+val zioPreludeVersion           = "1.0.0-RC31"
 val zioVersion                  = "2.1.9"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
@@ -110,7 +110,7 @@ lazy val root = (project in file("."))
       "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
       "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
       "dev.zio"      %% "zio-test-sbt"           % zioVersion     % Test,
-      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.1.1"        % Test,
+      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.2.0"        % Test,
     ),
     testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
     Docker / dockerRepository            := Some("daschswiss"),
