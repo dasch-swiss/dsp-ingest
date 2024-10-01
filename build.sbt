@@ -29,7 +29,7 @@ val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
 
 ThisBuild / organization      := "dasch.swiss"
 ThisBuild / version           := gitVersion
-ThisBuild / scalaVersion      := "3.3.3"
+ThisBuild / scalaVersion      := "3.3.4"
 ThisBuild / fork              := true
 ThisBuild / semanticdbEnabled := true
 
