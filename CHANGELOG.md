@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.13.1...v0.14.0) (2024-10-15)
+
+
+### Maintenances
+
+* Minor dependency updates ([#279](https://github.com/dasch-swiss/dsp-ingest/issues/279)) ([073947c](https://github.com/dasch-swiss/dsp-ingest/commit/073947c7014f8c5f0e00992d7e9635292fa4c0ee))
+
+
+### Enhancements
+
+* Allow uploading JSON text files (DEV-4222) ([#276](https://github.com/dasch-swiss/dsp-ingest/issues/276)) ([25a5f34](https://github.com/dasch-swiss/dsp-ingest/commit/25a5f340f8ecbc10f739a87615743f18f0ba8247))
+
 ## [0.13.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.13.0...v0.13.1) (2024-10-01)
 
 
