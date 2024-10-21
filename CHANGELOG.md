@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.14.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.13.1...v0.14.0) (2024-10-21)
+
+
+### Maintenances
+
+* Minor dependency updates ([#279](https://github.com/dasch-swiss/dsp-ingest/issues/279)) ([073947c](https://github.com/dasch-swiss/dsp-ingest/commit/073947c7014f8c5f0e00992d7e9635292fa4c0ee))
+* Patch dependency updates ([#278](https://github.com/dasch-swiss/dsp-ingest/issues/278)) ([88db806](https://github.com/dasch-swiss/dsp-ingest/commit/88db8064993e4cf2c7a732617fd41245f5d23ab9))
+* Revert Minor dependency updates ([#279](https://github.com/dasch-swiss/dsp-ingest/issues/279)) ([#280](https://github.com/dasch-swiss/dsp-ingest/issues/280)) ([652a1c9](https://github.com/dasch-swiss/dsp-ingest/commit/652a1c9fcaca6ebf970c31a56261609159326bd6))
+* Update sttp.client3 to 3.10.1 ([#281](https://github.com/dasch-swiss/dsp-ingest/issues/281)) ([21fb3b5](https://github.com/dasch-swiss/dsp-ingest/commit/21fb3b52785a39989d6b098120e68923e4cc91dc))
+
+
+### Enhancements
+
+* Allow uploading JSON text files (DEV-4222) ([#276](https://github.com/dasch-swiss/dsp-ingest/issues/276)) ([25a5f34](https://github.com/dasch-swiss/dsp-ingest/commit/25a5f340f8ecbc10f739a87615743f18f0ba8247))
+
 ## [0.13.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.13.0...v0.13.1) (2024-10-01)
 
 
