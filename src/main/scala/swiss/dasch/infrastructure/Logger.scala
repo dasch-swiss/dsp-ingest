@@ -21,10 +21,10 @@ object Logger {
       case "error" => LogLevel.Error
       case "fatal" => LogLevel.Fatal
       case _       => LogLevel.Info
-    }
-      // Uncomment the following lines to change the log level for specific loggers:
-      // , ("zio.logging.slf4j", LogLevel.Debug)
-      // , ("SLF4J-LOGGER", LogLevel.Warning)
+    },
+    // Uncomment the following lines to change the log level for specific loggers:
+    // , ("zio.logging.slf4j", LogLevel.Debug)
+    // , ("SLF4J-LOGGER", LogLevel.Warning)
   )
 
   private val logFormatText: LogFormat =
@@ -52,7 +52,7 @@ object Logger {
 
   private val logger: ZLayer[ServiceConfig, Nothing, Unit] = ZLayer.service[ServiceConfig].flatMap { config =>
     val value: ServiceConfig = config.get
-    val logLevel = value.logLevel
+    val logLevel             = value.logLevel
     if (value.logFormat.toLowerCase() == "json") jsonLogger(logLevel)
     else textLogger(logLevel)
   }
