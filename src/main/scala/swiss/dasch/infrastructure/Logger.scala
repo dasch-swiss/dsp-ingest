@@ -13,7 +13,8 @@ import zio.logging.slf4j.bridge.Slf4jBridge
 object Logger {
 
   private val logFilter = LogFilter.LogLevelByNameConfig(
-    LogLevel.Info,
+    val value: ServiceConfig = config.get
+    LogLevel.fromString(value.service.logLevel).getOrElse(LogLevel.Info)
       // Uncomment the following lines to change the log level for specific loggers:
       // , ("zio.logging.slf4j", LogLevel.Debug)
       // , ("SLF4J-LOGGER", LogLevel.Warning)
