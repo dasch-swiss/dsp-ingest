@@ -12,7 +12,7 @@ import sttp.tapir.ztapir.*
 import swiss.dasch.domain.ProjectShortcode
 import zio.json.{DeriveJsonCodec, JsonCodec}
 import zio.schema.{DeriveSchema, Schema}
-import zio.{Chunk, ZLayer}
+import zio.ZLayer
 
 final case class MappingEntry(internalFilename: String, originalFilename: String)
 
