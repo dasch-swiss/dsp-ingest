@@ -10,7 +10,7 @@ import swiss.dasch.domain.*
 import swiss.dasch.domain.Exif.Image.OrientationValue
 import swiss.dasch.infrastructure.CommandExecutorMock
 import swiss.dasch.test.SpecConstants.*
-import swiss.dasch.test.{SpecConfigurations, SpecConstants}
+import swiss.dasch.test.SpecConfigurations
 import swiss.dasch.util.TestUtils
 import zio.*
 import zio.http.*
