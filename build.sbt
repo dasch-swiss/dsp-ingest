@@ -8,11 +8,11 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
 
-val flywayVersion               = "10.19.0"
+val flywayVersion               = "10.20.1"
 val hikariVersion               = "6.0.0"
 val quillVersion                = "4.8.6"
 val sipiVersion                 = "v30.18.3"
-val sqliteVersion               = "3.46.1.3"
+val sqliteVersion               = "3.47.0.0"
 val tapirVersion                = "1.11.7"
 val testContainersVersion       = "0.40.15"
 val zioConfigVersion            = "4.0.2"
