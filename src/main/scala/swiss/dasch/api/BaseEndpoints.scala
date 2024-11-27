@@ -19,7 +19,7 @@ case class BaseEndpoints(authService: AuthService) {
   val publicEndpoint: PublicEndpoint[Unit, ApiProblem, Unit, Any] = endpoint
     .errorOut(defaultErrorOutputs)
 
-  val maybeSecureEndpoint: ZPartialServerEndpoint[Any, Option[String], Option[Principal], Unit, ApiProblem, Unit, Any] =
+  val withUserEndpoint: ZPartialServerEndpoint[Any, Option[String], Option[Principal], Unit, ApiProblem, Unit, Any] =
     endpoint
       .errorOut(defaultErrorOutputs)
       .securityIn(auth.bearer[Option[String]](WWWAuthenticateChallenge.bearer))
