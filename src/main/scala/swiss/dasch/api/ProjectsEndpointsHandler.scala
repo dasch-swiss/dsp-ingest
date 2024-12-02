@@ -206,10 +206,10 @@ final case class ProjectsEndpointsHandler(
             .filterOrFail(_.elements.nonEmpty)("Is empty")
             .tap(p => ZIO.fromEither(AssetFilename.fromPath(p)))
             .mapError(msg => BadRequest.invalidPathVariable("filename", filename, msg))
-        _ <- bulkIngestService.uploadSingleFile(shortcode, path, stream).mapError { e =>
+        s <- bulkIngestService.uploadSingleFile(shortcode, path, stream).mapError { e =>
                e.map(InternalServerError(_)).getOrElse(failBulkIngestInProgress(shortcode))
              }
-      } yield ()
+      } yield s
     })
 
   private def failBulkIngestInProgress(code: ProjectShortcode) =
