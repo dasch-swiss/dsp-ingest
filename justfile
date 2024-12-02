@@ -12,9 +12,12 @@ localdev-cleandb:
 localdev-run:
     export JWT_DISABLE_AUTH=true; sbt "~run"
 
-# Build a docker image locally and run it with docker-compose up
-build-and-run-docker:
+# Build a docker image locally
+build-docker:
     export DOCKER_BUILDKIT=1; sbt Docker/publishLocal
+
+# Build a docker image locally and run it with docker-compose up
+build-and-run-docker: build-docker
     docker compose up -d
     docker compose logs -f
 
