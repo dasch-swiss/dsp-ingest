@@ -133,7 +133,7 @@ final case class ProjectsEndpointsHandler(
             "*",
             "true",
             "GET",
-            "Authorization"
+            "Authorization",
           )
         },
       )
