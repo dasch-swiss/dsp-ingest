@@ -27,10 +27,10 @@ object IngestApiServer {
     .options
 
   def startup() = for {
-    _        <- ZIO.logInfo(s"Starting ${BuildInfo.name}")
-    routes   <- ZIO.serviceWith[Endpoints](e => ZHttp4sServerInterpreter(serverOptions).from(e.endpoints).toRoutes)
-    c        <- ZIO.service[ServiceConfig]
-    _        <- ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
+    _      <- ZIO.logInfo(s"Starting ${BuildInfo.name}")
+    routes <- ZIO.serviceWith[Endpoints](e => ZHttp4sServerInterpreter(serverOptions).from(e.endpoints).toRoutes)
+    c      <- ZIO.service[ServiceConfig]
+    _      <- ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
     server <-
       NettyServerBuilder[Task]
         .bindHttp(c.port, c.host)
