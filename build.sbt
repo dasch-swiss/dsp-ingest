@@ -41,7 +41,7 @@ val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-refined"           % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-http4s-server-zio" % tapirVersion,
-  "org.http4s"                  %% "http4s-blaze-server"     % "0.23.17",
+  "org.http4s"                  %%  "http4s-netty-server"    % "0.5.21",
   "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"      % tapirVersion,
 )
 

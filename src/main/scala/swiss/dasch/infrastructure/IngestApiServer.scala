@@ -4,7 +4,7 @@
  */
 
 package swiss.dasch.infrastructure
-import org.http4s.blaze.server.BlazeServerBuilder
+import org.http4s.netty.server.NettyServerBuilder
 import org.http4s.server.Router
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir.server.http4s.ztapir.ZHttp4sServerInterpreter
@@ -28,17 +28,14 @@ object IngestApiServer {
 
   def startup() = for {
     _        <- ZIO.logInfo(s"Starting ${BuildInfo.name}")
-    executor <- ZIO.executor
     routes   <- ZIO.serviceWith[Endpoints](e => ZHttp4sServerInterpreter(serverOptions).from(e.endpoints).toRoutes)
     c        <- ZIO.service[ServiceConfig]
     _        <- ZIO.logInfo(s"Started ${BuildInfo.name}/${BuildInfo.version}, see http://${c.host}:${c.port}/docs")
     server <-
-      BlazeServerBuilder[Task]
-        .withExecutionContext(executor.asExecutionContext)
+      NettyServerBuilder[Task]
         .bindHttp(c.port, c.host)
         .withHttpApp(Router("/" -> routes).orNotFound)
-        .serve
-        .compile
-        .drain
+        .resource
+        .useForever
   } yield server
 }
