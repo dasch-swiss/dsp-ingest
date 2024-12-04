@@ -44,7 +44,7 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     ) {
       for {
         _            <- client(_.info).tap(Console.printLine(_))
-        contentLength = 512.KB
+        contentLength = 5.MB
         response     <- client(_.uploadRandomFile(contentLength, filename))
         _            <- Console.printLine(s"upload response: $response")
         tmpFile      <- ZIO.serviceWith[SharedVolumes.Temp](_.asPath / "import" / "0001" / filename)

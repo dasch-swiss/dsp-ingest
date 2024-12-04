@@ -22,6 +22,7 @@ val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC35"
+val zioSchemaVersion            = "1.5.0"
 val zioVersion                  = "2.1.13"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
@@ -39,7 +40,8 @@ val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-json-zio"          % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-refined"           % tapirVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-http4s-server-zio" % tapirVersion,
+  "org.http4s"                  %% "http4s-blaze-server"     % "0.23.17",
   "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"      % tapirVersion,
 )
 
@@ -54,6 +56,28 @@ val db = Seq(
   "org.flywaydb" % "flyway-core"    % flywayVersion,
   "com.zaxxer"   % "HikariCP"       % hikariVersion,
   "io.getquill" %% "quill-jdbc-zio" % quillVersion,
+)
+
+val zio = Seq(
+  "dev.zio" %% "zio"                   % zioVersion,
+  "dev.zio" %% "zio-streams"           % zioVersion,
+  "dev.zio" %% "zio-schema"            % zioSchemaVersion,
+  "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion,
+  "dev.zio" %% "zio-nio"               % zioNioVersion,
+  "dev.zio" %% "zio-prelude"           % zioPreludeVersion,
+)
+
+val test = Seq(
+  "dev.zio"           %% "zio-mock"               % zioMockVersion % Test,
+  "dev.zio"           %% "zio-http"               % "3.0.1"        % Test,
+  "dev.zio"           %% "zio-test"               % zioVersion     % Test,
+  "dev.zio"           %% "zio-test-junit"         % zioVersion     % Test,
+  "dev.zio"           %% "zio-test-magnolia"      % zioVersion     % Test,
+  "dev.zio"           %% "zio-test-sbt"           % zioVersion     % Test,
+  "org.scoverage"      % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
+  "org.testcontainers" % "testcontainers"         % "1.20.4"       % Test,
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+
 )
 
 lazy val root = (project in file("."))
@@ -80,10 +104,9 @@ lazy val root = (project in file("."))
            |""".stripMargin,
       ),
     ),
-    libraryDependencies ++= db ++ tapir ++ metrics ++ Seq(
+    libraryDependencies ++= db ++ tapir ++ metrics ++ zio ++ Seq(
       "com.github.jwt-scala"          %% "jwt-zio-json"                      % "10.0.1",
       "commons-io"                     % "commons-io"                        % "2.18.0",
-      "dev.zio"                       %% "zio"                               % zioVersion,
       "dev.zio"                       %% "zio-config"                        % zioConfigVersion,
       "dev.zio"                       %% "zio-config-magnolia"               % zioConfigVersion,
       "dev.zio"                       %% "zio-config-typesafe"               % zioConfigVersion,
@@ -91,9 +114,6 @@ lazy val root = (project in file("."))
       "dev.zio"                       %% "zio-json-interop-refined"          % zioJsonVersion,
       "dev.zio"                       %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
       "dev.zio"                       %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
-      "dev.zio"                       %% "zio-nio"                           % zioNioVersion,
-      "dev.zio"                       %% "zio-prelude"                       % zioPreludeVersion,
-      "dev.zio"                       %% "zio-streams"                       % zioVersion,
       "eu.timepit"                    %% "refined"                           % "0.11.2",
       "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.1",
 
@@ -103,16 +123,7 @@ lazy val root = (project in file("."))
       // logging
       "dev.zio" %% "zio-logging"               % zioLoggingVersion,
       "dev.zio" %% "zio-logging-slf4j2-bridge" % zioLoggingVersion,
-
-      // test
-      "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
-      "dev.zio"      %% "zio-test"               % zioVersion     % Test,
-      "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
-      "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
-      "dev.zio"      %% "zio-test-sbt"           % zioVersion     % Test,
-      "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
-      "org.testcontainers" % "testcontainers" % "1.20.4" % Test,
-    ),
+    ) ++ test,
     testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
     Docker / dockerRepository            := Some("daschswiss"),
     Docker / packageName                 := "dsp-ingest",
