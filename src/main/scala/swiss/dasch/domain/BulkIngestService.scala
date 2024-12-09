@@ -170,14 +170,13 @@ final case class BulkIngestService(
     shortcode: ProjectShortcode,
     path: Path,
     stream: ZStream[Any, Throwable, Byte],
-  ): IO[Option[Throwable], Unit] =
-    withSemaphore(shortcode) {
-      for {
-        file <- storage.getImportFolder(shortcode).map(_ / path)
-        _    <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
-        _    <- stream.run(ZSink.fromFile(file.toFile))
-      } yield ()
-    }
+  ) = withSemaphore(shortcode) {
+    for {
+      file <- storage.getImportFolder(shortcode).map(_ / path)
+      _    <- ZIO.foreachDiscard(file.parent)(Files.createDirectories(_))
+      s     = stream.tapSink(ZSink.fromFile(file.toFile)).drain ++ ZStream.fromIterable("OK".getBytes)
+    } yield s
+  }
 }
 
 object BulkIngestService {
