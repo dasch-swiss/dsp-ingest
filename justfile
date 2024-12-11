@@ -21,6 +21,10 @@ build-and-run-docker: build-docker
     docker compose up -d
     docker compose logs -f
 
+# Run the integration tests
+run-integration-tests: build-docker
+    sbt integration/test
+
 # Updates the OpenApi yml files by generating these from the tAPIr specs
 docs-openapi-generate:
     rm -f ./docs/openapi/openapi-*.yml
