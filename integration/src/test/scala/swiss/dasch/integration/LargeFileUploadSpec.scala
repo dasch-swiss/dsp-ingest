@@ -37,27 +37,28 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     }
   }
 
+  private val contentLength = 20.MB
   val spec = suite("Large Files")(
     test(
-      "uploading a large file should work" +
+      "uploading a large file should work " +
+        "given the file is larger than the available memory of the container " +
         "/projects/:shortcode/bulk-ingest/ingest/:filename",
     ) {
       for {
-        _            <- client(_.info).tap(Console.printLine(_))
-        contentLength = 5.MB
-        response     <- client(_.uploadRandomFile(contentLength, filename))
-        _            <- Console.printLine(s"upload response: $response")
-        tmpFile      <- ZIO.serviceWith[SharedVolumes.Temp](_.asPath / "import" / "0001" / filename)
-        size         <- Files.size(tmpFile)
-        _            <- Console.printLine(s"file size: ${size.pretty}")
+        _        <- client(_.info).tap(Console.printLine(_))
+        response <- client(_.uploadRandomFile(contentLength, filename))
+        _        <- Console.printLine(s"upload response: $response")
+        tmpFile  <- ZIO.serviceWith[SharedVolumes.Temp](_.asPath / "import" / "0001" / filename)
+        size     <- Files.size(tmpFile)
+        _        <- Console.printLine(s"file size: ${size.pretty}")
       } yield assertTrue(size >= contentLength)
     },
   ).provide(
     TestIngestClient.layer,
-    DspIngestTestContainer.layer(2.GB),
+    DspIngestTestContainer.layer(contentLength / 2),
     SharedVolumes.layer,
     HttpClientZioBackend.layer(),
-  ) @@ TestAspect.withLiveRandom @@ TestAspect.withLiveClock @@ TestAspect.timeout(3.minutes)
+  ) @@ TestAspect.withLiveRandom @@ TestAspect.withLiveClock @@ TestAspect.timeout(30.minutes)
 }
 
 final case class TestIngestClient(backend: SttpBackend[Task, ZioStreams], container: DspIngestTestContainer) {

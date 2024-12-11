@@ -1,12 +1,14 @@
 import com.typesafe.sbt.packager.docker.Cmd
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerRepository}
+import sbt.Keys.testFrameworks
 
+import scala.collection.Seq
 import scala.sys.process.*
 
-addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
-addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck;")
-addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate")
-addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck")
+addCommandAlias("fmt", "scalafmt; Test / scalafmt; integration/Test/scalafmt;")
+addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; integration/Test/ scalafmtCheck;")
+addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; integration/Test/headerCreate")
+addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
 val flywayVersion               = "10.22.0"
 val hikariVersion               = "6.2.1"
@@ -14,7 +16,7 @@ val quillVersion                = "4.8.6"
 val sipiVersion                 = "v30.22.0"
 val sqliteVersion               = "3.47.1.0"
 val tapirVersion                = "1.11.9"
-val testContainersVersion       = "0.40.15"
+val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.2"
 val zioJsonVersion              = "0.7.3"
 val zioLoggingVersion           = "2.4.0"
@@ -75,9 +77,19 @@ val test = Seq(
   "dev.zio"           %% "zio-test-magnolia"      % zioVersion     % Test,
   "dev.zio"           %% "zio-test-sbt"           % zioVersion     % Test,
   "org.scoverage"      % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
-  "org.testcontainers" % "testcontainers"         % "1.20.4"       % Test,
   "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+)
 
+val integrationTest = Seq(
+  "org.testcontainers" % "testcontainers" % testContainersVersion % Test,
+)
+
+val projectLicense = Some(
+  HeaderLicense.Custom(
+    """|Copyright © 2021 - 2024 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+       |SPDX-License-Identifier: Apache-2.0
+       |""".stripMargin,
+  ),
 )
 
 lazy val root = (project in file("."))
@@ -97,13 +109,7 @@ lazy val root = (project in file("."))
   )
   .settings(
     name := "dsp-ingest",
-    headerLicense := Some(
-      HeaderLicense.Custom(
-        """|Copyright © 2021 - 2024 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
-           |SPDX-License-Identifier: Apache-2.0
-           |""".stripMargin,
-      ),
-    ),
+    headerLicense := projectLicense,
     libraryDependencies ++= db ++ tapir ++ metrics ++ zio ++ Seq(
       "com.github.jwt-scala"          %% "jwt-zio-json"                      % "10.0.1",
       "commons-io"                     % "commons-io"                        % "2.18.0",
@@ -149,4 +155,13 @@ lazy val root = (project in file("."))
       case Cmd("USER", args @ _*) => true
       case cmd                    => false
     },
+  )
+
+lazy val integration = (project in file("integration"))
+  .dependsOn(root)
+  .settings(
+    publish / skip := true,
+    headerLicense := projectLicense,
+    libraryDependencies ++=  test ++ integrationTest,
+    testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
   )
