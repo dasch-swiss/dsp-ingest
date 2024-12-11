@@ -16,6 +16,8 @@ import zio.nio.file.Files
 import zio.stream.ZStream
 import zio.test.*
 
+val timeout: Duration = 40.minutes
+
 object LargeFileUploadSpec extends ZIOSpecDefault {
 
   private val client = ZIO.serviceWithZIO[TestIngestClient]
@@ -37,7 +39,8 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     }
   }
 
-  private val contentLength = 1.MB
+  private val contentLength = 360.MB
+
   val spec = suite("Large Files")(
     test(
       "uploading a large file should work " +
@@ -55,10 +58,10 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     },
   ).provide(
     TestIngestClient.layer,
-    DspIngestTestContainer.layer(300.MB),
+    DspIngestTestContainer.layer(contentLength - 50.MB),
     SharedVolumes.layer,
     HttpClientZioBackend.layer(),
-  ) @@ TestAspect.withLiveRandom @@ TestAspect.withLiveClock @@ TestAspect.timeout(40.minutes)
+  ) @@ TestAspect.withLiveRandom @@ TestAspect.withLiveClock @@ TestAspect.timeout(timeout)
 }
 
 final case class TestIngestClient(backend: SttpBackend[Task, ZioStreams], container: DspIngestTestContainer) {
@@ -78,7 +81,7 @@ final case class TestIngestClient(backend: SttpBackend[Task, ZioStreams], contai
         .post(baseUrl.withPath(Seq("projects", "0001", "bulk-ingest", "ingest", filename)))
         .streamBody(ZioStreams)(randomStream)
         .header(Header.authorization("Bearer", "token"))
-        .readTimeout(3.minutes.asScala)
+        .readTimeout(timeout.asScala)
         .send(backend)
         .flatMap(response => ZIO.fromEither(response.body).mapError(new Exception(_)))
     }
