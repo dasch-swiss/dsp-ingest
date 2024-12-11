@@ -65,8 +65,6 @@ jobs:
   integration-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Just
-        uses: extractions/setup-just@v2
       - name: Checkout current branch
         uses: actions/checkout@v4
         with:
@@ -78,7 +76,7 @@ jobs:
           java-version: 21
           cache: sbt
       - name: Run integration tests
-        run: just run-integration-test
+        run: export DOCKER_BUILDKIT=1;sbt Docker/publishLocal;sbt integration/test
 
   publish-docker-image:
     if: (github.ref == 'refs/heads/main' && github.event_name != 'release') || startsWith(github.ref, 'refs/tags/')
