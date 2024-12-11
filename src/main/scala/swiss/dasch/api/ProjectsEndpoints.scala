@@ -189,7 +189,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
     .out(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
     .tag("assets")
     .description(
-      """|Offers the original file for upload, provided the API permisisons allow.
+      """|Offers the original file for download, provided the API permisisons allow.
          |Authorization: JWT bearer token.""".stripMargin,
     )
 

@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.15.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.15.0...v0.15.1) (2024-12-03)
+
+
+### Maintenances
+
+* Update sipiVersion to v31.0.0 ([#302](https://github.com/dasch-swiss/dsp-ingest/issues/302)) ([153b766](https://github.com/dasch-swiss/dsp-ingest/commit/153b766831383a566dee407c2b5436c2ae894d08))
+
+
+### Bug Fixes
+
+* Fix Content-Disposition, allow CORS for original downloads (DEV-4371) ([#304](https://github.com/dasch-swiss/dsp-ingest/issues/304)) ([eefa0ea](https://github.com/dasch-swiss/dsp-ingest/commit/eefa0ea612395c06d4fb3eb3aae9d4e487164a98))
+* Remove redundant (DEV-4371) ([#305](https://github.com/dasch-swiss/dsp-ingest/issues/305)) ([fa33662](https://github.com/dasch-swiss/dsp-ingest/commit/fa3366216ea18a678a3212e97b818a166561b858))
+
+## [0.15.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.14.2...v0.15.0) (2024-12-02)
+
+
+### Maintenances
+
+* Dependency updates ([#300](https://github.com/dasch-swiss/dsp-ingest/issues/300)) ([21a8c8d](https://github.com/dasch-swiss/dsp-ingest/commit/21a8c8de7f14d4b5cd93a9e6656cd59faca229ff))
+* Minor dependency updates ([#299](https://github.com/dasch-swiss/dsp-ingest/issues/299)) ([b7d6e18](https://github.com/dasch-swiss/dsp-ingest/commit/b7d6e187e99249297e9cd865b472b27709d81f4c))
+* Patch dependency updates ([#298](https://github.com/dasch-swiss/dsp-ingest/issues/298)) ([c311308](https://github.com/dasch-swiss/dsp-ingest/commit/c311308a707f375e9c12f6d1813d8096c17ac666))
+* Update sipiVersion to v31.0.0 ([#301](https://github.com/dasch-swiss/dsp-ingest/issues/301)) ([7958f43](https://github.com/dasch-swiss/dsp-ingest/commit/7958f43f3ca79f91e3045fa632be745afae489e5))
+
+
+### Enhancements
+
+* Allow original downloads without JWT token (DEV-4371) ([#296](https://github.com/dasch-swiss/dsp-ingest/issues/296)) ([f96f3f9](https://github.com/dasch-swiss/dsp-ingest/commit/f96f3f9d4c455566d8e4405de5cbf7fbe302d9aa))
+
 ## [0.14.2](https://github.com/dasch-swiss/dsp-ingest/compare/v0.14.1...v0.14.2) (2024-11-25)
 
 
