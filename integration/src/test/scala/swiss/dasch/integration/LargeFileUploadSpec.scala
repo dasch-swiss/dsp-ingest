@@ -37,7 +37,7 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     }
   }
 
-  private val contentLength = 1.MB
+  private val contentLength = 360.MB
   val spec = suite("Large Files")(
     test(
       "uploading a large file should work " +
@@ -55,7 +55,7 @@ object LargeFileUploadSpec extends ZIOSpecDefault {
     },
   ).provide(
     TestIngestClient.layer,
-    DspIngestTestContainer.layer(300.MB),
+    DspIngestTestContainer.layer(contentLength - 50.MB),
     SharedVolumes.layer,
     HttpClientZioBackend.layer(),
   ) @@ TestAspect.withLiveRandom @@ TestAspect.withLiveClock @@ TestAspect.timeout(40.minutes)
