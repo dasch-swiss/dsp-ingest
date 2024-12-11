@@ -241,7 +241,7 @@ final case class ProjectsEndpoints(base: BaseEndpoints) {
   val postBulkIngestUpload = base.secureEndpoint.post
     .in(projects / shortcodePathVar / "bulk-ingest" / "ingest" / path[String]("file"))
     .in(streamBinaryBody(ZioStreams)(CodecFormat.OctetStream()))
-    .out(streamTextBody(ZioStreams)(CodecFormat.TextPlain()))
+    .out(jsonBody[UploadResponse])
     .description(
       "Uploads a file for consumption with the bulk-ingest route." +
         "Will return 409 Conflict if a bulk-ingest is currently running for the project." +
