@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.2](https://github.com/dasch-swiss/dsp-ingest/compare/v0.15.1...v0.15.2) (2024-12-11)
+
+
+### Bug Fixes
+
+* Replace http-server in order to prevent OOM exception (DEV-4405) ([#306](https://github.com/dasch-swiss/dsp-ingest/issues/306)) ([fa6f125](https://github.com/dasch-swiss/dsp-ingest/commit/fa6f1252f20cb0c45a50e7f275c571de8cd573b9))
+
 ## [0.15.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.15.0...v0.15.1) (2024-12-03)
 
 
