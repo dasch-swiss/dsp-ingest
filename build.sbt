@@ -15,7 +15,7 @@ val hikariVersion               = "6.2.1"
 val quillVersion                = "4.8.6"
 val sipiVersion                 = "v31.0.0"
 val sqliteVersion               = "3.47.1.0"
-val tapirVersion                = "1.11.9"
+val tapirVersion                = "1.11.10"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.2"
 val zioJsonVersion              = "0.7.3"
@@ -69,13 +69,13 @@ val zio = Seq(
 )
 
 val test = Seq(
-  "dev.zio"           %% "zio-mock"               % zioMockVersion % Test,
-  "dev.zio"           %% "zio-http"               % "3.0.1"        % Test,
-  "dev.zio"           %% "zio-test"               % zioVersion     % Test,
-  "dev.zio"           %% "zio-test-junit"         % zioVersion     % Test,
-  "dev.zio"           %% "zio-test-magnolia"      % zioVersion     % Test,
-  "dev.zio"           %% "zio-test-sbt"           % zioVersion     % Test,
-  "org.scoverage"      % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
+  "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
+  "dev.zio"      %% "zio-http"               % "3.0.1"        % Test,
+  "dev.zio"      %% "zio-test"               % zioVersion     % Test,
+  "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
+  "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
+  "dev.zio"      %% "zio-test-sbt"           % zioVersion     % Test,
+  "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
 )
 
 val integrationTest = Seq(
@@ -106,7 +106,7 @@ lazy val root = (project in file("."))
     Compile / mainClass := Some("swiss.dasch.Main"),
   )
   .settings(
-    name := "dsp-ingest",
+    name          := "dsp-ingest",
     headerLicense := projectLicense,
     libraryDependencies ++= db ++ tapir ++ metrics ++ zio ++ Seq(
       "com.github.jwt-scala"          %% "jwt-zio-json"                      % "10.0.1",
@@ -159,7 +159,7 @@ lazy val integration = (project in file("integration"))
   .dependsOn(root)
   .settings(
     publish / skip := true,
-    headerLicense := projectLicense,
-    libraryDependencies ++=  test ++ integrationTest,
-    testFrameworks                       := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
+    headerLicense  := projectLicense,
+    libraryDependencies ++= test ++ integrationTest,
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
   )
