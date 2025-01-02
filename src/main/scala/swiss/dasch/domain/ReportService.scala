@@ -66,6 +66,19 @@ sealed trait SizeInBytesPerType {
 }
 object SizeInBytesPerType {
 
+  final case class SizeInBytesAudio(sizeOrig: FileSize, sizeDerivative: FileSize) extends SizeInBytesPerType { self =>
+    val fileType: SupportedFileType = SupportedFileType.Audio
+    override def add(audio: SizeInBytesPerType): SizeInBytesAudio =
+      audio match {
+        case size: SizeInBytesAudio =>
+          self.copy(
+            sizeOrig = sizeOrig + size.sizeOrig,
+            sizeDerivative = sizeDerivative + size.sizeDerivative,
+          )
+        case _ => self
+      }
+  }
+
   final case class SizeInBytesOther(fileType: SupportedFileType, sizeOrig: FileSize, sizeDerivative: FileSize)
       extends SizeInBytesPerType { self =>
     override def add(other: SizeInBytesPerType): SizeInBytesOther =

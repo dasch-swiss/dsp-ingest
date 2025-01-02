@@ -6,8 +6,8 @@
 package swiss.dasch.domain
 
 import com.github.tototoshi.csv.CSVWriter
-import swiss.dasch.domain.SizeInBytesPerType.{SizeInBytesMovingImages, SizeInBytesOther}
-import swiss.dasch.domain.SupportedFileType.{MovingImage, OtherFiles, StillImage}
+import swiss.dasch.domain.SizeInBytesPerType.{SizeInBytesAudio, SizeInBytesMovingImages, SizeInBytesOther}
+import swiss.dasch.domain.SupportedFileType.{Audio, MovingImage, OtherFiles, StillImage}
 import zio.nio.file.Path
 import zio.{Task, ZIO}
 
@@ -16,12 +16,15 @@ final case class AssetOverviewReportCsvRow(
   totalNrOfAssets: Int,
   nrOfStillImageAssets: Int,
   nrOfMovingImageAssets: Int,
-  nrOrOtherAssets: Int,
+  nrOfAudioAssets: Int,
+  nrOfOtherAssets: Int,
   sizeOfStillImageOriginals: FileSize,
   sizeOfStillImageDerivatives: FileSize,
   sizeOfMovingImageOriginals: FileSize,
   sizeOfMovingImageDerivatives: FileSize,
   sizeOfMovingImageKeyframes: FileSize,
+  sizeOfAudioOriginals: FileSize,
+  sizeOfAudioDerivatives: FileSize,
   sizeOfOtherOriginals: FileSize,
   sizeOfOtherDerivatives: FileSize,
 ) {
@@ -31,12 +34,15 @@ final case class AssetOverviewReportCsvRow(
     totalNrOfAssets,
     nrOfStillImageAssets,
     nrOfMovingImageAssets,
-    nrOrOtherAssets,
+    nrOfOtherAssets,
+    nrOfAudioAssets,
     sizeOfStillImageOriginals.sizeInBytes,
     sizeOfStillImageDerivatives.sizeInBytes,
     sizeOfMovingImageOriginals.sizeInBytes,
     sizeOfMovingImageDerivatives.sizeInBytes,
     sizeOfMovingImageKeyframes.sizeInBytes,
+    sizeOfAudioOriginals.sizeInBytes,
+    sizeOfAudioDerivatives.sizeInBytes,
     sizeOfOtherOriginals.sizeInBytes,
     sizeOfOtherDerivatives.sizeInBytes,
   )
@@ -48,12 +54,15 @@ object AssetOverviewReportCsvRow {
     "totalNrOfAssets",
     "nrOfStillImageAssets",
     "nrOfMovingImageAssets",
+    "nrOfAudioAssets",
     "nrOfOtherAssets",
     "sizeOfStillImageOriginals",
     "sizeOfStillImageDerivatives",
     "sizeOfMovingImageOriginals",
     "sizeOfMovingImageDerivatives",
     "sizeOfMovingImageKeyframes",
+    "sizeOfAudioOriginals",
+    "sizeOfAudioDerivatives",
     "sizeOfOtherOriginals",
     "sizeOfOtherDerivatives",
   )
@@ -74,6 +83,12 @@ object AssetOverviewReportCsvRow {
             case "keyframes"  => still.sizeKeyframes
             case _            => throw new IllegalArgumentException(s"Unknown type: $typ")
           }
+        case Some(other: SizeInBytesAudio) =>
+          typ match {
+            case "orig"       => other.sizeOrig
+            case "derivative" => other.sizeDerivative
+            case _            => throw new IllegalArgumentException(s"Unknown type: $typ")
+          }
       }
 
     AssetOverviewReportCsvRow(
@@ -81,12 +96,15 @@ object AssetOverviewReportCsvRow {
       totalNrOfAssets = rep.totalNrOfAssets,
       nrOfStillImageAssets = rep.nrOfAssetsPerType.getOrElse(StillImage, 0),
       nrOfMovingImageAssets = rep.nrOfAssetsPerType.getOrElse(MovingImage, 0),
-      nrOrOtherAssets = rep.nrOfAssetsPerType.getOrElse(OtherFiles, 0),
+      nrOfAudioAssets = rep.nrOfAssetsPerType.getOrElse(Audio, 0),
+      nrOfOtherAssets = rep.nrOfAssetsPerType.getOrElse(OtherFiles, 0),
       getFileSize(StillImage, "orig"),
       getFileSize(StillImage, "derivative"),
       getFileSize(MovingImage, "orig"),
       getFileSize(MovingImage, "derivative"),
       getFileSize(MovingImage, "keyframes"),
+      getFileSize(Audio, "orig"),
+      getFileSize(Audio, "derivative"),
       getFileSize(OtherFiles, "orig"),
       getFileSize(OtherFiles, "derivative"),
     )
