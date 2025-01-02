@@ -24,8 +24,7 @@ object SupportedFileTypeSpec extends ZIOSpecDefault {
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.OtherFiles))
       }
     },
-    test("All valid extensions for Autdio are supported") {
-
+    test("All valid extensions for Audio are supported") {
       val audio = Seq("mp3", "mpeg", "wav")
       check(Gen.fromIterable(withUpperCase(audio))) { ext =>
         assertTrue(SupportedFileType.fromPath(Path(s"test.$ext")).contains(SupportedFileType.Audio))
