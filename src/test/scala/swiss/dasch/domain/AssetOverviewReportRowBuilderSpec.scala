@@ -31,11 +31,11 @@ object AssetOverviewReportRowBuilderSpec extends ZIOSpecDefault {
       assertTrue(
         headerAndValue == List(
           ("Project Shortcode", "0007"),
-          ("Nr Of All Assets Sum", 100),
-          ("Nr Of Still Image Assets", 1),
-          ("Nr Of Moving Image Assets", 2),
-          ("Nr Of Audio Assets", 3),
-          ("Nr Of Other Assets", 4),
+          ("No. Of All Assets Sum", 100),
+          ("No. Of Still Image Assets", 1),
+          ("No. Of Moving Image Assets", 2),
+          ("No. Of Audio Assets", 3),
+          ("No. Of Other Assets", 4),
           ("Size Of All Assets Sum", 460),
           ("Size Of Still Image Sum", 30),
           ("Size Of Still Image Originals", 10),
