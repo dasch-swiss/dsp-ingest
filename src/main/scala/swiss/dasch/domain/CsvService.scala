@@ -18,11 +18,11 @@ object AssetOverviewReportRowBuilder {
 
   private val columns: List[Column] = List(
     Column("Project Shortcode", _.shortcode.value),
-    Column("Nr Of All Assets Sum", _.totalNrOfAssets),
-    Column("Nr Of Still Image Assets", _.nrOfAssetsPerType.getOrElse(StillImage, 0)),
-    Column("Nr Of Moving Image Assets", _.nrOfAssetsPerType.getOrElse(MovingImage, 0)),
-    Column("Nr Of Audio Assets", _.nrOfAssetsPerType.getOrElse(Audio, 0)),
-    Column("Nr Of Other Assets", _.nrOfAssetsPerType.getOrElse(OtherFiles, 0)),
+    Column("No. Of All Assets Sum", _.totalNrOfAssets),
+    Column("No. Of Still Image Assets", _.nrOfAssetsPerType.getOrElse(StillImage, 0)),
+    Column("No. Of Moving Image Assets", _.nrOfAssetsPerType.getOrElse(MovingImage, 0)),
+    Column("No. Of Audio Assets", _.nrOfAssetsPerType.getOrElse(Audio, 0)),
+    Column("No. Of Other Assets", _.nrOfAssetsPerType.getOrElse(OtherFiles, 0)),
     Column("Size Of All Assets Sum", _.sizesPerType.sizes.values.map(_.sum.sizeInBytes).sum),
     Column("Size Of Still Image Sum", getFileSize(StillImage, _.sum)),
     Column("Size Of Still Image Originals", getFileSize(StillImage, _.sizeOrig)),
