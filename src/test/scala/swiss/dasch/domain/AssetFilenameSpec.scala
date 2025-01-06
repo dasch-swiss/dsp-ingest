@@ -23,7 +23,7 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "disegni e copie, Vat.lat.9849, f. 66r. (cf emerick nota 92)jpg.jpg",
         "öäüßÖÄÜ.jpg",                          // German alphabet
         "éèêëàâæçîïôœùûüÿÉÈÊËÀÂÆÇÎÏÔŒÙÛÜŸ.png", // Other Latin characters
-        "= `'+?!<>|.jpg",                       // Special characters
+        "= .,`'+?!<>|()[]{}.jpg",             // Special characters
         "漢字.jpg",                               // Kanji
         "ひらがな.jpg",                             // Hiragana
         "カタカナ.jpg",                             // Katakana
