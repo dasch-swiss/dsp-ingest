@@ -23,16 +23,16 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "disegni e copie, Vat.lat.9849, f. 66r. (cf emerick nota 92)jpg.jpg",
         "öäüßÖÄÜ.jpg",                          // German alphabet
         "éèêëàâæçîïôœùûüÿÉÈÊËÀÂÆÇÎÏÔŒÙÛÜŸ.png", // Other Latin characters
-        "= .,`'+?!<>|()[]{}.jpg",             // Special characters
-        "漢字.jpg",                               // Kanji
-        "ひらがな.jpg",                             // Hiragana
-        "カタカナ.jpg",                             // Katakana
+        "漢字.jpg",                              // Kanji
+        "ひらがな.jpg",                           // Hiragana
+        "カタカナ.jpg",                           // Katakana
         "한글.jpg",                               // Hangul
         "አማርኛ.jpg",                             // Amharic
-        "العربية.jpg",                          // Arabic
-        "հայերեն.jpg",                          // Armenian
-        "български.jpg",                        // Bulgarian
+        "العربية.jpg",                           // Arabic
+        "հայերեն.jpg",                           // Armenian
+        "български.jpg",                         // Bulgarian
         "中文.jpg",                               // Chinese
+        "= .,`'+!<>|()[]{}.jpg",                 // Special characters
       )
       check(Gen.fromIterable(validFilenames)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
