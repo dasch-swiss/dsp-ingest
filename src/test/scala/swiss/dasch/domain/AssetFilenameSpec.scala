@@ -56,6 +56,8 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "./Foo.png",
         "Foo/../../bar.jpg",
         "Foo//foo.jpg",
+        // backslash is strictly not allowed special character: https://www.dasch.swiss/_files/ugd/75aae1_3d1eafb5b81e4f0ea7c0ebb86b02d081.pdf
+        "/.jpg", // redundant for some extension, because we trate '/' as a path separator
       )
       check(Gen.fromIterable(filenamesWithoutValidExtension)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
@@ -67,6 +69,8 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "Foo#.png",
         "Foo$.png",
         "\uD83D\uDC4D.png", // Thumbs up emoji
+        // question mark is strictly not allowed special character: https://www.dasch.swiss/_files/ugd/75aae1_3d1eafb5b81e4f0ea7c0ebb86b02d081.pdf
+        "?.jpg",
       )
       check(Gen.fromIterable(filenamesWithInvalidCharacters)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
