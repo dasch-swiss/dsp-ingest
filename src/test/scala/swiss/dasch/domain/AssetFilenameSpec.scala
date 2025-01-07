@@ -23,16 +23,16 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "disegni e copie, Vat.lat.9849, f. 66r. (cf emerick nota 92)jpg.jpg",
         "öäüßÖÄÜ.jpg",                          // German alphabet
         "éèêëàâæçîïôœùûüÿÉÈÊËÀÂÆÇÎÏÔŒÙÛÜŸ.png", // Other Latin characters
-        "漢字.jpg",                              // Kanji
-        "ひらがな.jpg",                           // Hiragana
-        "カタカナ.jpg",                           // Katakana
+        "漢字.jpg",                               // Kanji
+        "ひらがな.jpg",                             // Hiragana
+        "カタカナ.jpg",                             // Katakana
         "한글.jpg",                               // Hangul
         "አማርኛ.jpg",                             // Amharic
-        "العربية.jpg",                           // Arabic
-        "հայերեն.jpg",                           // Armenian
-        "български.jpg",                         // Bulgarian
+        "العربية.jpg",                          // Arabic
+        "հայերեն.jpg",                          // Armenian
+        "български.jpg",                        // Bulgarian
         "中文.jpg",                               // Chinese
-        "= .,`'+!<>|()[]{}.jpg",                 // Special characters
+        "= .,`'+!<>|()[]{}.jpg",                // Special characters
       )
       check(Gen.fromIterable(validFilenames)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
@@ -57,7 +57,7 @@ object AssetFilenameSpec extends ZIOSpecDefault {
         "Foo/../../bar.jpg",
         "Foo//foo.jpg",
         // backslash is strictly not allowed special character: https://www.dasch.swiss/_files/ugd/75aae1_3d1eafb5b81e4f0ea7c0ebb86b02d081.pdf
-        "/.jpg", // redundant for some extension, because we trate '/' as a path separator
+        "/.jpg", // redundant for some extension, because we treat '/' as a path separator
       )
       check(Gen.fromIterable(filenamesWithoutValidExtension)) { str =>
         val actual: Either[String, String] = AssetFilename.from(str).map(_.value)
