@@ -41,17 +41,6 @@ final case class MaintenanceEndpointsHandler(
         } yield s"work in progress for projects ${paths.map(_.shortcode).mkString(", ")} (for details see logs)"
       })
 
-  val needsOriginalsEndpoint: ZServerEndpoint[Any, Any] = maintenanceEndpoints.needsOriginalsEndpoint
-    .serverLogic(userSession =>
-      imagesOnlyMaybe =>
-        authorizationHandler.ensureAdminScope(userSession) *>
-          maintenanceActions
-            .createNeedsOriginalsReport(imagesOnlyMaybe.getOrElse(true))
-            .forkDaemon
-            .logError
-            .as("work in progress"),
-    )
-
   val needsTopLeftCorrectionEndpoint: ZServerEndpoint[Any, Any] =
     maintenanceEndpoints.needsTopLeftCorrectionEndpoint
       .serverLogic(userSession =>
@@ -79,7 +68,6 @@ final case class MaintenanceEndpointsHandler(
   val endpoints: List[ZServerEndpoint[Any, Any]] =
     List(
       postMaintenanceEndpoint,
-      needsOriginalsEndpoint,
       needsTopLeftCorrectionEndpoint,
       wasTopLeftCorrectionAppliedEndpoint,
     )

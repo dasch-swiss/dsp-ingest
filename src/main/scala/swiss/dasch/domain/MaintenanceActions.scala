@@ -21,7 +21,6 @@ import java.io.IOException
 
 trait MaintenanceActions {
   def updateAssetMetadata(projects: Iterable[ProjectFolder]): Task[Unit]
-  def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit]
   def createNeedsTopLeftCorrectionReport(): Task[Unit]
   def createWasTopLeftCorrectionAppliedReport(): Task[Unit]
   def applyTopLeftCorrections(projectPath: ProjectFolder): Task[Int]
@@ -77,46 +76,6 @@ final case class MaintenanceActionsLive(
            }
       _ <- ZIO.logInfo(s"Finished ${ActionName.UpdateAssetMetadata}")
     } yield ()
-  }
-
-  def createNeedsOriginalsReport(imagesOnly: Boolean): Task[Unit] = {
-    val reportName = if (imagesOnly) "needsOriginals_images_only" else "needsOriginals"
-    for {
-      _        <- ZIO.logInfo(s"Checking for originals")
-      tmpDir   <- storageService.getTempFolder()
-      projects <- projectService.listAllProjects()
-      _ <- ZIO
-             .foreach(projects)(prj =>
-               Files
-                 .walk(prj.path)
-                 .mapZIOPar(8)(originalNotPresent(imagesOnly))
-                 .filter(identity)
-                 .as(prj.shortcode)
-                 .runHead,
-             )
-             .map(_.flatten.map(_.toString))
-             .flatMap(saveReport(tmpDir, reportName, _))
-             .zipLeft(ZIO.logInfo(s"Created $reportName.json"))
-
-    } yield ()
-  }
-
-  private def originalNotPresent(imagesOnly: Boolean)(path: file.Path): IO[IOException, Boolean] = {
-    lazy val assetId = AssetId.fromPath(path).map(_.toString).getOrElse("unknown-asset-id")
-
-    def checkIsImageIfNeeded(path: file.Path) = {
-      val shouldNotCheckImages = ZIO.succeed(!imagesOnly)
-      shouldNotCheckImages || FileFilters.isStillImage(path)
-    }
-
-    FileFilters.isNonHiddenRegularFile(path) &&
-    checkIsImageIfNeeded(path) &&
-    Files
-      .list(path.parent.orNull)
-      .map(_.filename.toString)
-      .filter(name => name.endsWith(".orig") && name.startsWith(assetId))
-      .runHead
-      .map(_.isEmpty)
   }
 
   private def saveReport[A](

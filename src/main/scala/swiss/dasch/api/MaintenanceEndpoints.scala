@@ -81,18 +81,9 @@ final case class MaintenanceEndpoints(base: BaseEndpoints) {
     .tag(maintenance)
     .description("Authorization: admin scope required.")
 
-  val needsOriginalsEndpoint = base.secureEndpoint.get
-    .in(maintenance / "needs-originals")
-    .in(query[Option[Boolean]]("imagesOnly"))
-    .out(stringBody)
-    .out(statusCode(StatusCode.Accepted))
-    .tag(maintenance)
-    .description("Authorization: admin scope required.")
-
   val endpoints = List(
     postMaintenanceActionEndpoint,
     needsTopLeftCorrectionEndpoint,
-    needsOriginalsEndpoint,
   )
 }
 

@@ -30,36 +30,6 @@ object MaintenanceEndpointsSpec extends ZIOSpecDefault {
     response <- app.runZIO(request).logError
   } yield response
 
-  private val needsOriginalsSuite =
-    suite("/maintenance/needs-originals should")(
-      test("should return 204 and create a report") {
-        val request = Request
-          .get(URL(Path.root / "maintenance" / "needs-originals"))
-          .addHeader(Header.Authorization.name, "Bearer fakeToken")
-        for {
-          response <- executeRequest(request)
-          projects <- loadReport("needsOriginals_images_only.json")
-          status    = response.status
-        } yield {
-          assertTrue(status == Status.Accepted, projects == Chunk("0001"))
-        }
-      },
-      test("should return 204 and create an extended report") {
-        val url: URL =
-          URL(Path.root / "maintenance" / "needs-originals").addQueryParams(QueryParams(("imagesOnly", Chunk("false"))))
-        val request = Request
-          .get(url)
-          .addHeader(Header.Authorization.name, "Bearer fakeToken")
-        for {
-          response <- executeRequest(request)
-          projects <- loadReport("needsOriginals.json")
-          status    = response.status
-        } yield {
-          assertTrue(status == Status.Accepted, projects == Chunk("0001"))
-        }
-      },
-    ) @@ TestAspect.withLiveClock
-
   private def loadReport(name: String) =
     StorageService.getTempFolder().flatMap { tmpDir =>
       val report = tmpDir / "reports" / name
@@ -83,7 +53,7 @@ object MaintenanceEndpointsSpec extends ZIOSpecDefault {
       },
     ) @@ TestAspect.withLiveClock
 
-  val spec = suite("MaintenanceEndpoint")(needsOriginalsSuite, needsTopleftCorrectionSuite)
+  val spec = suite("MaintenanceEndpoint")(needsTopleftCorrectionSuite)
     .provide(
       AssetInfoServiceLive.layer,
       AuthServiceLive.layer,
