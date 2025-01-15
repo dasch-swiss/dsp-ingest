@@ -86,8 +86,8 @@ lazy val year = java.time.LocalDate.now().getYear
 val projectLicense = Some(
   HeaderLicense.Custom(
     s"""|Copyright © 2021 - $year Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
-       |SPDX-License-Identifier: Apache-2.0
-       |""".stripMargin,
+        |SPDX-License-Identifier: Apache-2.0
+        |""".stripMargin,
   ),
 )
 
@@ -120,7 +120,7 @@ lazy val root = (project in file("."))
       "dev.zio"                       %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
       "dev.zio"                       %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
       "eu.timepit"                    %% "refined"                           % "0.11.2",
-      "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.1",
+      "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.2",
 
       // csv for reports
       "com.github.tototoshi" %% "scala-csv" % "2.0.0",
