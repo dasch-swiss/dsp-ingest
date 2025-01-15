@@ -119,7 +119,7 @@ lazy val root = (project in file("."))
       "dev.zio"                       %% "zio-json-interop-refined"          % zioJsonVersion,
       "dev.zio"                       %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
       "dev.zio"                       %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
-      "eu.timepit"                    %% "refined"                           % "0.11.2",
+      "eu.timepit"                    %% "refined"                           % "0.11.3",
       "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.1",
 
       // csv for reports
