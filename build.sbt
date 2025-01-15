@@ -23,7 +23,7 @@ val zioLoggingVersion           = "2.4.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC35"
+val zioPreludeVersion           = "1.0.0-RC36"
 val zioSchemaVersion            = "1.5.0"
 val zioVersion                  = "2.1.13"
 
@@ -86,8 +86,8 @@ lazy val year = java.time.LocalDate.now().getYear
 val projectLicense = Some(
   HeaderLicense.Custom(
     s"""|Copyright © 2021 - $year Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
-       |SPDX-License-Identifier: Apache-2.0
-       |""".stripMargin,
+        |SPDX-License-Identifier: Apache-2.0
+        |""".stripMargin,
   ),
 )
 
