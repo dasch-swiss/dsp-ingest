@@ -25,7 +25,7 @@ val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC35"
 val zioSchemaVersion            = "1.5.0"
-val zioVersion                  = "2.1.13"
+val zioVersion                  = "2.1.14"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
 val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
