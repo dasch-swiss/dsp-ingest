@@ -18,7 +18,7 @@ val sqliteVersion               = "3.47.1.0"
 val tapirVersion                = "1.11.10"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.2"
-val zioJsonVersion              = "0.7.3"
+val zioJsonVersion              = "0.7.4"
 val zioLoggingVersion           = "2.4.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
@@ -86,8 +86,8 @@ lazy val year = java.time.LocalDate.now().getYear
 val projectLicense = Some(
   HeaderLicense.Custom(
     s"""|Copyright © 2021 - $year Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
-       |SPDX-License-Identifier: Apache-2.0
-       |""".stripMargin,
+        |SPDX-License-Identifier: Apache-2.0
+        |""".stripMargin,
   ),
 )
 
