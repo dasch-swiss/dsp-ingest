@@ -18,7 +18,7 @@ val sqliteVersion               = "3.47.2.0"
 val tapirVersion                = "1.11.10"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.2"
-val zioJsonVersion              = "0.7.3"
+val zioJsonVersion              = "0.7.4"
 val zioLoggingVersion           = "2.4.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
@@ -75,7 +75,7 @@ val test = Seq(
   "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
   "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
   "dev.zio"      %% "zio-test-sbt"           % zioVersion     % Test,
-  "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.2.2"        % Test,
+  "org.scoverage" % "sbt-scoverage_2.12_1.0" % "2.3.0"        % Test,
 )
 
 val integrationTest = Seq(
@@ -119,7 +119,7 @@ lazy val root = (project in file("."))
       "dev.zio"                       %% "zio-json-interop-refined"          % zioJsonVersion,
       "dev.zio"                       %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
       "dev.zio"                       %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
-      "eu.timepit"                    %% "refined"                           % "0.11.2",
+      "eu.timepit"                    %% "refined"                           % "0.11.3",
       "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.1",
 
       // csv for reports
