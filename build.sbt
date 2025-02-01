@@ -23,7 +23,7 @@ val zioLoggingVersion           = "2.4.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC36"
+val zioPreludeVersion           = "1.0.0-RC37"
 val zioSchemaVersion            = "1.5.0"
 val zioVersion                  = "2.1.14"
 
