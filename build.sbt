@@ -14,8 +14,8 @@ val flywayVersion               = "11.3.0"
 val hikariVersion               = "6.2.1"
 val quillVersion                = "4.8.6"
 val sipiVersion                 = "v31.3.0"
-val sqliteVersion               = "3.47.2.0"
-val tapirVersion                = "1.11.12"
+val sqliteVersion               = "3.48.0.0"
+val tapirVersion                = "1.11.13"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.3"
 val zioJsonVersion              = "0.7.11"
@@ -23,7 +23,7 @@ val zioLoggingVersion           = "2.4.0"
 val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioPreludeVersion           = "1.0.0-RC36"
+val zioPreludeVersion           = "1.0.0-RC37"
 val zioSchemaVersion            = "1.6.1"
 val zioVersion                  = "2.1.14"
 
@@ -32,7 +32,7 @@ val gitVersion = ("git describe --tag --dirty --abbrev=7 --always  " !!).trim
 
 ThisBuild / organization      := "dasch.swiss"
 ThisBuild / version           := gitVersion
-ThisBuild / scalaVersion      := "3.3.4"
+ThisBuild / scalaVersion      := "3.3.5"
 ThisBuild / fork              := true
 ThisBuild / semanticdbEnabled := true
 
