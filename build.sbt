@@ -18,7 +18,7 @@ val sqliteVersion         = "3.48.0.0"
 val tapirVersion          = "1.11.13"
 val testContainersVersion = "1.20.4"
 val zioConfigVersion      = "4.0.3"
-// jwt-scala 10.0.1 depends on zio-json 0.7.4
+// jwt-scala 10.0.1 depends on zio-json 0.7.21
 // though newer version compatible with a newer zio-json version is available
 // it is not yet published: https://github.com/jwt-scala/jwt-scala/issues/642
 val zioJsonVersion              = "0.7.21"
