@@ -15,7 +15,7 @@ val hikariVersion         = "6.2.1"
 val knoraSipiVersion      = "v31.5.0"
 val quillVersion          = "4.8.6"
 val sqliteVersion         = "3.48.0.0"
-val tapirVersion          = "1.11.13"
+val tapirVersion          = "1.11.14"
 val testContainersVersion = "1.20.4"
 val zioConfigVersion      = "4.0.3"
 // jwt-scala 10.0.1 depends on zio-json 0.7.4
