@@ -10,7 +10,7 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; integration/Te
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; integration/Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
-val flywayVersion               = "11.3.2"
+val flywayVersion               = "11.3.4"
 val hikariVersion               = "6.2.1"
 val knoraSipiVersion            = "v31.7.0"
 val quillVersion                = "4.8.6"
