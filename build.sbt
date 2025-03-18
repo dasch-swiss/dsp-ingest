@@ -12,10 +12,10 @@ addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; inte
 
 val flywayVersion               = "11.4.0"
 val hikariVersion               = "6.2.1"
-val knoraSipiVersion            = "v31.7.0"
+val knoraSipiVersion            = "v31.9.0"
 val quillVersion                = "4.8.6"
 val sqliteVersion               = "3.49.1.0"
-val tapirVersion                = "1.11.16"
+val tapirVersion                = "1.11.19"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.3"
 val zioJsonVersion              = "0.7.39"
@@ -24,7 +24,7 @@ val zioMetricsConnectorsVersion = "2.3.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioPreludeVersion           = "1.0.0-RC39"
-val zioSchemaVersion            = "1.6.3"
+val zioSchemaVersion            = "1.6.5"
 val zioVersion                  = "2.1.16"
 
 val gitCommit  = ("git rev-parse HEAD" !!).trim
