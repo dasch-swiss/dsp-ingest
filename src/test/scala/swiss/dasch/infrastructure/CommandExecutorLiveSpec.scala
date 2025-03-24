@@ -44,8 +44,8 @@ object CommandExecutorLiveSpec extends ZIOSpecDefault {
         .map { ce =>
           assertTrue(
             ce.parseSipiLogs(logExample) == List(
-              "INFO: Something bad happened",
-              "ERROR: GET /0811/G5a5GeA4Jgn-ChDqwJzOJQM.jp2/0,2048,2048,111/1024,56/0/default.jpg failed (Not Found)",
+              "Sipi: INFO: Something bad happened",
+              "Sipi: ERROR: GET /0811/G5a5GeA4Jgn-ChDqwJzOJQM.jp2/0,2048,2048,111/1024,56/0/default.jpg failed (Not Found)",
             ),
           )
         }

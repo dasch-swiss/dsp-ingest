@@ -61,7 +61,7 @@ trait CommandExecutor {
    */
   def parseSipiLogs(out: String): List[String] =
     out.linesIterator.toList.filter(_.replaceAll("\\s", "").nonEmpty).map { line =>
-      line
+      val newLine = line
         .fromJson[Json.Obj]
         .fold(
           _ => "INFO: " ++ line.replaceFirst("\\s+", ""),
@@ -71,6 +71,7 @@ trait CommandExecutor {
           },
         )
         .replaceAll("[\"\\n]", ".")
+      "Sipi: " ++ newLine
     }
 }
 
