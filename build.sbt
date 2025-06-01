@@ -112,7 +112,7 @@ lazy val root = (project in file("."))
     headerLicense := projectLicense,
     libraryDependencies ++= db ++ tapir ++ metrics ++ zio ++ Seq(
       "com.github.jwt-scala"          %% "jwt-zio-json"                      % "10.0.4",
-      "commons-io"                     % "commons-io"                        % "2.18.0",
+      "commons-io"                     % "commons-io"                        % "2.19.0",
       "dev.zio"                       %% "zio-config"                        % zioConfigVersion,
       "dev.zio"                       %% "zio-config-magnolia"               % zioConfigVersion,
       "dev.zio"                       %% "zio-config-typesafe"               % zioConfigVersion,
