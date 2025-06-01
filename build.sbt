@@ -121,7 +121,7 @@ lazy val root = (project in file("."))
       "dev.zio"                       %% "zio-metrics-connectors"            % zioMetricsConnectorsVersion,
       "dev.zio"                       %% "zio-metrics-connectors-prometheus" % zioMetricsConnectorsVersion,
       "eu.timepit"                    %% "refined"                           % "0.11.3",
-      "com.softwaremill.sttp.client3" %% "zio"                               % "3.10.3",
+      "com.softwaremill.sttp.client3" %% "zio"                               % "3.11.0",
 
       // csv for reports
       "com.github.tototoshi" %% "scala-csv" % "2.0.0",
