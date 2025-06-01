@@ -71,7 +71,7 @@ val zio = Seq(
 
 val test = Seq(
   "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
-  "dev.zio"      %% "zio-http"               % "3.1.0"        % Test,
+  "dev.zio"      %% "zio-http"               % "3.3.3"        % Test,
   "dev.zio"      %% "zio-test"               % zioVersion     % Test,
   "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
   "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
