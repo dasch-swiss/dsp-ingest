@@ -47,6 +47,7 @@ private val text =
     "txt"  -> MimeType.unsafeFrom("text/plain"),
     "json" -> MimeType.unsafeFrom("application/json"),
     "html" -> MimeType.unsafeFrom("test/html"),
+    "htm"  -> MimeType.unsafeFrom("test/html"),
     // xml, xsd, xsl are XML files, schema and stylesheets
     "xml" -> MimeType.unsafeFrom("application/xml"),
     "xsd" -> MimeType.unsafeFrom("application/xsd+xml"),
