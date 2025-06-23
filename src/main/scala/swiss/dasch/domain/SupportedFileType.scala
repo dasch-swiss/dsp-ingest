@@ -26,6 +26,7 @@ private val audio =
     "wav"  -> MimeType.unsafeFrom("audio/wav"),
   )
 private val office = Seq(
+  "epub" -> MimeType.unsafeFrom("application/epub+zip"),
   "doc"  -> MimeType.unsafeFrom("application/msword"),
   "docx" -> MimeType.unsafeFrom("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
   "pdf"  -> MimeType.unsafeFrom("application/pdf"),
@@ -45,6 +46,7 @@ private val text =
     "rng"  -> MimeType.unsafeFrom("application/rng+xml"),
     "txt"  -> MimeType.unsafeFrom("text/plain"),
     "json" -> MimeType.unsafeFrom("application/json"),
+    "html" -> MimeType.unsafeFrom("test/html"),
     // xml, xsd, xsl are XML files, schema and stylesheets
     "xml" -> MimeType.unsafeFrom("application/xml"),
     "xsd" -> MimeType.unsafeFrom("application/xsd+xml"),
