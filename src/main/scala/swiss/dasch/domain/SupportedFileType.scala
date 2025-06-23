@@ -26,9 +26,9 @@ private val audio =
     "wav"  -> MimeType.unsafeFrom("audio/wav"),
   )
 private val office = Seq(
-  "epub" -> MimeType.unsafeFrom("application/epub+zip"),
   "doc"  -> MimeType.unsafeFrom("application/msword"),
   "docx" -> MimeType.unsafeFrom("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+  "epub" -> MimeType.unsafeFrom("application/epub+zip"),
   "pdf"  -> MimeType.unsafeFrom("application/pdf"),
   "ppt"  -> MimeType.unsafeFrom("application/vnd.ms-powerpoint"),
   "pptx" -> MimeType.unsafeFrom("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
@@ -42,12 +42,12 @@ private val text =
   Map(
     // odd and rng are TEI formats, see
     // https://tei-c.org/guidelines/customization/getting-started-with-p5-odds/#section-2
+    "htm"  -> MimeType.unsafeFrom("text/html"),
+    "html" -> MimeType.unsafeFrom("text/html"),
+    "json" -> MimeType.unsafeFrom("application/json"),
     "odd"  -> MimeType.unsafeFrom("application/odd+xml"),
     "rng"  -> MimeType.unsafeFrom("application/rng+xml"),
     "txt"  -> MimeType.unsafeFrom("text/plain"),
-    "json" -> MimeType.unsafeFrom("application/json"),
-    "html" -> MimeType.unsafeFrom("text/html"),
-    "htm"  -> MimeType.unsafeFrom("text/html"),
     // xml, xsd, xsl are XML files, schema and stylesheets
     "xml" -> MimeType.unsafeFrom("application/xml"),
     "xsd" -> MimeType.unsafeFrom("application/xsd+xml"),
@@ -59,13 +59,13 @@ private val other = archive ++ office ++ tables ++ text
 private val movingImages = Map("mp4" -> MimeType.unsafeFrom("video/mp4"))
 
 private val stillImages = Map(
-  "jpx"  -> MimeType.unsafeFrom("image/jpx"),
   "jp2"  -> MimeType.unsafeFrom("image/jp2"),
-  "jpg"  -> MimeType.unsafeFrom("image/jpeg"),
   "jpeg" -> MimeType.unsafeFrom("image/jpeg"),
-  "tiff" -> MimeType.unsafeFrom("image/tiff"),
-  "tif"  -> MimeType.unsafeFrom("image/tiff"),
+  "jpg"  -> MimeType.unsafeFrom("image/jpeg"),
+  "jpx"  -> MimeType.unsafeFrom("image/jpx"),
   "png"  -> MimeType.unsafeFrom("image/png"),
+  "tif"  -> MimeType.unsafeFrom("image/tiff"),
+  "tiff" -> MimeType.unsafeFrom("image/tiff"),
 )
 
 /**
@@ -75,9 +75,9 @@ private val stillImages = Map(
  * @param extensions the file extensions of the supported file types.
  */
 enum SupportedFileType(val mappings: Map[String, MimeType]) derives JsonCodec {
-  case StillImage  extends SupportedFileType(stillImages)
-  case MovingImage extends SupportedFileType(movingImages)
   case Audio       extends SupportedFileType(audio)
+  case MovingImage extends SupportedFileType(movingImages)
+  case StillImage  extends SupportedFileType(stillImages)
   case OtherFiles  extends SupportedFileType(other)
 
   val extensions: Seq[String]                      = mappings.keys.toSeq
