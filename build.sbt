@@ -37,6 +37,7 @@ ThisBuild / fork              := true
 ThisBuild / semanticdbEnabled := true
 
 scalacOptions ++= Seq("-old-syntax", "-rewrite")
+scalacOptions ++= Seq("-Xmax-inlines", "50")
 
 val tapir = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-json-zio"          % tapirVersion,
