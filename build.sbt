@@ -14,8 +14,8 @@ val flywayVersion               = "11.10.0"
 val hikariVersion               = "6.3.0"
 val knoraSipiVersion            = "v31.15.0"
 val quillVersion                = "4.8.6"
-val sqliteVersion               = "3.50.1.0"
-val tapirVersion                = "1.11.33"
+val sqliteVersion               = "3.50.2.0"
+val tapirVersion                = "1.11.35"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.4"
 val zioJsonVersion              = "0.7.44"
@@ -111,7 +111,7 @@ lazy val root = (project in file("."))
     name          := "dsp-ingest",
     headerLicense := projectLicense,
     libraryDependencies ++= db ++ tapir ++ metrics ++ zio ++ Seq(
-      "com.github.jwt-scala"          %% "jwt-zio-json"                      % "10.0.4",
+      "com.github.jwt-scala"          %% "jwt-zio-json"                      % "11.0.0",
       "commons-io"                     % "commons-io"                        % "2.19.0",
       "dev.zio"                       %% "zio-config"                        % zioConfigVersion,
       "dev.zio"                       %% "zio-config-magnolia"               % zioConfigVersion,
