@@ -11,7 +11,7 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; i
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
 val flywayVersion               = "11.10.2"
-val hikariVersion               = "6.3.0"
+val hikariVersion               = "6.3.2"
 val knoraSipiVersion            = "v31.20.0"
 val quillVersion                = "4.8.6"
 val sqliteVersion               = "3.50.2.0"
