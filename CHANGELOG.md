@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.21.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.20.2...v0.21.0) (2025-08-06)
+
+
+### Maintenances
+
+* Dependency updates ([#379](https://github.com/dasch-swiss/dsp-ingest/issues/379)) ([3fa7884](https://github.com/dasch-swiss/dsp-ingest/commit/3fa78844d444bfbe625fdeb8071f99cb358566b6))
+* **docker:** Add otel java agent and grafana pyroscope otel extension to docker image ([#382](https://github.com/dasch-swiss/dsp-ingest/issues/382)) ([df3a927](https://github.com/dasch-swiss/dsp-ingest/commit/df3a9272f386205536a82ce10b974447a403c113))
+* Minor dependency updates ([#378](https://github.com/dasch-swiss/dsp-ingest/issues/378)) ([bb2bc25](https://github.com/dasch-swiss/dsp-ingest/commit/bb2bc258e03a919ed80a3772a8759fb893221e9c))
+* Patch dependency updates ([#377](https://github.com/dasch-swiss/dsp-ingest/issues/377)) ([bae266c](https://github.com/dasch-swiss/dsp-ingest/commit/bae266cb8990761ef4f3c1aed7802f43a4037f32))
+
+
+### Enhancements
+
+* Allow project admin to bulk-ingest ([#381](https://github.com/dasch-swiss/dsp-ingest/issues/381)) ([8a78801](https://github.com/dasch-swiss/dsp-ingest/commit/8a7880162277eb4763d69cbf86a9a9fa000fa830))
+
 ## [0.20.2](https://github.com/dasch-swiss/dsp-ingest/compare/v0.20.1...v0.20.2) (2025-07-28)
 
 
