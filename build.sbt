@@ -73,7 +73,7 @@ val zio = Seq(
 
 val test = Seq(
   "dev.zio"      %% "zio-mock"               % zioMockVersion % Test,
-  "dev.zio"      %% "zio-http"               % "3.3.3"        % Test,
+  "dev.zio"      %% "zio-http"               % "3.4.0"        % Test,
   "dev.zio"      %% "zio-test"               % zioVersion     % Test,
   "dev.zio"      %% "zio-test-junit"         % zioVersion     % Test,
   "dev.zio"      %% "zio-test-magnolia"      % zioVersion     % Test,
@@ -157,12 +157,12 @@ lazy val root = (project in file("."))
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/${otelAgentVersion}/opentelemetry-javaagent.jar",
-      "/usr/local/lib/opentelemetry-javaagent.jar"
+      "/usr/local/lib/opentelemetry-javaagent.jar",
     ),
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/grafana/otel-profiling-java/releases/download/${otelPyroscopeVersion}/pyroscope-otel.jar",
-      "/usr/local/lib/pyroscope-otel.jar"
+      "/usr/local/lib/pyroscope-otel.jar",
     ),
     dockerCommands := dockerCommands.value.filterNot {
       case Cmd("USER", args @ _*) => true
