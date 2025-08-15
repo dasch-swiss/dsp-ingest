@@ -11,7 +11,7 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; i
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
 val flywayVersion               = "11.10.5"
-val hikariVersion               = "6.3.2"
+val hikariVersion               = "7.0.1"
 val knoraSipiVersion            = "v31.20.0"
 val otelAgentVersion            = "v2.18.1"
 val otelPyroscopeVersion        = "v1.0.4"
@@ -157,12 +157,12 @@ lazy val root = (project in file("."))
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/${otelAgentVersion}/opentelemetry-javaagent.jar",
-      "/usr/local/lib/opentelemetry-javaagent.jar"
+      "/usr/local/lib/opentelemetry-javaagent.jar",
     ),
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/grafana/otel-profiling-java/releases/download/${otelPyroscopeVersion}/pyroscope-otel.jar",
-      "/usr/local/lib/pyroscope-otel.jar"
+      "/usr/local/lib/pyroscope-otel.jar",
     ),
     dockerCommands := dockerCommands.value.filterNot {
       case Cmd("USER", args @ _*) => true
