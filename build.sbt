@@ -17,15 +17,15 @@ val otelAgentVersion            = "v2.18.1"
 val otelPyroscopeVersion        = "v1.0.4"
 val quillVersion                = "4.8.6"
 val sqliteVersion               = "3.50.3.0"
-val tapirVersion                = "1.11.40"
+val tapirVersion                = "1.11.42"
 val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.4"
 val zioJsonVersion              = "0.7.44"
 val zioLoggingVersion           = "2.5.1"
-val zioMetricsConnectorsVersion = "2.4.0"
+val zioMetricsConnectorsVersion = "2.4.1"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
-val zioSchemaVersion            = "1.7.3"
+val zioSchemaVersion            = "1.7.4"
 val zioPreludeVersion           = "1.0.0-RC41"
 val zioVersion                  = "2.1.20"
 
@@ -157,12 +157,12 @@ lazy val root = (project in file("."))
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/${otelAgentVersion}/opentelemetry-javaagent.jar",
-      "/usr/local/lib/opentelemetry-javaagent.jar"
+      "/usr/local/lib/opentelemetry-javaagent.jar",
     ),
     dockerCommands += Cmd(
       "ADD",
       s"https://github.com/grafana/otel-profiling-java/releases/download/${otelPyroscopeVersion}/pyroscope-otel.jar",
-      "/usr/local/lib/pyroscope-otel.jar"
+      "/usr/local/lib/pyroscope-otel.jar",
     ),
     dockerCommands := dockerCommands.value.filterNot {
       case Cmd("USER", args @ _*) => true
