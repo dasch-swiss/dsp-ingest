@@ -11,7 +11,8 @@ addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; i
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
 val flywayVersion               = "11.11.1"
-val hikariVersion               = "6.3.2"
+val hikariVersion               = "7.0.1"
+
 val knoraSipiVersion            = "v31.20.0"
 val otelAgentVersion            = "v2.18.1"
 val otelPyroscopeVersion        = "v1.0.4"
