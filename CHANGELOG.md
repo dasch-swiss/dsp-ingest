@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.21.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.21.0...v0.21.1) (2025-09-01)
+
+
+### Maintenances
+
+* Minor dependency updates ([#384](https://github.com/dasch-swiss/dsp-ingest/issues/384)) ([10d3fee](https://github.com/dasch-swiss/dsp-ingest/commit/10d3fee73f018c2ae1b3338dbcf1cbf0af0b19ce))
+* Patch dependency updates ([#383](https://github.com/dasch-swiss/dsp-ingest/issues/383)) ([7aadafd](https://github.com/dasch-swiss/dsp-ingest/commit/7aadafd600c4e8b166604d12c94691ca5c80d937))
+* Patch dependency updates ([#387](https://github.com/dasch-swiss/dsp-ingest/issues/387)) ([4e9c128](https://github.com/dasch-swiss/dsp-ingest/commit/4e9c128ebc2336304cb21280e196bac6ad801a76))
+
 ## [0.21.0](https://github.com/dasch-swiss/dsp-ingest/compare/v0.20.2...v0.21.0) (2025-08-06)
 
 
