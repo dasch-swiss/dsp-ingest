@@ -10,7 +10,7 @@ addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; integration/Te
 addCommandAlias("headerCreateAll", "; all root/headerCreate Test/headerCreate; integration/Test/headerCreate")
 addCommandAlias("headerCheckAll", "; all root/headerCheck Test/headerCheck; integration/Test/headerCheck")
 
-val flywayVersion               = "11.11.1"
+val flywayVersion               = "11.11.2"
 val hikariVersion               = "6.3.2"
 val knoraSipiVersion            = "v31.20.0"
 val otelAgentVersion            = "v2.18.1"
@@ -22,7 +22,7 @@ val testContainersVersion       = "1.20.4"
 val zioConfigVersion            = "4.0.4"
 val zioJsonVersion              = "0.7.44"
 val zioLoggingVersion           = "2.5.1"
-val zioMetricsConnectorsVersion = "2.4.1"
+val zioMetricsConnectorsVersion = "2.4.3"
 val zioMockVersion              = "1.0.0-RC12"
 val zioNioVersion               = "2.0.2"
 val zioSchemaVersion            = "1.7.4"
