@@ -1,4 +1,8 @@
-# Dsp-Ingest
+# Archived and moved into [DSP-API](https://github.com/dasch-swiss/dsp-api/)
+
+<hr><hr><hr>
+
+#### Dsp-Ingest
 
 [![Github](https://img.shields.io/github/v/tag/dasch-swiss/dsp-ingest?include_prereleases&label=Github%20tag)](https://github.com/dasch-swiss/dsp-ingest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -13,7 +17,7 @@ metadata extraction, and storage, ensuring that the data is readily available fo
 This service aims to enhance the overall performance and effectiveness of DSP applications by simplifying and
 accelerating the data ingestion workflow.
 
-# Documentation
+##### Documentation
 
 The `./docs` folder contains the sources to the documentation.
 The documentation is published under <https://docs.dasch.swiss/> and managed
@@ -21,12 +25,12 @@ by [DSP-DOCS](https://github.com/dasch-swiss/dsp-docs) repository.
 Documentation is written in [Markdown](https://www.markdownguide.org/) and built with [MkDocs](https://www.mkdocs.org/)
 using [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) for layout and styling.
 
-## Writing documentation // Build and serve the docs locally
+###### Writing documentation // Build and serve the docs locally
 
 Follow the installation instructions from the dsp-docs repository in order to build and serve the documentation locally.
 Once the necessary software is installed you can use `mkdocs serve` for a live preview on  http://127.0.0.1:8000/.
 
-## Contributing
+###### Contributing
 
 Our commit messages follow the [Conventional Commits Guidelines](https://www.conventionalcommits.org/en/v1.0.0/).
 
