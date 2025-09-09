@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.21.2](https://github.com/dasch-swiss/dsp-ingest/compare/v0.21.1...v0.21.2) (2025-09-09)
+
+
+### Maintenances
+
+* Add info about the new location of the code ([#390](https://github.com/dasch-swiss/dsp-ingest/issues/390)) ([dfedd7c](https://github.com/dasch-swiss/dsp-ingest/commit/dfedd7cd3052ef2644ff1d321a2bbbfbe7ba0a1c))
+* Mark repo as archived and code included into the DSP-API ([#388](https://github.com/dasch-swiss/dsp-ingest/issues/388)) ([d787dfa](https://github.com/dasch-swiss/dsp-ingest/commit/d787dfa82aabf8c8185f0f76d516fcbf2fa4ed80))
+
 ## [0.21.1](https://github.com/dasch-swiss/dsp-ingest/compare/v0.21.0...v0.21.1) (2025-09-01)
 
 
