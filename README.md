@@ -1,6 +1,7 @@
-# Archived and moved into [DSP-API](https://github.com/dasch-swiss/dsp-api/)
+> [!CAUTION]
+> **THIS REPO HAS BEEN ARCHIVED.**
 
-<hr><hr><hr>
+<hr>
 
 #### Dsp-Ingest
 
