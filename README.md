@@ -1,5 +1,6 @@
 > [!CAUTION]
-> **THIS REPO HAS BEEN ARCHIVED.**
+> **THIS REPO HAS BEEN ARCHIVED.**  
+> It has now been included into https://github.com/dasch-swiss/dsp-api/.
 
 <hr>
 
